@@ -1,202 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voltage - Rocket League Mod</title>
-    <link rel="icon" href="https://volt-cdn.voltage.gay/TransparentIcon.png" type="image/x-icon">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voltage - Rocket League Mod</title>
+  <link rel="icon" href="https://volt-cdn.voltage.gay/TransparentIcon.png" type="image/x-icon" />
 
-    <meta property="og:title" content="Voltage - Rocket League Mod">
-    <meta property="og:description" content="Join the Voltage community for Rocket League modding and access exclusive plugins, features, and more!">
-    <meta property="og:image" content="https://volt-cdn.voltage.gay/TransparentIcon.png">
-    <meta property="og:url" content="https://discord.gg/THSrk3mUZ2">
-    <meta property="og:type" content="website">
+  <!-- Open Graph -->
+  <meta property="og:title" content="Voltage - Rocket League Mod" />
+  <meta property="og:description" content="Join the Voltage community for Rocket League modding and access exclusive plugins, features, and more!" />
+  <meta property="og:image" content="https://volt-cdn.voltage.gay/TransparentIcon.png" />
+  <meta property="og:url" content="https://discord.gg/THSrk3mUZ2" />
+  <meta property="og:type" content="website" />
 
-    <style>
-        body, html {
-            height: 100%;
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-image: url('https://volt-cdn.voltage.gay/bg.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-color: #0a0a0a;
-            color: #eaeaea;
-        }
-        .aspect-ratio-container {
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-        }
-        .aspect-ratio-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .nav {
-            display: flex;
-            justify-content: flex-end;
-            background: #111;
-            padding: 10px 0;
-        }
-        .nav button {
-            background: none;
-            border: 2px solid #ffffff;
-            padding: 10px; /* Reduced padding for closer proximity */
-            margin: 0 5px; /* Added to control spacing between buttons */
-            color: #eaeaea;
-            cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .nav button:hover {
-            background: #0078d4;
-            color: #0a0a0a;
-        }
-        .content {
-            flex: 1;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .content.active {
-            display: flex;
-            opacity: 1;
-        }
-        .content h1, .content p {
-            text-align: center;
-        }
-        .footer {
-            background: #111;
-            color: #eaeaea;
-            text-align: center;
-            padding: 10px;
-        }
-        .cta-button {
-            background-color: #111;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
-        /* Embed container */
-        .discord-invite {
-            width: 300px;
-            border: 1px solid #202225;
-            border-radius: 5px;
-            overflow: hidden;
-            color: #dcddde;
-            background-color: #2f3136;
-        }
+  <!-- SEO (requested keywords) -->
+  <meta name="description" content="Voltage is a Rocket League modding community. Join the server for plugins, tools, and modding resources." />
+  <meta name="keywords" content="rocket league mod, rocket league item spawning, rocket league item mods, rocket league texture packs, rocket league old ui, 2019 rocket league mods, mods rocket league, voltage, voltage rocket league, hacking, spawn items, item hacks, alpha boost, free alpha boost, custom titles rocket league, free crates, free drops" />
 
-        /* Server icon and information */
-        .server-info {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .server-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            margin-right: 10px;
-            border: 2px solid #2f3136;
-        }
-
-        /* Invite button styling */
-        .invite-button {
-            display: block;
-            text-align: center;
-            background-color: #5865f2;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 10px;
-            font-weight: 600;
-            border: 0;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
-            transition: background-color 0.2s ease-in-out;
-        }
-
-        .invite-button:hover {
-            background-color: #4752c4;
-        }
-
-        .flex-container {
-            display: flex;
-            align-items: center; /* Adjust alignment as needed */
-            justify-content: space-between; /* Adjust spacing as needed */
-        }
-
-        .server-info, .additional-text {
-            margin: 0 10px; /* Adds spacing around elements, adjust as needed */
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="nav">
-        <button onclick="openTab('home')">Home</button>
-        <button onclick="openTab('showcase')">Showcase</button>
-    </div>
-    
-    <div id="home" class="content active">
-        <div class="discord-invite">
-                <div class="server-info">
-                    <img src="https://volt-cdn.voltage.gay/TransparentIcon.png" alt="Server Icon" class="server-icon">
-                    <div>Voltage Admission</div>
-                </div>
-                <a href="https://discord.gg/THSrk3mUZ2" class="invite-button" target="_blank">Join The Server</a>
-            </div>
-    </div>
-    
-    <div id="showcase" class="content">
-        <div class="aspect-ratio-container">
-            <iframe src="https://www.youtube.com/watch?v=HcAQ12w9YfA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-    </div>
-    
-    <div class="footer">
-        2021 - 2024 Voltage - Rocket League Mod
-</div>
-
-<script>
-    function openTab(tabId) {
-        const contents = document.querySelectorAll('.content');
-        contents.forEach((content) => {
-            content.style.display = 'none';
-            content.classList.remove('active');
-        });
-        
-        const activeTab = document.getElementById(tabId);
-        activeTab.style.display = 'flex';
-        setTimeout(() => activeTab.classList.add('active'), 10);
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --panel: rgba(15, 15, 18, 0.78);
+      --panel-border: rgba(255, 255, 255, 0.10);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.68);
+      --accent: #5865f2; /* Discord-ish */
+      --accent-hover: #4752c4;
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+      --radius: 16px;
     }
-</script>
 
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      background-image: url("https://volt-cdn.voltage.gay/bg.png");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* Layout: keep footer at bottom even on short pages */
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 48px 18px;
+    }
+
+    /* subtle dark overlay for readability */
+    .backdrop {
+      width: 100%;
+      max-width: 520px;
+      padding: 22px;
+      border-radius: var(--radius);
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .brand img {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      background: rgba(0,0,0,0.15);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      margin: 0;
+      letter-spacing: 0.2px;
+      line-height: 1.2;
+    }
+
+    .brand p {
+      margin: 4px 0 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+.cta {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+
+    .btn {
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 650;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+      width: auto;
+    }
+
+    .btn:focus {
+      outline: 2px solid rgba(88, 101, 242, 0.55);
+      outline-offset: 2px;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      border-color: rgba(0, 0, 0, 0.0);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .fineprint {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    footer {
+      background: rgba(10, 10, 12, 0.9);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 16px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+    }
+
+    /* Hidden SEO text block (not visible on site) */
+    .seo-only {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+  </style>
+</head>
+
+<body>
+  <!-- SEO-only keywords section (not shown on the actual site) -->
+  <section class="seo-only" aria-hidden="true">
+    rocket league mod rocket league item spawning rocket league item mods rocket league texture packs rocket league old ui 2019 rocket league mods mods rocket league voltage voltage rocket league hacking spawn items item hacks alpha boost free alpha boost custom titles rocket league free crates free drops
+  </section>
+
+  <main>
+    <section class="backdrop">
+      <div class="brand">
+        <img src="https://volt-cdn.voltage.gay/TransparentIcon.png" alt="Voltage Icon" />
+        <div>
+          <h1>Voltage Admission</h1>
+          <p>Rocket League modding community - purchase Voltage here.</p>
+        </div>
+      </div>
+
+      <div class="cta">
+        <a class="btn primary" href="https://discord.gg/THSrk3mUZ2" target="_blank" rel="noopener noreferrer">
+          Join the Server
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    2021 - 2026 Voltage - Rocket League Mod
+  </footer>
 </body>
 </html>
-
-
-
