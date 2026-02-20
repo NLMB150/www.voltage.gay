@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SURVIVAL SIM — Spatial Observer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap');
+
+  :root {
+    --bg:       #010a0f;
+    --grid:     #0a1a24;
+    --host:     #00ffc8;
+    --virus:    #ff2d55;
+    --neutral:  #1a3a4a;
+    --dim:      #1e3340;
+    --glow-h:   0 0 12px #00ffc8, 0 0 30px #00ffc888;
+    --glow-v:   0 0 12px #ff2d55, 0 0 30px #ff2d5588;
+    --text:     #a8d8e8;
+    --accent:   #f0c040;
+    --font-m:   'Share Tech Mono', monospace;
+    --font-d:   'Orbitron', monospace;
+    --font-v:   'VT323', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-m);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events:none;
+    z-index:1000;
+  }
+
+  /* CRT vignette */
+  body::after {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+    pointer-events:none;
+    z-index:999;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    border-bottom: 1px solid #0d2a38;
+    background: linear-gradient(180deg, #010f18 0%, transparent 100%);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .title {
+    font-family: var(--font-d);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--host);
+    text-shadow: var(--glow-h);
+  }
+
+  .ticker {
+    font-family: var(--font-v);
+    font-size: 20px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--host);
+    box-shadow: var(--glow-h);
+    animation: pulse 1.2s ease-in-out infinite;
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity:1; transform: scale(1); }
+    50%      { opacity:0.4; transform: scale(0.7); }
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    grid-template-rows: 1fr 120px;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* ── SIDE PANELS ── */
+  .panel {
+    border: 1px solid #0d2a38;
+    padding: 12px;
+    background: rgba(1,15,24,0.8);
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.7;
+  }
+
+  .panel-title {
+    font-family: var(--font-d);
+    font-size: 8px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #0d2a38;
+  }
+
+  .panel-title.host-color { color: var(--host); text-shadow: var(--glow-h); }
+  .panel-title.virus-color { color: var(--virus); text-shadow: var(--glow-v); }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 3px 0;
+    font-size: 11px;
+  }
+
+  .stat-label { color: #4a8a9a; }
+  .stat-val-h { color: var(--host); }
+  .stat-val-v { color: var(--virus); }
+  .stat-val-y { color: var(--accent); }
+
+  .mini-bar {
+    height: 4px;
+    background: #0d2a38;
+    border-radius: 2px;
+    margin: 4px 0 8px 0;
+    overflow: hidden;
+  }
+  .mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .mini-bar-fill.h { background: linear-gradient(90deg, #00a88a, var(--host)); box-shadow: 0 0 6px var(--host); }
+  .mini-bar-fill.v { background: linear-gradient(90deg, #aa1030, var(--virus)); box-shadow: 0 0 6px var(--virus); }
+
+  .gene-list { margin-top: 8px; }
+  .gene-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 3px 0;
+    font-size: 10px;
+  }
+  .gene-name { color: #8abacb; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gene-bar {
+    height: 3px;
+    background: var(--virus);
+    border-radius: 2px;
+    min-width: 2px;
+    box-shadow: 0 0 4px var(--virus);
+    transition: width 0.4s ease;
+  }
+
+  /* ── CANVAS AREA ── */
+  .canvas-wrap {
+    position: relative;
+    grid-row: 1 / 2;
+    grid-column: 2 / 3;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  #mainCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── BOTTOM LOG ── */
+  .log-panel {
+    grid-column: 1 / 4;
+    border-top: 1px solid #0d2a38;
+    padding: 8px 16px;
+    background: rgba(1,10,15,0.95);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .log-line {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    animation: fadein 0.3s forwards;
+  }
+
+  @keyframes fadein { to { opacity: 1; } }
+
+  .log-line.breach { color: #ff6080; }
+  .log-line.escape { color: #40ffb0; }
+  .log-line.mutate { color: #d080ff; }
+  .log-line.respawn { color: var(--accent); }
+
+  /* ── FLOATING LABELS ── */
+  .node-label {
+    position: absolute;
+    font-family: var(--font-d);
+    font-size: 9px;
+    letter-spacing: 2px;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title"><span class="status-dot"></span>SURVIVAL SIM — SPATIAL OBSERVER</div>
+  <div class="ticker" id="tickDisplay">T:0000</div>
+  <div style="font-size:11px; color:#4a8a9a;">OUTSIDE VIEW / READ-ONLY</div>
+</header>
+
+<div class="main">
+
+  <!-- HOST PANEL -->
+  <div class="panel" id="hostPanel">
+    <div class="panel-title host-color">◈ HOST NODE</div>
+    <div class="stat-row"><span class="stat-label">INTEGRITY</span><span class="stat-val-h" id="hIntVal">100%</span></div>
+    <div class="mini-bar"><div class="mini-bar-fill h" id="hIntBar" style="width:100%"></div></div>
+    <div class="stat-row"><span class="stat-label">UPTIME</span><span class="stat-val-h" id="hUptime">0</span></div>
+    <div class="stat-row"><span class="stat-label">ESCAPES</span><span class="stat-val-h" id="hEscapes">0</span></div>
+    <div class="stat-row"><span class="stat-label">BREACHES</span><span class="stat-val-v" id="hBreaches">0</span></div>
+    <div class="stat-row"><span class="stat-label">REGEN</span><span class="stat-val-h" id="hRegen">—</span></div>
+    <br>
+    <div class="panel-title host-color" style="margin-top:6px">◈ ACTIVE SHIELDS</div>
+    <div id="shieldList" style="font-size:10px; color:#4aefb0; line-height:1.9;"></div>
+  </div>
+
+  <!-- MAP CANVAS -->
+  <div class="canvas-wrap">
+    <canvas id="mainCanvas"></canvas>
+  </div>
+
+  <!-- VIRUS PANEL -->
+  <div class="panel" id="virusPanel">
+    <div class="panel-title virus-color">◈ VIRUS ENTITY</div>
+    <div class="stat-row"><span class="stat-label">INTEGRITY</span><span class="stat-val-v" id="vIntVal">100%</span></div>
+    <div class="mini-bar"><div class="mini-bar-fill v" id="vIntBar" style="width:100%"></div></div>
+    <div class="stat-row"><span class="stat-label">GENERATION</span><span class="stat-val-y" id="vGen">1</span></div>
+    <div class="stat-row"><span class="stat-label">MUTATIONS</span><span class="stat-val-y" id="vMut">0</span></div>
+    <div class="stat-row"><span class="stat-label">HITS</span><span class="stat-val-v" id="vHits">0</span></div>
+    <div class="stat-row"><span class="stat-label">BLOCKED</span><span class="stat-val-h" id="vBlocked">0</span></div>
+    <br>
+    <div class="panel-title virus-color" style="margin-top:6px">◈ GENE POOL</div>
+    <div class="gene-list" id="geneList"></div>
+  </div>
+
+  <!-- EVENT LOG -->
+  <div class="log-panel" id="logPanel"></div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  SIMULATION DATA  (mirrors survival_sim.py exactly)
+// ═══════════════════════════════════════════════════════════
+
+const ATTACK_DEFENSE_PAIRS = {
+  memory_inject:      ["memory_encryption",  "injecting shellcode into heap",             "scrambling memory layout (ASLR + XOR cipher)"],
+  process_kill:       ["spawn_decoy",         "sending SIGKILL to PID",                    "forking decoy process, migrating to shadow PID"],
+  stack_smash:        ["stack_canary",        "overflowing return address",                "canary value triggered — stack rebuilt"],
+  rootkit_install:    ["privilege_drop",      "escalating to ring-0",                      "dropping to unprivileged namespace"],
+  file_corrupt:       ["checksum_restore",    "overwriting executable bytes",              "rolling back from immutable snapshot"],
+  network_hijack:     ["tunnel_reroute",      "poisoning routing table",                   "tunneling through encrypted VPN hop"],
+  timing_attack:      ["jitter_shield",       "measuring cache side-channels",             "injecting random timing jitter"],
+  syscall_intercept:  ["syscall_filter",      "hooking sys_execve",                        "installing seccomp-BPF syscall whitelist"],
+  entropy_drain:      ["entropy_seed",        "exhausting /dev/urandom pool",              "reseeding PRNG from hardware noise"],
+  log_poison:         ["log_integrity",       "corrupting audit trail",                    "writing signed append-only log"],
+  dns_spoof:          ["dnssec_verify",       "hijacking DNS resolution",                  "verifying DNSSEC chain of trust"],
+  heap_spray:         ["heap_isolation",      "spraying NOP sleds across heap",            "isolating heap regions with guard pages"],
+  race_condition:     ["mutex_lockdown",      "exploiting TOCTOU window",                  "wrapping critical section in mutex"],
+  cold_boot_attack:   ["memory_wipe",         "imaging RAM before power cycle",            "overwriting RAM with zeros on suspend"],
+  dependency_hijack:  ["dep_pin",             "replacing trusted library",                 "pinning all deps to verified checksums"],
+};
+
+const ATTACKS  = Object.keys(ATTACK_DEFENSE_PAIRS);
+const DEFENSES = {};
+for (const [k,v] of Object.entries(ATTACK_DEFENSE_PAIRS)) DEFENSES[k] = v[0];
+
+// ─── Random utils ───────────────────────────────────────────
+let _seed = Date.now();
+function srand() { _seed = (_seed * 1664525 + 1013904223) & 0xffffffff; return (_seed >>> 0) / 0xffffffff; }
+function randFloat(lo, hi) { return lo + srand() * (hi - lo); }
+function randInt(lo, hi)   { return Math.floor(randFloat(lo, hi + 1)); }
+function randChoice(arr, weights) {
+  if (!weights) return arr[Math.floor(srand() * arr.length)];
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = srand() * total;
+  for (let i=0; i<arr.length; i++) { r -= weights[i]; if (r <= 0) return arr[i]; }
+  return arr[arr.length-1];
+}
+
+// ─── State ──────────────────────────────────────────────────
+const host = {
+  integrity: 100, maxIntegrity: 100, uptime: 0,
+  defenseMemory: {}, escapes: 0, breaches: 0,
+  activeShields: [], shieldCooldown: {},
+};
+const virus = {
+  integrity: 100, maxIntegrity: 100, generation: 1,
+  genePool: Object.fromEntries(ATTACKS.map(a=>[a,1.0])),
+  hits: 0, blocked: 0, mutations: 0,
+};
+
+// ─── Simulation logic (mirrors Python) ──────────────────────
+function hostApplyDefense(attack) {
+  const defense = DEFENSES[attack];
+  const mem = host.defenseMemory[defense] || 0;
+  const cd  = host.shieldCooldown[defense] || 0;
+  const chance = Math.min(0.90, 0.65 + Math.min(mem*0.04,0.25) - Math.min(cd*0.1,0.40));
+  const success = srand() < chance;
+  if (success) {
+    host.defenseMemory[defense] = (host.defenseMemory[defense]||0) + 1;
+    host.shieldCooldown[defense] = 0;
+    if (!host.activeShields.includes(defense)) {
+      host.activeShields.push(defense);
+      if (host.activeShields.length > 5) host.activeShields.shift();
+    }
+    host.escapes++;
+  } else {
+    host.shieldCooldown[defense] = (host.shieldCooldown[defense]||0) + 2;
+    host.breaches++;
+  }
+  for (const d of Object.keys(host.shieldCooldown))
+    host.shieldCooldown[d] = Math.max(0, (host.shieldCooldown[d]||0) - 1);
+  return { success, defense, flavor: ATTACK_DEFENSE_PAIRS[attack][2] };
+}
+
+function virusChooseAttack() {
+  const attacks = Object.keys(virus.genePool);
+  const weights = attacks.map(a => virus.genePool[a]);
+  return randChoice(attacks, weights);
+}
+
+function virusReinforce(attack, success) {
+  if (success) {
+    virus.genePool[attack] = Math.min(virus.genePool[attack]*1.4 + 0.5, 10.0);
+    virus.hits++;
+  } else {
+    virus.genePool[attack] = Math.max(virus.genePool[attack]*0.7, 0.1);
+    virus.blocked++;
+  }
+}
+
+function virusMaybesMutate() {
+  if (srand() < 0.18) {
+    const pool = [...ATTACKS];
+    const a1 = pool[randInt(0,pool.length-1)];
+    const a2 = pool[randInt(0,pool.length-1)];
+    const a3 = pool[randInt(0,pool.length-1)];
+    virus.genePool[a3] = (virus.genePool[a1]+virus.genePool[a2])/2*1.1;
+    virus.mutations++;
+    virus.generation++;
+    return a3;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SPATIAL MAP  — fixed topology
+// ═══════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('mainCanvas');
+const ctx    = canvas.getContext('2d');
+
+// Attack categories → spatial zones (conceptually mapped)
+// Zone layout: 8 "attack vector" nodes orbit the HOST
+// They connect through 3 "relay" midpoints (memory, process, network)
+// The VIRUS lives on the outer ring and sends packets inward
+
+let W, H, CX, CY, R_INNER, R_RELAY, R_OUTER;
+
+const ATTACK_ZONES = {
+  // name → which relay cluster it belongs to
+  memory_inject:     'MEMORY',
+  stack_smash:       'MEMORY',
+  heap_spray:        'MEMORY',
+  cold_boot_attack:  'MEMORY',
+  process_kill:      'PROCESS',
+  rootkit_install:   'PROCESS',
+  race_condition:    'PROCESS',
+  syscall_intercept: 'PROCESS',
+  file_corrupt:      'STORAGE',
+  dependency_hijack: 'STORAGE',
+  log_poison:        'STORAGE',
+  network_hijack:    'NETWORK',
+  dns_spoof:         'NETWORK',
+  entropy_drain:     'NETWORK',
+  timing_attack:     'NETWORK',
+};
+
+const RELAY_ANGLES = {
+  MEMORY:  Math.PI * 1.75,
+  PROCESS: Math.PI * 0.25,
+  STORAGE: Math.PI * 1.25,
+  NETWORK: Math.PI * 0.75,
+};
+
+let nodes = {}; // attack name → {x,y}
+let relays = {}; // relay name → {x,y}
+let hostPos, virusPos;
+let particles = [];
+let shieldRings = [];
+let explosions = [];
+let gridLines = [];
+
+function buildLayout() {
+  W  = canvas.width  = canvas.offsetWidth;
+  H  = canvas.height = canvas.offsetHeight;
+  CX = W/2; CY = H/2;
+  R_INNER = Math.min(W,H) * 0.14;
+  R_RELAY = Math.min(W,H) * 0.30;
+  R_OUTER = Math.min(W,H) * 0.46;
+
+  hostPos  = { x: CX, y: CY };
+  virusPos = { x: CX + R_OUTER * 1.18, y: CY - R_OUTER * 0.3 };
+
+  // Relay nodes
+  for (const [relay, angle] of Object.entries(RELAY_ANGLES)) {
+    relays[relay] = {
+      x: CX + Math.cos(angle) * R_RELAY,
+      y: CY + Math.sin(angle) * R_RELAY,
+      label: relay,
+    };
+  }
+
+  // Attack nodes — arranged around their relay
+  const relayGroups = {};
+  for (const [atk, relay] of Object.entries(ATTACK_ZONES)) {
+    if (!relayGroups[relay]) relayGroups[relay] = [];
+    relayGroups[relay].push(atk);
+  }
+
+  for (const [relay, atkList] of Object.entries(relayGroups)) {
+    const baseAngle = RELAY_ANGLES[relay];
+    const spread = Math.PI * 0.35;
+    atkList.forEach((atk, i) => {
+      const t = atkList.length === 1 ? 0.5 : i / (atkList.length - 1);
+      const angle = baseAngle - spread/2 + t * spread;
+      nodes[atk] = {
+        x: CX + Math.cos(angle) * R_OUTER,
+        y: CY + Math.sin(angle) * R_OUTER,
+        relay,
+        angle,
+        active: false,
+        heat: 0,
+      };
+    });
+  }
+
+  // Background grid lines
+  gridLines = [];
+  const step = 36;
+  for (let x=0; x<W; x+=step) gridLines.push({x1:x,y1:0,x2:x,y2:H,horiz:false});
+  for (let y=0; y<H; y+=step) gridLines.push({x1:0,y1:y,x2:W,y2:y,horiz:true});
+}
+
+// ─── Particle system ────────────────────────────────────────
+function spawnParticle(fromX, fromY, toX, toY, color, isAttack, label) {
+  const dur = randFloat(0.6, 1.1);
+  particles.push({ fromX, fromY, toX, toY, color, t:0, dur,
+    label: label || '', isAttack,
+    midX: (fromX+toX)/2 + randFloat(-40,40),
+    midY: (fromY+toY)/2 + randFloat(-40,40),
+  });
+}
+
+function spawnExplosion(x, y, color, size=24) {
+  const pieces = randInt(6,12);
+  for (let i=0; i<pieces; i++) {
+    const angle = srand() * Math.PI*2;
+    const speed = randFloat(1,4);
+    explosions.push({ x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+      life:1, color, size: randFloat(2, size*0.4) });
+  }
+}
+
+function spawnShieldRing(x, y) {
+  shieldRings.push({ x, y, r:10, life:1 });
+}
+
+// ─── Draw helpers ───────────────────────────────────────────
+function hex2rgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function drawGlowCircle(x, y, r, color, glowR=r*2.5) {
+  const g = ctx.createRadialGradient(x,y,r*0.2,x,y,glowR);
+  g.addColorStop(0, color+'cc');
+  g.addColorStop(0.4, color+'44');
+  g.addColorStop(1, color+'00');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x,y,glowR,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+}
+
+function drawLine(x1,y1,x2,y2, color, width=1, alpha=1, dash=[]) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.globalAlpha = alpha;
+  if (dash.length) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawText(text, x, y, color, size=10, font='Share Tech Mono', align='center') {
+  ctx.save();
+  ctx.font = `${size}px '${font}', monospace`;
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function bezierPoint(p0,p1,p2,t) {
+  const x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
+  const y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
+  return {x,y};
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER LOOP
+// ═══════════════════════════════════════════════════════════
+let tick = 0;
+let lastEventType = 'idle';
+let animFrame = 0;
+let hostHit = 0;  // flash timer
+
+function draw() {
+  animFrame++;
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle = '#010a0f';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.save();
+  ctx.strokeStyle = '#0a1a24';
+  ctx.lineWidth = 0.5;
+  ctx.globalAlpha = 0.6;
+  for (const gl of gridLines) {
+    ctx.beginPath(); ctx.moveTo(gl.x1,gl.y1); ctx.lineTo(gl.x2,gl.y2); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Faint orbits
+  [R_INNER, R_RELAY, R_OUTER].forEach((r,i) => {
+    ctx.save();
+    ctx.strokeStyle = ['#00ffc8','#1a3a4a','#1a2a34'][i];
+    ctx.lineWidth = [1,0.5,0.5][i];
+    ctx.globalAlpha = [0.25,0.18,0.12][i];
+    ctx.setLineDash([4,8]);
+    ctx.beginPath(); ctx.arc(CX,CY,r,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  });
+
+  // Relay → Host connections
+  for (const relay of Object.values(relays)) {
+    drawLine(relay.x, relay.y, CX, CY, '#0d3a4a', 0.8, 0.5, [6,10]);
+  }
+
+  // Attack node → relay connections
+  for (const [atk, node] of Object.entries(nodes)) {
+    const relay = relays[node.relay];
+    const heat = Math.min(node.heat, 1);
+    const col = heat > 0 ? `rgba(255,45,85,${heat*0.5})` : 'rgba(26,58,74,0.4)';
+    drawLine(node.x, node.y, relay.x, relay.y, col, 0.6, 0.7, [3,8]);
+  }
+
+  // Virus → outer nodes connections (faint web)
+  for (const node of Object.values(nodes)) {
+    const heat = Math.min(node.heat, 1);
+    if (heat > 0.1) {
+      drawLine(virusPos.x, virusPos.y, node.x, node.y,
+        `rgba(255,45,85,${heat*0.25})`, 0.5, 1, [2,12]);
+    }
+  }
+
+  // ── Attack nodes ──
+  for (const [atk, node] of Object.entries(nodes)) {
+    const heat = Math.min(node.heat, 1);
+    node.heat = Math.max(0, node.heat - 0.012);
+    const r = 5 + heat*4;
+    const col = node.active ? '#ff2d55' : '#1a4a5a';
+    const glCol = node.active ? '#ff2d55' : '#1a4a5a';
+    drawGlowCircle(node.x, node.y, r, col, r*3);
+    // label
+    const labelX = node.x + Math.cos(node.angle) * 18;
+    const labelY = node.y + Math.sin(node.angle) * 18;
+    ctx.save();
+    ctx.font = "9px 'Share Tech Mono', monospace";
+    ctx.fillStyle = heat > 0.3 ? '#ff8090' : '#2a5a6a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(atk.replace(/_/g,' '), labelX, labelY);
+    ctx.restore();
+    node.active = false;
+  }
+
+  // ── Relay nodes ──
+  for (const relay of Object.values(relays)) {
+    const pulse = 0.5 + 0.5 * Math.sin(animFrame*0.06);
+    drawGlowCircle(relay.x, relay.y, 8+pulse*2, '#1a8aa8', 24);
+    ctx.save();
+    ctx.font = "9px 'Orbitron', monospace";
+    ctx.fillStyle = '#4aaac8';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(relay.label, relay.x, relay.y - 18);
+    ctx.restore();
+  }
+
+  // ── HOST node ──
+  const hostPulse = 0.5 + 0.5 * Math.sin(animFrame * 0.04);
+  const hostR = R_INNER * 0.45;
+  const hostColor = host.integrity > 50 ? '#00ffc8' : host.integrity > 20 ? '#f0c040' : '#ff2d55';
+  // glow rings
+  for (let i=3; i>=0; i--) {
+    ctx.save();
+    ctx.globalAlpha = 0.04 + i*0.04;
+    ctx.strokeStyle = hostColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(CX, CY, hostR + i*12 + hostPulse*4, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  drawGlowCircle(CX, CY, hostR, hostColor, hostR*2.8);
+
+  // Host integrity arc
+  const intAngle = (host.integrity/100) * Math.PI*2 - Math.PI/2;
+  ctx.save();
+  ctx.strokeStyle = '#001a14';
+  ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(CX,CY,hostR+8,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle = hostColor;
+  ctx.shadowColor = hostColor; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(CX,CY,hostR+8,-Math.PI/2,intAngle); ctx.stroke();
+  ctx.restore();
+
+  // Host flash on hit
+  if (hostHit > 0) {
+    ctx.save();
+    ctx.globalAlpha = hostHit * 0.35;
+    ctx.fillStyle = '#ff2d55';
+    ctx.beginPath(); ctx.arc(CX,CY,hostR+20,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    hostHit -= 0.08;
+  }
+
+  drawText('HOST', CX, CY-6, hostColor, 12, 'Orbitron');
+  drawText(`${host.integrity.toFixed(0)}%`, CX, CY+10, hostColor+'aa', 10);
+
+  // ── VIRUS entity ──
+  const vp = animFrame * 0.018;
+  const virusX = CX + (R_OUTER*1.18)*Math.cos(vp*0.3) * 0.05 + virusPos.x - CX;
+  const virusY = CY + (R_OUTER*0.3)*Math.sin(vp*0.4) * 0.1  + virusPos.y - CY;
+  const virusColor = virus.integrity > 50 ? '#ff2d55' : virus.integrity > 20 ? '#f0c040' : '#884444';
+  const vr = 14 + 3*Math.sin(animFrame*0.08);
+  drawGlowCircle(virusX, virusY, vr, virusColor, vr*3);
+  // Hexagon border
+  ctx.save();
+  ctx.strokeStyle = virusColor;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = virusColor; ctx.shadowBlur = 10;
+  ctx.beginPath();
+  for (let i=0; i<6; i++) {
+    const a = (i/6)*Math.PI*2 + animFrame*0.015;
+    const x = virusX + Math.cos(a)*(vr+10);
+    const y = virusY + Math.sin(a)*(vr+10);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.closePath(); ctx.stroke();
+  ctx.restore();
+  drawText('VIRUS', virusX, virusY-4, virusColor, 10, 'Orbitron');
+  drawText(`GEN ${virus.generation}`, virusX, virusY+10, virusColor+'99', 9);
+
+  // ── Particles (attack/defense projectiles) ──
+  const alive = [];
+  for (const p of particles) {
+    p.t += 0.022 / p.dur;
+    if (p.t >= 1) {
+      if (p.isAttack) spawnExplosion(p.toX, p.toY, p.color, 20);
+      else spawnShieldRing(p.toX, p.toY);
+      continue;
+    }
+    const mid = {x:p.midX, y:p.midY};
+    const pos = bezierPoint({x:p.fromX,y:p.fromY}, mid, {x:p.toX,y:p.toY}, p.t);
+    const alpha = Math.sin(p.t * Math.PI);
+    const r = p.isAttack ? 4 : 5;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    drawGlowCircle(pos.x, pos.y, r, p.color, r*4);
+    if (p.label) {
+      ctx.font = "8px 'Share Tech Mono'";
+      ctx.fillStyle = p.color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(p.label, pos.x, pos.y-8);
+    }
+    ctx.restore();
+    // Tail
+    if (p.t > 0.05) {
+      const prev = bezierPoint({x:p.fromX,y:p.fromY}, mid, {x:p.toX,y:p.toY}, p.t-0.05);
+      ctx.save();
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(pos.x,pos.y); ctx.stroke();
+      ctx.restore();
+    }
+    alive.push(p);
+  }
+  particles = alive;
+
+  // ── Shield rings ──
+  const aliveS = [];
+  for (const s of shieldRings) {
+    s.r += 4; s.life -= 0.06;
+    if (s.life <= 0) continue;
+    ctx.save();
+    ctx.strokeStyle = '#00ffc8';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = s.life * 0.7;
+    ctx.shadowColor = '#00ffc8'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+    aliveS.push(s);
+  }
+  shieldRings = aliveS;
+
+  // ── Explosions ──
+  const aliveE = [];
+  for (const e of explosions) {
+    e.x += e.vx; e.y += e.vy;
+    e.vx *= 0.92; e.vy *= 0.92;
+    e.life -= 0.06;
+    if (e.life <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = e.life;
+    ctx.fillStyle = e.color;
+    ctx.beginPath(); ctx.arc(e.x, e.y, e.size*e.life, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    aliveE.push(e);
+  }
+  explosions = aliveE;
+
+  requestAnimationFrame(draw);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SIMULATION STEP (mirrors Python logic tick-by-tick)
+// ═══════════════════════════════════════════════════════════
+const LOG_MAX = 8;
+const logEl = document.getElementById('logPanel');
+
+function addLog(msg, type) {
+  const div = document.createElement('div');
+  div.className = `log-line ${type}`;
+  div.textContent = msg;
+  logEl.insertBefore(div, logEl.firstChild);
+  while (logEl.children.length > LOG_MAX) logEl.removeChild(logEl.lastChild);
+}
+
+function updateUI() {
+  // Host
+  document.getElementById('hIntVal').textContent = host.integrity.toFixed(1)+'%';
+  document.getElementById('hIntBar').style.width = host.integrity+'%';
+  document.getElementById('hUptime').textContent = host.uptime;
+  document.getElementById('hEscapes').textContent = host.escapes;
+  document.getElementById('hBreaches').textContent = host.breaches;
+  document.getElementById('shieldList').innerHTML =
+    host.activeShields.slice(-4).map(s=>`<div>▸ ${s}</div>`).join('');
+
+  // Virus
+  document.getElementById('vIntVal').textContent = virus.integrity.toFixed(1)+'%';
+  document.getElementById('vIntBar').style.width = virus.integrity+'%';
+  document.getElementById('vGen').textContent = virus.generation;
+  document.getElementById('vMut').textContent = virus.mutations;
+  document.getElementById('vHits').textContent = virus.hits;
+  document.getElementById('vBlocked').textContent = virus.blocked;
+  document.getElementById('tickDisplay').textContent = `T:${String(tick).padStart(4,'0')}`;
+
+  // Gene pool (top 8)
+  const sorted = Object.entries(virus.genePool).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxW = sorted[0]?.[1] || 1;
+  document.getElementById('geneList').innerHTML = sorted.map(([a,w])=>`
+    <div class="gene-item">
+      <span class="gene-name">${a.replace(/_/g,' ')}</span>
+      <div class="gene-bar" style="width:${Math.round((w/maxW)*60)}px"></div>
+    </div>`).join('');
+}
+
+function simStep() {
+  tick++;
+  host.uptime++;
+
+  const attack = virusChooseAttack();
+  const atkFlavor = ATTACK_DEFENSE_PAIRS[attack][1];
+  const { success, defense, flavor } = hostApplyDefense(attack);
+
+  // Activate node visually
+  if (nodes[attack]) {
+    nodes[attack].active = true;
+    nodes[attack].heat = 1.0;
+  }
+
+  const node = nodes[attack];
+  const relay = node ? relays[node.relay] : relays['NETWORK'];
+
+  if (success) {
+    const dmg = randFloat(4.0, 12.0);
+    virus.integrity = Math.max(0, virus.integrity - dmg);
+    virusReinforce(attack, false);
+
+    // Visual: virus fires at attack node, host fires back
+    spawnParticle(virusPos.x, virusPos.y, node.x, node.y, '#ff2d55', true, attack.replace(/_/g,' '));
+    setTimeout(()=>{
+      spawnParticle(CX, CY, virusPos.x, virusPos.y, '#00ffc8', false, defense.replace(/_/g,' '));
+      spawnShieldRing(CX, CY);
+    }, 300);
+
+    addLog(`T${tick} BLOCKED [${attack}] → ${defense} — virus -${dmg.toFixed(1)}`, 'escape');
+  } else {
+    const dmg = randFloat(6.0, 18.0);
+    host.integrity = Math.max(0, host.integrity - dmg);
+    virusReinforce(attack, true);
+    hostHit = 1.0;
+
+    // Visual: virus packet travels to host
+    spawnParticle(virusPos.x, virusPos.y, CX, CY, '#ff2d55', true, attack.replace(/_/g,' '));
+    setTimeout(()=>spawnExplosion(CX, CY, '#ff2d55', 30), 500);
+
+    addLog(`T${tick} BREACH! [${attack}] vs [${defense}] — host -${dmg.toFixed(1)}`, 'breach');
+  }
+
+  // Mutation
+  const mut = virusMaybesMutate();
+  if (mut) addLog(`T${tick} MUTATION → gene [${mut}] evolved (gen ${virus.generation})`, 'mutate');
+
+  // Virus regen
+  if (virus.integrity < virus.max) virus.integrity = Math.min(100, virus.integrity + randFloat(0.5,2.0));
+
+  // Host regen
+  if (host.integrity < 100 && host.integrity > 10)
+    host.integrity = Math.min(100, host.integrity + randFloat(0.3,1.2));
+
+  // Virus death → respawn
+  if (virus.integrity <= 0) {
+    const oldPool = {...virus.genePool};
+    const newPool = {};
+    for (const [k,v] of Object.entries(oldPool)) newPool[k] = v * 1.15;
+    virus.genePool = newPool;
+    virus.integrity = 100;
+    virus.generation++;
+    addLog(`T${tick} VIRUS RESPAWNED — gen ${virus.generation} with reinforced genome`, 'respawn');
+  }
+
+  // Host death
+  if (host.integrity <= 0) {
+    addLog(`T${tick} !! HOST TERMINATED !!`, 'breach');
+    clearInterval(simInterval);
+    setTimeout(()=>{ if(confirm('Host terminated. Restart simulation?')) location.reload(); }, 500);
+    return;
+  }
+
+  updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('resize', buildLayout);
+buildLayout();
+draw();
+
+// Stagger start
+setTimeout(()=>{
+  const simInterval = setInterval(simStep, 700);
+  window.simInterval = simInterval;
+}, 800);
+</script>
+</body>
+</html>
