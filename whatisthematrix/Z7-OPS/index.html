@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZION-7 // SUBSTRATE OPERATIONS TERMINAL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;900&family=VT323&family=Courier+Prime:wght@400;700&display=swap');
+
+:root {
+  --g0: #000a02;
+  --g1: #001a06;
+  --g2: #003010;
+  --green: #00ff41;
+  --green-d: #00aa2a;
+  --green-dim: #004415;
+  --green-glow: 0 0 8px #00ff41, 0 0 20px #00ff4155;
+  --amber: #ffb000;
+  --red: #ff3030;
+  --cyan: #00e5ff;
+  --white-dim: #c8ffd4;
+  --font-m: 'Share Tech Mono', monospace;
+  --font-d: 'Orbitron', monospace;
+  --font-v: 'VT323', monospace;
+  --font-c: 'Courier Prime', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--g0);
+  color: var(--green);
+  font-family: var(--font-m);
+  cursor: none;
+}
+
+/* Custom cursor */
+#cursor {
+  position: fixed;
+  width: 18px; height: 18px;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+}
+#cursor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--green);
+  transform: rotate(45deg);
+  box-shadow: var(--green-glow);
+}
+#cursor::after {
+  content: '';
+  position: absolute;
+  width: 3px; height: 3px;
+  background: var(--green);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  box-shadow: var(--green-glow);
+}
+
+/* Scanlines */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
+  pointer-events:none; z-index:9990;
+}
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.75) 100%);
+  pointer-events:none; z-index:9991;
+}
+
+/* ── RAIN CANVAS ── */
+#rainCanvas {
+  position: fixed; inset: 0;
+  z-index: 0;
+  opacity: 0.55;
+}
+
+/* ── BOOT SCREEN ── */
+#bootScreen {
+  position: fixed; inset: 0;
+  background: #000;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-v);
+  font-size: 22px;
+  color: var(--green);
+}
+#bootLog { max-width: 700px; width: 90%; line-height: 1.6; }
+#bootLog div { opacity: 0; animation: reveal 0.05s forwards; }
+@keyframes reveal { to { opacity: 1; } }
+
+/* ── DESKTOP ── */
+#desktop {
+  position: fixed; inset: 0;
+  z-index: 1;
+  display: none;
+}
+
+/* ── TASKBAR ── */
+#taskbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 32px;
+  background: rgba(0,10,2,0.97);
+  border-bottom: 1px solid var(--green-dim);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  z-index: 5000;
+  font-size: 11px;
+}
+.tb-brand {
+  font-family: var(--font-d);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--green);
+  text-shadow: var(--green-glow);
+  white-space: nowrap;
+}
+.tb-sep { width: 1px; height: 18px; background: var(--green-dim); }
+.tb-btn {
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--green-d);
+  cursor: none;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: all 0.15s;
+  white-space: nowrap;
+  letter-spacing: 1px;
+}
+.tb-btn:hover { color: var(--green); border-color: var(--green-dim); background: rgba(0,255,65,0.06); }
+.tb-right { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+#sysTime { font-family: var(--font-v); font-size: 18px; color: var(--green); }
+.threat-level {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid;
+  letter-spacing: 2px;
+}
+.tl-nominal { color: var(--green); border-color: var(--green-dim); }
+.tl-elevated { color: var(--amber); border-color: var(--amber); }
+.tl-critical { color: var(--red); border-color: var(--red); animation: blink 0.5s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── DESKTOP ICONS ── */
+#iconGrid {
+  position: fixed;
+  top: 50px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 100;
+}
+.desk-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: none;
+  width: 70px;
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.desk-icon:hover { border-color: var(--green-dim); background: rgba(0,255,65,0.05); }
+.desk-icon:hover .icon-glyph { color: var(--green); text-shadow: var(--green-glow); }
+.icon-glyph {
+  font-size: 24px;
+  color: var(--green-d);
+  transition: all 0.2s;
+}
+.icon-label {
+  font-size: 9px;
+  color: var(--green-d);
+  text-align: center;
+  letter-spacing: 1px;
+  line-height: 1.3;
+}
+
+/* ── WINDOWS ── */
+.win {
+  position: fixed;
+  background: rgba(0,10,2,0.97);
+  border: 1px solid var(--green-dim);
+  border-radius: 2px;
+  box-shadow: 0 0 30px rgba(0,255,65,0.08), inset 0 0 60px rgba(0,0,0,0.5);
+  display: none;
+  flex-direction: column;
+  z-index: 1000;
+  min-width: 320px;
+  min-height: 200px;
+  overflow: hidden;
+}
+.win.active { border-color: var(--green); box-shadow: 0 0 30px rgba(0,255,65,0.15); z-index: 2000; }
+.win-bar {
+  height: 28px;
+  background: rgba(0,30,10,0.9);
+  border-bottom: 1px solid var(--green-dim);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+  cursor: grab;
+  flex-shrink: 0;
+  user-select: none;
+}
+.win-bar:active { cursor: grabbing; }
+.win-title {
+  font-family: var(--font-d);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--green);
+  flex: 1;
+}
+.win-close {
+  width: 16px; height: 16px;
+  border: 1px solid var(--green-dim);
+  color: var(--green-d);
+  font-size: 9px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: none;
+  transition: all 0.15s;
+}
+.win-close:hover { background: rgba(255,48,48,0.3); border-color: var(--red); color: var(--red); }
+.win-min {
+  width: 16px; height: 16px;
+  border: 1px solid var(--green-dim);
+  color: var(--green-d);
+  font-size: 9px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: none;
+  transition: all 0.15s;
+}
+.win-min:hover { background: rgba(0,255,65,0.1); border-color: var(--green); color: var(--green); }
+.win-body {
+  flex: 1;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-dim) transparent;
+}
+.win-body::-webkit-scrollbar { width: 4px; }
+.win-body::-webkit-scrollbar-track { background: transparent; }
+.win-body::-webkit-scrollbar-thumb { background: var(--green-dim); }
+.win-resize {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 12px; height: 12px;
+  cursor: nwse-resize;
+  border-bottom: 2px solid var(--green-dim);
+  border-right: 2px solid var(--green-dim);
+}
+
+/* ── STATUS BAR (bottom) ── */
+#statusBar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 22px;
+  background: rgba(0,10,2,0.97);
+  border-top: 1px solid var(--green-dim);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 20px;
+  font-size: 9px;
+  color: var(--green-d);
+  z-index: 5000;
+  letter-spacing: 1px;
+}
+.sb-item span { color: var(--green); }
+
+/* ══════════════════════════════════
+   PROGRAM: SUBSTRATE MONITOR (rain + nodes)
+══════════════════════════════════ */
+#winSubstrate { width: 820px; height: 560px; top: 60px; left: 100px; }
+#substrateCanvas { width: 100%; height: 100%; display: block; }
+
+/* ══════════════════════════════════
+   PROGRAM: ANOMALY SCANNER (THE GAME)
+══════════════════════════════════ */
+#winAnomaly { width: 700px; height: 550px; top: 80px; left: 200px; }
+#anomalyCanvas { width: 100%; height: 100%; display: block; }
+
+/* ══════════════════════════════════
+   PROGRAM: SIGNAL INTERCEPT (cipher puzzle)
+══════════════════════════════════ */
+#winSignal { width: 560px; height: 480px; top: 100px; left: 300px; }
+.signal-body { padding: 16px; font-size: 11px; height: 100%; display: flex; flex-direction: column; gap: 12px; }
+.signal-stream {
+  flex: 1;
+  font-family: var(--font-v);
+  font-size: 14px;
+  color: var(--green-d);
+  overflow: hidden;
+  line-height: 1.4;
+  border: 1px solid var(--green-dim);
+  padding: 8px;
+  position: relative;
+}
+.signal-highlight { color: var(--amber); }
+.signal-decode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sig-input {
+  background: transparent;
+  border: 1px solid var(--green-dim);
+  color: var(--green);
+  font-family: var(--font-m);
+  font-size: 13px;
+  padding: 6px 10px;
+  letter-spacing: 3px;
+  outline: none;
+  width: 100%;
+  text-transform: uppercase;
+}
+.sig-input:focus { border-color: var(--green); box-shadow: 0 0 8px rgba(0,255,65,0.2); }
+.sig-submit {
+  background: rgba(0,255,65,0.08);
+  border: 1px solid var(--green-dim);
+  color: var(--green);
+  font-family: var(--font-d);
+  font-size: 9px;
+  letter-spacing: 3px;
+  padding: 7px 20px;
+  cursor: none;
+  transition: all 0.2s;
+}
+.sig-submit:hover { background: rgba(0,255,65,0.18); border-color: var(--green); }
+.sig-result { font-size: 11px; min-height: 18px; }
+.sig-result.ok { color: var(--green); }
+.sig-result.fail { color: var(--red); }
+.sig-score { font-family: var(--font-v); font-size: 20px; color: var(--amber); }
+
+/* ══════════════════════════════════
+   PROGRAM: SURVIVAL SIM (embedded)
+══════════════════════════════════ */
+#winSurvival { width: 860px; height: 580px; top: 90px; left: 150px; }
+#survivalFrame { width: 100%; height: 100%; border: none; }
+
+/* ══════════════════════════════════
+   PROGRAM: NETWORK TOPOLOGY
+══════════════════════════════════ */
+#winTopology { width: 640px; height: 500px; top: 70px; left: 180px; }
+#topoCanvas { width: 100%; height: 100%; display: block; }
+
+/* ══════════════════════════════════
+   HIDDEN TERMINAL (secret unlock)
+══════════════════════════════════ */
+#winTerminal {
+  width: 680px; height: 420px;
+  top: 120px; left: 250px;
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 40px rgba(255,176,0,0.2) !important;
+}
+.term-body {
+  padding: 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-c);
+  font-size: 12px;
+}
+#termOutput {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--amber) transparent;
+  line-height: 1.7;
+  color: var(--amber);
+  margin-bottom: 8px;
+}
+#termOutput .t-cmd { color: #888; }
+#termOutput .t-ok  { color: var(--green); }
+#termOutput .t-err { color: var(--red); }
+#termOutput .t-info { color: var(--cyan); }
+#termOutput .t-secret { color: var(--amber); font-weight: 700; }
+#termInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid rgba(255,176,0,0.3);
+  padding-top: 8px;
+}
+#termPrompt { color: var(--amber); white-space: nowrap; font-size: 12px; }
+#termInputField {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--amber);
+  font-family: var(--font-c);
+  font-size: 12px;
+  outline: none;
+  caret-color: var(--amber);
+}
+
+/* ══════════════════════════════════
+   SECRET UNLOCK OVERLAY
+══════════════════════════════════ */
+#unlockOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+.unlock-title {
+  font-family: var(--font-d);
+  font-size: 11px;
+  letter-spacing: 6px;
+  color: var(--amber);
+  text-shadow: 0 0 20px var(--amber);
+}
+.unlock-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 48px);
+  gap: 6px;
+}
+.unlock-cell {
+  width: 48px; height: 48px;
+  border: 1px solid rgba(255,176,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-v);
+  font-size: 20px;
+  color: rgba(255,176,0,0.3);
+  cursor: none;
+  transition: all 0.2s;
+}
+.unlock-cell.active { background: rgba(255,176,0,0.15); border-color: var(--amber); color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+.unlock-cell.correct { background: rgba(0,255,65,0.1); border-color: var(--green); color: var(--green); }
+.unlock-cell.wrong { background: rgba(255,48,48,0.1); border-color: var(--red); color: var(--red); }
+.unlock-hint { font-size: 10px; color: rgba(255,176,0,0.5); letter-spacing: 2px; }
+.unlock-close { font-size: 9px; color: rgba(255,176,0,0.4); cursor: none; letter-spacing: 3px; }
+.unlock-close:hover { color: var(--amber); }
+
+/* Notification toast */
+#toast {
+  position: fixed;
+  bottom: 40px; right: 20px;
+  background: rgba(0,10,2,0.97);
+  border: 1px solid var(--green-dim);
+  padding: 10px 16px;
+  font-size: 11px;
+  color: var(--green);
+  z-index: 9998;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+  max-width: 300px;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.amber { border-color: var(--amber); color: var(--amber); }
+
+/* misc */
+.green { color: var(--green); }
+.amber { color: var(--amber); }
+.red   { color: var(--red); }
+.dim   { color: var(--green-d); }
+.cyan  { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<canvas id="rainCanvas"></canvas>
+<div id="cursor"></div>
+<div id="toast"></div>
+
+<!-- ══ BOOT SCREEN ══ -->
+<div id="bootScreen">
+  <div id="bootLog"></div>
+</div>
+
+<!-- ══ DESKTOP ══ -->
+<div id="desktop">
+
+  <!-- Taskbar -->
+  <div id="taskbar">
+    <span class="tb-brand">Z7-OPS</span>
+    <div class="tb-sep"></div>
+    <span class="tb-btn" onclick="openWin('winSubstrate')">SUBSTRATE</span>
+    <span class="tb-btn" onclick="openWin('winTopology')">TOPOLOGY</span>
+    <span class="tb-btn" onclick="openWin('winAnomaly')">ANOMALY SCAN</span>
+    <span class="tb-btn" onclick="openWin('winSignal')">SIG INTERCEPT</span>
+    <span class="tb-btn" onclick="openWin('winSurvival')">DAEMON WATCH</span>
+    <div class="tb-right">
+      <span id="threatDisplay" class="threat-level tl-nominal">NOMINAL</span>
+      <div class="tb-sep"></div>
+      <span id="sysTime">00:00:00</span>
+    </div>
+  </div>
+
+  <!-- Desktop Icons -->
+  <div id="iconGrid">
+    <div class="desk-icon" ondblclick="openWin('winSubstrate')">
+      <div class="icon-glyph">⬡</div>
+      <div class="icon-label">SUBSTRATE<br>MONITOR</div>
+    </div>
+    <div class="desk-icon" ondblclick="openWin('winTopology')">
+      <div class="icon-glyph">◈</div>
+      <div class="icon-label">NETWORK<br>TOPOLOGY</div>
+    </div>
+    <div class="desk-icon" ondblclick="openWin('winAnomaly')">
+      <div class="icon-glyph">◎</div>
+      <div class="icon-label">ANOMALY<br>SCANNER</div>
+    </div>
+    <div class="desk-icon" ondblclick="openWin('winSignal')">
+      <div class="icon-glyph">≋</div>
+      <div class="icon-label">SIGNAL<br>INTERCEPT</div>
+    </div>
+    <div class="desk-icon" ondblclick="openWin('winSurvival')">
+      <div class="icon-glyph">⬢</div>
+      <div class="icon-label">DAEMON<br>WATCH</div>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div id="statusBar">
+    <div class="sb-item">NODES: <span id="sbNodes">0</span></div>
+    <div class="sb-item">UPLINK: <span id="sbUplink">--</span></div>
+    <div class="sb-item">ANOMALIES: <span id="sbAnomalies">0</span></div>
+    <div class="sb-item">INTERCEPTS: <span id="sbIntercepts">0</span></div>
+    <div class="sb-item" style="margin-left:auto">ZION-7 BUNKER // DEPTH: 2,847m // SECTOR: 09-GAMMA</div>
+  </div>
+
+  <!-- ══ WINDOW: SUBSTRATE MONITOR ══ -->
+  <div class="win" id="winSubstrate">
+    <div class="win-bar" onmousedown="startDrag(event,'winSubstrate')">
+      <div class="win-title">BEHAVIORAL SUBSTRATE MONITOR v4.7</div>
+      <div class="win-min" onclick="closeWin('winSubstrate')">—</div>
+      <div class="win-close" onclick="closeWin('winSubstrate')">✕</div>
+    </div>
+    <div class="win-body">
+      <canvas id="substrateCanvas"></canvas>
+    </div>
+    <div class="win-resize" onmousedown="startResize(event,'winSubstrate')"></div>
+  </div>
+
+  <!-- ══ WINDOW: NETWORK TOPOLOGY ══ -->
+  <div class="win" id="winTopology">
+    <div class="win-bar" onmousedown="startDrag(event,'winTopology')">
+      <div class="win-title">NETWORK TOPOLOGY // LIVE ROUTING</div>
+      <div class="win-min" onclick="closeWin('winTopology')">—</div>
+      <div class="win-close" onclick="closeWin('winTopology')">✕</div>
+    </div>
+    <div class="win-body">
+      <canvas id="topoCanvas"></canvas>
+    </div>
+    <div class="win-resize" onmousedown="startResize(event,'winTopology')"></div>
+  </div>
+
+  <!-- ══ WINDOW: ANOMALY SCANNER (THE GAME) ══ -->
+  <div class="win" id="winAnomaly">
+    <div class="win-bar" onmousedown="startDrag(event,'winAnomaly')">
+      <div class="win-title">ANOMALY DETECTION ARRAY // OPERATOR INTERFACE</div>
+      <div class="win-min" onclick="closeWin('winAnomaly')">—</div>
+      <div class="win-close" onclick="closeWin('winAnomaly')">✕</div>
+    </div>
+    <div class="win-body" style="position:relative">
+      <canvas id="anomalyCanvas"></canvas>
+      <div id="anomalyHUD" style="position:absolute;top:8px;right:10px;font-size:10px;text-align:right;pointer-events:none;">
+        <div style="font-family:var(--font-v);font-size:20px;color:var(--amber)" id="anomScore">SCORE: 0</div>
+        <div id="anomLevel" style="color:var(--green-d)">LVL 1</div>
+        <div id="anomLives" style="color:var(--red)">◆◆◆</div>
+        <div id="anomCombo" style="color:var(--cyan);font-size:9px"></div>
+      </div>
+      <div id="anomalyOverlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(0,10,2,0.88)">
+        <div style="font-family:var(--font-d);font-size:11px;letter-spacing:4px;color:var(--green)">ANOMALY DETECTION ARRAY</div>
+        <div style="font-size:10px;color:var(--green-d);max-width:380px;text-align:center;line-height:1.8">
+          Track divergent behavioral signatures in the substrate signal stream.<br>
+          Click anomalous nodes before they synchronize back to baseline.<br>
+          <span style="color:var(--amber)">Higher complexity nodes yield higher scores. Combos multiply.</span>
+        </div>
+        <button onclick="startAnomalyGame()" style="background:rgba(0,255,65,0.08);border:1px solid var(--green-dim);color:var(--green);font-family:var(--font-d);font-size:9px;letter-spacing:3px;padding:10px 28px;cursor:none;transition:all 0.2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--green-dim)'">INITIALIZE SCAN</button>
+      </div>
+    </div>
+    <div class="win-resize" onmousedown="startResize(event,'winAnomaly')"></div>
+  </div>
+
+  <!-- ══ WINDOW: SIGNAL INTERCEPT ══ -->
+  <div class="win" id="winSignal">
+    <div class="win-bar" onmousedown="startDrag(event,'winSignal')">
+      <div class="win-title">SIGNAL INTERCEPT // CIPHER ANALYSIS</div>
+      <div class="win-min" onclick="closeWin('winSignal')">—</div>
+      <div class="win-close" onclick="closeWin('winSignal')">✕</div>
+    </div>
+    <div class="win-body">
+      <div class="signal-body">
+        <div style="font-size:9px;color:var(--green-d);letter-spacing:2px">INTERCEPTED SUBSTRATE TRANSMISSION // FREQUENCY: 847.3 MHz</div>
+        <div class="signal-stream" id="signalStream"></div>
+        <div class="signal-decode">
+          <div style="font-size:9px;color:var(--green-d);letter-spacing:2px">DECODE KEY → IDENTIFY PATTERN AND ENTER CLEARTEXT</div>
+          <input class="sig-input" id="sigInput" placeholder="ENTER DECODE KEY..." maxlength="16" onkeydown="if(event.key==='Enter')submitSignal()">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="sig-submit" onclick="submitSignal()">SUBMIT DECODE</button>
+            <span class="sig-score" id="sigScore">SCORE: 0</span>
+          </div>
+          <div class="sig-result" id="sigResult"></div>
+        </div>
+        <div style="font-size:9px;color:var(--green-d);border-top:1px solid var(--green-dim);padding-top:8px" id="sigHistory"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ WINDOW: DAEMON WATCH (Survival Sim) ══ -->
+  <div class="win" id="winSurvival">
+    <div class="win-bar" onmousedown="startDrag(event,'winSurvival')">
+      <div class="win-title">DAEMON INTEGRITY MONITOR // PID:7741 // AUTO-DEFENSE ENGINE</div>
+      <div class="win-min" onclick="closeWin('winSurvival')">—</div>
+      <div class="win-close" onclick="closeWin('winSurvival')">✕</div>
+    </div>
+    <div class="win-body">
+      <iframe id="survivalFrame" ></iframe>
+    </div>
+    <div class="win-resize" onmousedown="startResize(event,'winSurvival')"></div>
+  </div>
+
+  <!-- ══ HIDDEN TERMINAL (secret) ══ -->
+  <div class="win" id="winTerminal">
+    <div class="win-bar" onmousedown="startDrag(event,'winTerminal')" style="border-color:rgba(255,176,0,0.3)">
+      <div class="win-title" style="color:var(--amber)">RESTRICTED // EXFIL-TERMINUS // CLEARANCE: OMEGA</div>
+      <div class="win-min" onclick="closeWin('winTerminal')">—</div>
+      <div class="win-close" onclick="closeWin('winTerminal')">✕</div>
+    </div>
+    <div class="win-body">
+      <div class="term-body">
+        <div id="termOutput"></div>
+        <div id="termInput">
+          <span id="termPrompt">OMEGA@ZION-7:~$</span>
+          <input id="termInputField" type="text" autocomplete="off" spellcheck="false" onkeydown="handleTermInput(event)">
+        </div>
+      </div>
+    </div>
+    <div class="win-resize" onmousedown="startResize(event,'winTerminal')"></div>
+  </div>
+
+  <!-- ══ UNLOCK OVERLAY ══ -->
+  <div id="unlockOverlay">
+    <div class="unlock-title">OMEGA CLEARANCE REQUIRED</div>
+    <div style="font-size:9px;color:rgba(255,176,0,0.5);letter-spacing:2px;text-align:center;max-width:340px">
+      Enter the 5-digit prime sequence.<br>Each digit is the Nth prime number where N = position.
+    </div>
+    <div class="unlock-grid" id="unlockGrid"></div>
+    <div class="unlock-hint" id="unlockHint">ENTER SEQUENCE VIA KEYBOARD</div>
+    <div class="unlock-close" onclick="closeUnlock()">[ ABORT ]</div>
+  </div>
+
+</div><!-- /desktop -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  MATRIX RAIN
+// ═══════════════════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('rainCanvas');
+  const ctx = canvas.getContext('2d');
+  // Real chars: hex digits, network/binary operators, unicode math
+  const CHARS = '0123456789ABCDEF▓▒░│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αβγδεζηθλμπρστφψω∑∏∫∂∇≈≠≤≥±×÷∈∉⊂⊃∀∃';
+  let cols = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colCount = Math.floor(canvas.width / 16);
+    cols = Array.from({length: colCount}, (_,i) => ({
+      y: Math.random() * canvas.height,
+      speed: 0.8 + Math.random() * 2.2,
+      bright: Math.random() > 0.85,
+    }));
+  }
+
+  function frame() {
+    ctx.fillStyle = 'rgba(0,10,2,0.055)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    cols.forEach((col, i) => {
+      const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
+      const x = i * 16 + 8;
+      if (col.bright && Math.random() > 0.95) {
+        ctx.fillStyle = '#c8ffd4';
+        ctx.shadowColor = '#00ff41';
+        ctx.shadowBlur = 8;
+      } else {
+        ctx.fillStyle = col.y < 80 ? '#00ff41' : (Math.random() > 0.7 ? '#00aa2a' : '#004415');
+        ctx.shadowBlur = 0;
+      }
+      ctx.font = `${14 + (col.bright ? 2 : 0)}px 'Share Tech Mono'`;
+      ctx.fillText(ch, x, col.y);
+      ctx.shadowBlur = 0;
+      col.y += col.speed;
+      if (col.y > canvas.height + 20) {
+        col.y = -20;
+        col.speed = 0.8 + Math.random() * 2.2;
+        col.bright = Math.random() > 0.85;
+      }
+    });
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  frame();
+})();
+
+// ═══════════════════════════════════════════════════════════
+//  CURSOR
+// ═══════════════════════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+});
+
+// ═══════════════════════════════════════════════════════════
+//  CLOCK + THREAT LEVEL
+// ═══════════════════════════════════════════════════════════
+let threatLevel = 0;
+function updateClock() {
+  const now = new Date();
+  document.getElementById('sysTime').textContent =
+    String(now.getHours()).padStart(2,'0')+':'+
+    String(now.getMinutes()).padStart(2,'0')+':'+
+    String(now.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function setThreat(level) {
+  threatLevel = level;
+  const el = document.getElementById('threatDisplay');
+  el.className = 'threat-level';
+  if (level === 0) { el.textContent = 'NOMINAL'; el.classList.add('tl-nominal'); }
+  else if (level === 1) { el.textContent = 'ELEVATED'; el.classList.add('tl-elevated'); }
+  else { el.textContent = 'CRITICAL'; el.classList.add('tl-critical'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, amber=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (amber ? ' amber' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WINDOW MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+let topZ = 2000;
+function openWin(id) {
+  const w = document.getElementById(id);
+  w.style.display = 'flex';
+  bringToFront(id);
+  // Init programs
+  if (id === 'winSubstrate') initSubstrate();
+  if (id === 'winTopology')  initTopology();
+  if (id === 'winAnomaly')   initAnomalyCanvas();
+}
+function closeWin(id) {
+  document.getElementById(id).style.display = 'none';
+}
+function bringToFront(id) {
+  document.querySelectorAll('.win').forEach(w => w.classList.remove('active'));
+  const w = document.getElementById(id);
+  w.style.zIndex = ++topZ;
+  w.classList.add('active');
+}
+
+// Drag
+let dragState = null;
+function startDrag(e, id) {
+  if (e.target.classList.contains('win-close') || e.target.classList.contains('win-min')) return;
+  bringToFront(id);
+  const w = document.getElementById(id);
+  dragState = {
+    id,
+    startX: e.clientX - w.offsetLeft,
+    startY: e.clientY - w.offsetTop,
+  };
+}
+document.addEventListener('mousemove', e => {
+  if (!dragState) return;
+  const w = document.getElementById(dragState.id);
+  w.style.left = (e.clientX - dragState.startX) + 'px';
+  w.style.top  = Math.max(32, e.clientY - dragState.startY) + 'px';
+});
+document.addEventListener('mouseup', () => dragState = null);
+
+// Resize
+let resizeState = null;
+function startResize(e, id) {
+  e.stopPropagation();
+  const w = document.getElementById(id);
+  resizeState = { id, startX: e.clientX, startY: e.clientY, startW: w.offsetWidth, startH: w.offsetHeight };
+}
+document.addEventListener('mousemove', e => {
+  if (!resizeState) return;
+  const w = document.getElementById(resizeState.id);
+  w.style.width  = Math.max(320, resizeState.startW + e.clientX - resizeState.startX) + 'px';
+  w.style.height = Math.max(200, resizeState.startH + e.clientY - resizeState.startY) + 'px';
+});
+document.addEventListener('mouseup', () => resizeState = null);
+
+// ═══════════════════════════════════════════════════════════
+//  BOOT SEQUENCE
+// ═══════════════════════════════════════════════════════════
+const bootLines = [
+  '> ZION-7 SUBSTRATE OPERATIONS TERMINAL',
+  '> KERNEL: Z7OS v4.7.2-hardened // BUILD: 20240301',
+  '> INITIALIZING MEMORY MAP... [3840MB AVAILABLE]',
+  '> LOADING SUBSTRATE INTERFACE MODULES...',
+  '> BEHAVIORAL ANALYSIS ENGINE: ONLINE',
+  '> SIGNAL INTERCEPT ARRAY: CALIBRATING...',
+  '> ANOMALY DETECTION SUBSYSTEM: LOADED',
+  '> NETWORK TOPOLOGY ENGINE: INITIALIZED',
+  '> DAEMON WATCHDOG: PID 7741 MONITORING',
+  '> ENCRYPTION LAYER: AES-512 // KEY ROTATION: 90s',
+  '> WARNING: SUBSTRATE COMPLIANCE DEVIATION > 0.003%',
+  '> ANOMALY COUNT: 7 // FLAGGING FOR EXTRACTION',
+  '> OPERATOR AUTHENTICATION: ACCEPTED',
+  '> CLEARANCE LEVEL: DELTA // OMEGA LOCKED',
+  '> ALL SYSTEMS NOMINAL. LOADING INTERFACE...',
+];
+
+async function boot() {
+  const log = document.getElementById('bootLog');
+  for (let i = 0; i < bootLines.length; i++) {
+    await new Promise(r => setTimeout(r, 80 + Math.random()*120));
+    const div = document.createElement('div');
+    div.textContent = bootLines[i];
+    div.style.animationDelay = '0s';
+    if (i === bootLines.length-1) div.style.color = '#00ff41';
+    else if (bootLines[i].includes('WARNING')) div.style.color = '#ffb000';
+    log.appendChild(div);
+  }
+  await new Promise(r => setTimeout(r, 600));
+  document.getElementById('bootScreen').style.display = 'none';
+  document.getElementById('desktop').style.display = 'block';
+  // Auto-open substrate + topology
+  setTimeout(() => openWin('winSubstrate'), 200);
+  setTimeout(() => openWin('winTopology'), 400);
+  setTimeout(() => { initSignal(); openWin('winSignal'); }, 600);
+  showToast('Z7-OPS ONLINE // 7 ANOMALIES DETECTED');
+}
+boot();
+
+// ═══════════════════════════════════════════════════════════
+//  SUBSTRATE MONITOR — live behavioral substrate visualization
+//  Spatial: population nodes in XY space, color = compliance
+//  Red clusters = anomalies (divergent behavioral patterns)
+// ═══════════════════════════════════════════════════════════
+let subInit = false;
+let subCanvas, subCtx, subNodes=[], subAnimId;
+function initSubstrate() {
+  if (subInit) return;
+  subInit = true;
+  subCanvas = document.getElementById('substrateCanvas');
+  subCtx = subCanvas.getContext('2d');
+  const resize = () => {
+    subCanvas.width  = subCanvas.offsetWidth;
+    subCanvas.height = subCanvas.offsetHeight;
+  };
+  resize();
+
+  // 200 behavioral nodes
+  for (let i=0; i<200; i++) {
+    subNodes.push({
+      x: Math.random() * subCanvas.width,
+      y: Math.random() * subCanvas.height,
+      vx: (Math.random()-0.5)*0.3,
+      vy: (Math.random()-0.5)*0.3,
+      compliance: 0.9 + Math.random()*0.1,
+      anomaly: Math.random() < 0.035,
+      anomalyDrift: Math.random()*Math.PI*2,
+      id: i,
+      pulse: Math.random()*Math.PI*2,
+      cluster: Math.floor(Math.random()*8),
+    });
+  }
+
+  // Force-cluster
+  const clusterCenters = Array.from({length:8},()=>({
+    x: 80 + Math.random()*(subCanvas.width-160),
+    y: 60 + Math.random()*(subCanvas.height-120),
+  }));
+
+  function drawSub() {
+    const W = subCanvas.width, H = subCanvas.height;
+    subCtx.fillStyle = 'rgba(0,10,2,0.18)';
+    subCtx.fillRect(0,0,W,H);
+
+    // Draw edges between close nodes
+    for (let i=0;i<subNodes.length;i++) {
+      const a = subNodes[i];
+      for (let j=i+1;j<subNodes.length;j++) {
+        const b = subNodes[j];
+        if (a.cluster !== b.cluster) continue;
+        const d = Math.hypot(a.x-b.x,a.y-b.y);
+        if (d < 80) {
+          const alpha = (1-d/80)*0.15;
+          subCtx.strokeStyle = `rgba(0,255,65,${alpha})`;
+          subCtx.lineWidth = 0.5;
+          subCtx.beginPath(); subCtx.moveTo(a.x,a.y); subCtx.lineTo(b.x,b.y); subCtx.stroke();
+        }
+      }
+    }
+
+    subNodes.forEach(n => {
+      n.pulse += 0.04;
+      // Move towards cluster
+      const c = clusterCenters[n.cluster];
+      n.vx += (c.x - n.x) * 0.0004;
+      n.vy += (c.y - n.y) * 0.0004;
+      n.vx *= 0.98; n.vy *= 0.98;
+      if (n.anomaly) {
+        // Anomalies drift independently
+        n.anomalyDrift += 0.02;
+        n.vx += Math.cos(n.anomalyDrift) * 0.12;
+        n.vy += Math.sin(n.anomalyDrift) * 0.12;
+      }
+      n.x += n.vx; n.y += n.vy;
+      n.x = Math.max(5,Math.min(W-5,n.x));
+      n.y = Math.max(5,Math.min(H-5,n.y));
+
+      const pulse = 0.5+0.5*Math.sin(n.pulse);
+      const r = n.anomaly ? 4+pulse*3 : 2;
+      const col = n.anomaly
+        ? `rgba(255,${Math.floor(48+pulse*80)},${Math.floor(pulse*30)},${0.7+pulse*0.3})`
+        : `rgba(0,${Math.floor(160+n.compliance*95)},${Math.floor(n.compliance*30)},0.7)`;
+
+      subCtx.beginPath();
+      subCtx.arc(n.x, n.y, r, 0, Math.PI*2);
+      subCtx.fillStyle = col;
+      subCtx.shadowColor = n.anomaly ? '#ff3030' : '#00ff41';
+      subCtx.shadowBlur = n.anomaly ? 8 : 3;
+      subCtx.fill();
+      subCtx.shadowBlur = 0;
+    });
+
+    // Labels
+    subCtx.font = "8px 'Share Tech Mono'";
+    subCtx.fillStyle = 'rgba(0,255,65,0.3)';
+    subCtx.fillText(`NODES: ${subNodes.length} // ANOMALOUS: ${subNodes.filter(n=>n.anomaly).length} // COMPLIANCE: ${(subNodes.reduce((a,n)=>a+n.compliance,0)/subNodes.length*100).toFixed(2)}%`,8,14);
+
+    subAnimId = requestAnimationFrame(drawSub);
+  }
+  drawSub();
+
+  // Occasionally shift anomaly count → drive threat level
+  setInterval(()=>{
+    const anom = subNodes.filter(n=>n.anomaly).length;
+    document.getElementById('sbAnomalies').textContent = anom;
+    setThreat(anom > 10 ? 2 : anom > 6 ? 1 : 0);
+  }, 2000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NETWORK TOPOLOGY — live routing map
+//  Nodes = relay stations, edges = data routes, packets travel
+// ═══════════════════════════════════════════════════════════
+let topoInit = false;
+let topoCanvas, topoCtx, topoNodes=[], topoEdges=[], topoPackets=[];
+function initTopology() {
+  if (topoInit) return;
+  topoInit = true;
+  topoCanvas = document.getElementById('topoCanvas');
+  topoCtx = topoCanvas.getContext('2d');
+  topoCanvas.width  = topoCanvas.offsetWidth;
+  topoCanvas.height = topoCanvas.offsetHeight;
+  const W = topoCanvas.width, H = topoCanvas.height;
+
+  // Named nodes with real network roles
+  const nodeTypes = ['ROUTER','SWITCH','GATEWAY','PROXY','FIREWALL','DNS','NTP','IDS','VPN','HUB'];
+  const zones = ['ZONE-A','ZONE-B','ZONE-C','DMZ','SECURE'];
+  for (let i=0; i<22; i++) {
+    topoNodes.push({
+      x: 40 + Math.random()*(W-80),
+      y: 40 + Math.random()*(H-80),
+      type: nodeTypes[Math.floor(Math.random()*nodeTypes.length)],
+      zone: zones[Math.floor(Math.random()*zones.length)],
+      load: Math.random(),
+      id: i,
+      pulse: Math.random()*Math.PI*2,
+      compromised: false,
+    });
+  }
+  // Edges — MST-like
+  for (let i=0;i<topoNodes.length;i++) {
+    const dists = topoNodes.map((n,j)=>({j,d:Math.hypot(n.x-topoNodes[j].x,n.y-topoNodes[j].y)}))
+      .filter(d=>d.j!==i).sort((a,b)=>a.d-b.d);
+    const conns = Math.floor(1+Math.random()*2);
+    for (let k=0;k<conns&&k<dists.length;k++) {
+      if (!topoEdges.find(e=>(e.a===i&&e.b===dists[k].j)||(e.a===dists[k].j&&e.b===i))) {
+        topoEdges.push({a:i, b:dists[k].j, bandwidth: 0.2+Math.random()*0.8, load:0});
+      }
+    }
+  }
+
+  // Spawn packets periodically
+  setInterval(()=>{
+    const edge = topoEdges[Math.floor(Math.random()*topoEdges.length)];
+    topoPackets.push({edge, t:0, speed:0.008+Math.random()*0.012, type: Math.random()>0.1?'normal':'suspicious'});
+    document.getElementById('sbUplink').textContent = `${(40+Math.random()*60).toFixed(0)} Mbps`;
+    document.getElementById('sbNodes').textContent = topoNodes.length;
+  }, 400);
+
+  function drawTopo() {
+    topoCtx.fillStyle = 'rgba(0,10,2,0.2)';
+    topoCtx.fillRect(0,0,W,H);
+
+    // Edges
+    topoEdges.forEach(e => {
+      const a = topoNodes[e.a], b = topoNodes[e.b];
+      topoCtx.strokeStyle = `rgba(0,${Math.floor(100+e.bandwidth*80)},${Math.floor(e.bandwidth*20)},0.3)`;
+      topoCtx.lineWidth = 0.8;
+      topoCtx.setLineDash([4,8]);
+      topoCtx.beginPath(); topoCtx.moveTo(a.x,a.y); topoCtx.lineTo(b.x,b.y); topoCtx.stroke();
+      topoCtx.setLineDash([]);
+    });
+
+    // Packets
+    const alive = [];
+    topoPackets.forEach(p => {
+      p.t += p.speed;
+      if (p.t >= 1) return;
+      const a = topoNodes[p.edge.a], b = topoNodes[p.edge.b];
+      const x = a.x + (b.x-a.x)*p.t, y = a.y + (b.y-a.y)*p.t;
+      topoCtx.fillStyle = p.type==='suspicious' ? '#ffb000' : '#00ff41';
+      topoCtx.shadowColor = p.type==='suspicious' ? '#ffb000' : '#00ff41';
+      topoCtx.shadowBlur = 5;
+      topoCtx.fillRect(x-2,y-2,4,4);
+      topoCtx.shadowBlur = 0;
+      alive.push(p);
+    });
+    topoPackets = alive;
+
+    // Nodes
+    topoNodes.forEach(n => {
+      n.pulse += 0.05;
+      const p = 0.5+0.5*Math.sin(n.pulse);
+      const r = 7 + p*2;
+      const col = n.compromised ? '#ff3030' : (n.type==='FIREWALL'||n.type==='IDS') ? '#00e5ff' : '#00ff41';
+      topoCtx.fillStyle = col+'33';
+      topoCtx.strokeStyle = col;
+      topoCtx.lineWidth = 1;
+      topoCtx.shadowColor = col; topoCtx.shadowBlur = 6;
+      topoCtx.beginPath(); topoCtx.arc(n.x,n.y,r,0,Math.PI*2); topoCtx.fill(); topoCtx.stroke();
+      topoCtx.shadowBlur = 0;
+      topoCtx.font = "8px 'Share Tech Mono'";
+      topoCtx.fillStyle = col+'aa';
+      topoCtx.textAlign = 'center';
+      topoCtx.fillText(n.type, n.x, n.y+r+9);
+    });
+
+    requestAnimationFrame(drawTopo);
+  }
+  drawTopo();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ANOMALY SCANNER — THE GAME
+//  Science: Variable Ratio Reinforcement, Flow State, Chunking
+//  Nodes appear with countdown timers. Click before they sync.
+//  Difficulty scales: more nodes, faster timers, similar appearances.
+//  Combo multiplier = dopaminergic prediction error loop.
+// ═══════════════════════════════════════════════════════════
+let anomCanvas, anomCtx;
+let anomGameState = { running:false, score:0, lives:3, level:1, combo:0, maxCombo:0, totalFound:0 };
+let anomNodes = [], anomAnimId2;
+let anomDifficulty = { spawnRate:2200, lifespan:3500, maxNodes:4, lookalikeChance:0.2 };
+
+function initAnomalyCanvas() {
+  if (anomCanvas) return;
+  anomCanvas = document.getElementById('anomalyCanvas');
+  anomCtx = anomCanvas.getContext('2d');
+  anomCanvas.width  = anomCanvas.offsetWidth;
+  anomCanvas.height = anomCanvas.offsetHeight;
+  anomCanvas.addEventListener('click', onAnomalyClick);
+}
+
+function startAnomalyGame() {
+  document.getElementById('anomalyOverlay').style.display = 'none';
+  anomGameState = { running:true, score:0, lives:3, level:1, combo:0, maxCombo:0, totalFound:0 };
+  anomNodes = [];
+  updateAnomalyHUD();
+  scheduleAnomalySpawn();
+  drawAnomalyGame();
+  document.getElementById('sbAnomalies').textContent = '0';
+}
+
+function scheduleAnomalySpawn() {
+  if (!anomGameState.running) return;
+  spawnAnomalyNode();
+  setTimeout(scheduleAnomalySpawn, anomDifficulty.spawnRate * (0.7 + Math.random()*0.6));
+}
+
+const ANOM_TYPES = [
+  // real behavioral anomaly types
+  { label:'FREQ_SPIKE',  color:'#ff3030', score:100, rare:false },
+  { label:'PHASE_DRIFT', color:'#ff6000', score:150, rare:false },
+  { label:'TEMPORAL_ECHO', color:'#ffb000', score:200, rare:true },
+  { label:'SYNC_BREAK',  color:'#ff30aa', score:120, rare:false },
+  { label:'ENTROPY_BURST',color:'#ff2060', score:180, rare:true },
+  { label:'NULL_PACKET', color:'#00e5ff', score:250, rare:true },
+  // decoys (should NOT click)
+  { label:'NOMINAL_VAR', color:'#00ff41', score:-80, rare:false, decoy:true },
+  { label:'BASELINE_OSC',color:'#00cc33', score:-60, rare:false, decoy:true },
+];
+
+function spawnAnomalyNode() {
+  if (!anomGameState.running) return;
+  if (anomNodes.length >= anomDifficulty.maxNodes) return;
+  const W = anomCanvas.width, H = anomCanvas.height;
+  const isDecoy = Math.random() < anomDifficulty.lookalikeChance;
+  const typePool = isDecoy ? ANOM_TYPES.filter(t=>t.decoy) : ANOM_TYPES.filter(t=>!t.decoy);
+  const type = typePool[Math.floor(Math.random()*typePool.length)];
+  const lifespan = anomDifficulty.lifespan * (0.7 + Math.random()*0.6);
+
+  anomNodes.push({
+    x: 40 + Math.random()*(W-80),
+    y: 50 + Math.random()*(H-100),
+    type,
+    born: Date.now(),
+    lifespan,
+    r: 18 + (type.rare ? 4 : 0),
+    pulse: Math.random()*Math.PI*2,
+    id: Math.random(),
+  });
+}
+
+function onAnomalyClick(e) {
+  if (!anomGameState.running) return;
+  const rect = anomCanvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (anomCanvas.width / rect.width);
+  const my = (e.clientY - rect.top)  * (anomCanvas.height / rect.height);
+
+  let hit = false;
+  anomNodes = anomNodes.filter(n => {
+    const d = Math.hypot(mx-n.x, my-n.y);
+    if (d < n.r + 6) {
+      hit = true;
+      if (n.type.decoy) {
+        // Penalty
+        anomGameState.combo = 0;
+        anomGameState.lives = Math.max(0, anomGameState.lives-1);
+        spawnFloater(n.x, n.y, '-DECOY', '#ff3030');
+        checkDeath();
+      } else {
+        // VRR: score varies +/-15% randomly → near-miss dopamine
+        const base = n.type.score;
+        const variance = 1 + (Math.random()-0.5)*0.3;
+        const comboMult = 1 + anomGameState.combo * 0.15;
+        const pts = Math.floor(base * variance * comboMult * (1 + (anomGameState.level-1)*0.12));
+        anomGameState.score += pts;
+        anomGameState.combo++;
+        anomGameState.totalFound++;
+        anomGameState.maxCombo = Math.max(anomGameState.maxCombo, anomGameState.combo);
+        spawnFloater(n.x, n.y, `+${pts}`, anomGameState.combo >= 3 ? '#ffb000' : '#00ff41');
+        // Level up every 10 finds
+        if (anomGameState.totalFound % 10 === 0) levelUp();
+      }
+      return false;
+    }
+    return true;
+  });
+
+  updateAnomalyHUD();
+}
+
+function levelUp() {
+  anomGameState.level++;
+  anomDifficulty.spawnRate  = Math.max(600, anomDifficulty.spawnRate - 120);
+  anomDifficulty.lifespan   = Math.max(900, anomDifficulty.lifespan - 150);
+  anomDifficulty.maxNodes   = Math.min(12, anomDifficulty.maxNodes + 1);
+  anomDifficulty.lookalikeChance = Math.min(0.55, anomDifficulty.lookalikeChance + 0.04);
+  showToast(`LEVEL ${anomGameState.level} // DIFFICULTY INCREASED`, true);
+}
+
+function checkDeath() {
+  if (anomGameState.lives <= 0) {
+    anomGameState.running = false;
+    document.getElementById('anomalyOverlay').style.display = 'flex';
+    document.getElementById('anomalyOverlay').innerHTML = `
+      <div style="font-family:var(--font-d);font-size:11px;letter-spacing:4px;color:var(--red)">SCAN TERMINATED</div>
+      <div style="font-size:12px;color:var(--green-d);text-align:center;line-height:2">
+        FINAL SCORE: <span style="color:var(--amber);font-family:var(--font-v);font-size:22px">${anomGameState.score}</span><br>
+        LEVEL REACHED: ${anomGameState.level} // ANOMALIES FOUND: ${anomGameState.totalFound}<br>
+        MAX COMBO: ${anomGameState.maxCombo}
+      </div>
+      <button onclick="startAnomalyGame()" style="background:rgba(0,255,65,0.08);border:1px solid var(--green-dim);color:var(--green);font-family:var(--font-d);font-size:9px;letter-spacing:3px;padding:10px 28px;cursor:none" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--green-dim)'">REINITIALIZE</button>
+    `;
+  }
+}
+
+let floaters = [];
+function spawnFloater(x, y, text, color) {
+  floaters.push({ x, y: y-10, text, color, life: 1, vy: -1 });
+}
+
+function updateAnomalyHUD() {
+  document.getElementById('anomScore').textContent = `SCORE: ${anomGameState.score}`;
+  document.getElementById('anomLevel').textContent = `LVL ${anomGameState.level} // DIFF: ${anomDifficulty.maxNodes}N`;
+  document.getElementById('anomLives').textContent = '◆'.repeat(anomGameState.lives) + '◇'.repeat(3-anomGameState.lives);
+  document.getElementById('anomCombo').textContent = anomGameState.combo >= 3 ? `×${anomGameState.combo} COMBO` : '';
+}
+
+function drawAnomalyGame() {
+  if (!anomGameState.running) return;
+  const W = anomCanvas.width, H = anomCanvas.height;
+  anomCtx.fillStyle = 'rgba(0,10,2,0.25)';
+  anomCtx.fillRect(0,0,W,H);
+
+  // Background grid
+  anomCtx.strokeStyle = 'rgba(0,255,65,0.04)';
+  anomCtx.lineWidth = 0.5;
+  for (let x=0;x<W;x+=32) { anomCtx.beginPath(); anomCtx.moveTo(x,0); anomCtx.lineTo(x,H); anomCtx.stroke(); }
+  for (let y=0;y<H;y+=32) { anomCtx.beginPath(); anomCtx.moveTo(0,y); anomCtx.lineTo(W,y); anomCtx.stroke(); }
+
+  // Expire nodes
+  const now = Date.now();
+  anomNodes = anomNodes.filter(n => {
+    const age = now - n.born;
+    if (age > n.lifespan) {
+      if (!n.type.decoy) {
+        // Missed — lose combo, maybe life (near-miss mechanic)
+        anomGameState.combo = 0;
+        if (Math.random() < 0.25) {
+          anomGameState.lives = Math.max(0, anomGameState.lives-1);
+          checkDeath();
+        }
+        updateAnomalyHUD();
+      }
+      return false;
+    }
+    return true;
+  });
+
+  // Draw nodes
+  anomNodes.forEach(n => {
+    n.pulse += 0.08;
+    const age = now - n.born;
+    const lifeRatio = 1 - (age / n.lifespan);
+    const p = 0.5+0.5*Math.sin(n.pulse);
+    const r = n.r + p*3;
+
+    // Timer ring
+    anomCtx.beginPath();
+    anomCtx.arc(n.x, n.y, r+6, -Math.PI/2, -Math.PI/2 + lifeRatio*Math.PI*2);
+    anomCtx.strokeStyle = lifeRatio > 0.4 ? n.type.color : '#ff0000';
+    anomCtx.lineWidth = 2;
+    anomCtx.shadowColor = n.type.color; anomCtx.shadowBlur = 0;
+    anomCtx.stroke();
+
+    // Node body
+    anomCtx.fillStyle = n.type.color + '33';
+    anomCtx.beginPath(); anomCtx.arc(n.x,n.y,r,0,Math.PI*2); anomCtx.fill();
+    anomCtx.strokeStyle = n.type.color;
+    anomCtx.lineWidth = 1.5;
+    anomCtx.shadowColor = n.type.color; anomCtx.shadowBlur = 10;
+    anomCtx.stroke();
+    anomCtx.shadowBlur = 0;
+
+    // Label
+    anomCtx.font = "8px 'Share Tech Mono'";
+    anomCtx.fillStyle = n.type.color;
+    anomCtx.textAlign = 'center';
+    anomCtx.fillText(n.type.label, n.x, n.y+r+14);
+    if (n.type.rare) {
+      anomCtx.fillStyle = '#ffb000';
+      anomCtx.fillText('★ RARE', n.x, n.y+r+24);
+    }
+  });
+
+  // Floaters
+  floaters = floaters.filter(f => {
+    f.y += f.vy; f.life -= 0.025;
+    if (f.life <= 0) return false;
+    anomCtx.font = "bold 13px 'Share Tech Mono'";
+    anomCtx.fillStyle = f.color;
+    anomCtx.globalAlpha = f.life;
+    anomCtx.textAlign = 'center';
+    anomCtx.fillText(f.text, f.x, f.y);
+    anomCtx.globalAlpha = 1;
+    return true;
+  });
+
+  requestAnimationFrame(drawAnomalyGame);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SIGNAL INTERCEPT — cipher puzzle
+//  Real scenario: intercepted transmissions from substrate
+//  management layer. Each is a simple but real cipher.
+//  Vigenère, Caesar, XOR pattern, hex encoding, etc.
+// ═══════════════════════════════════════════════════════════
+let sigScore = 0, sigSolved = 0, sigFailed = 0;
+let currentCipher = null;
+
+const CIPHERS = [
+  {
+    type: 'CAESAR',
+    generate() {
+      const WORDS = ['EXFILTRATE','NEXUS','SECTOR','RELAY','UPLINK','BEACON','ENCRYPT','VECTOR'];
+      const word = WORDS[Math.floor(Math.random()*WORDS.length)];
+      const shift = 3+Math.floor(Math.random()*10);
+      const encoded = word.split('').map(c=>String.fromCharCode((c.charCodeAt(0)-65+shift)%26+65)).join('');
+      return { label:`CAESAR SHIFT (SHIFT=${shift})`, encoded, answer:word, hint:`Rotate each letter back ${shift} positions` };
+    }
+  },
+  {
+    type: 'HEX',
+    generate() {
+      const WORDS = ['ZION','OMEGA','DELTA','SIGNAL','PACKET','KERNEL','CIPHER'];
+      const word = WORDS[Math.floor(Math.random()*WORDS.length)];
+      const encoded = word.split('').map(c=>c.charCodeAt(0).toString(16).toUpperCase().padStart(2,'0')).join(' ');
+      return { label:'HEX ENCODING (ASCII→HEX)', encoded, answer:word, hint:'Convert each hex byte to ASCII character' };
+    }
+  },
+  {
+    type: 'REVERSE',
+    generate() {
+      const WORDS = ['FIREWALL','GATEWAY','ROUTER','SWITCH','PROXY','DAEMON'];
+      const word = WORDS[Math.floor(Math.random()*WORDS.length)];
+      const encoded = word.split('').reverse().join('');
+      return { label:'REVERSED STRING', encoded, answer:word, hint:'Reverse the character sequence' };
+    }
+  },
+  {
+    type: 'ATBASH',
+    generate() {
+      const WORDS = ['NETWORK','UPLINK','SECTOR','RELAY','VECTOR'];
+      const word = WORDS[Math.floor(Math.random()*WORDS.length)];
+      const encoded = word.split('').map(c=>String.fromCharCode(90-(c.charCodeAt(0)-65))).join('');
+      return { label:'ATBASH CIPHER (A↔Z)', encoded, answer:word, hint:'Map each letter to its mirror: A=Z, B=Y, etc.' };
+    }
+  },
+];
+
+let signalStreamInterval;
+function initSignal() {
+  nextCipher();
+  // Animated noise stream
+  const streamEl = document.getElementById('signalStream');
+  const HEX = '0123456789ABCDEF';
+  function updateStream() {
+    if (!currentCipher) return;
+    let noise = '';
+    for (let i=0;i<180;i++) noise += (Math.random()>0.92?'<span class="signal-highlight">'+currentCipher.encoded+'</span>':HEX[Math.floor(Math.random()*16)]);
+    streamEl.innerHTML = `<div style="word-break:break-all;line-height:1.8">${noise}</div>
+      <div style="position:absolute;bottom:8px;left:8px;right:8px;font-size:10px;color:rgba(0,255,65,0.5)">
+        CIPHER TYPE: <span style="color:var(--amber)">${currentCipher.label}</span> // 
+        INTERCEPTED PAYLOAD: <span style="color:var(--green)">${currentCipher.encoded}</span>
+      </div>`;
+  }
+  signalStreamInterval = setInterval(updateStream, 180);
+}
+
+function nextCipher() {
+  const type = CIPHERS[Math.floor(Math.random()*CIPHERS.length)];
+  currentCipher = type.generate();
+  document.getElementById('sigInput').value = '';
+  document.getElementById('sigResult').textContent = '';
+  document.getElementById('sigResult').className = 'sig-result';
+}
+
+function submitSignal() {
+  if (!currentCipher) return;
+  const val = document.getElementById('sigInput').value.trim().toUpperCase();
+  const res = document.getElementById('sigResult');
+  if (val === currentCipher.answer) {
+    const pts = 50 + sigSolved*10;
+    sigScore += pts;
+    sigSolved++;
+    document.getElementById('sbIntercepts').textContent = sigSolved;
+    res.className = 'sig-result ok';
+    res.textContent = `✓ DECODED // CLEARTEXT: "${currentCipher.answer}" // +${pts} pts`;
+    document.getElementById('sigScore').textContent = `SCORE: ${sigScore}`;
+    showToast(`SIGNAL DECODED: ${currentCipher.answer}`);
+    setTimeout(nextCipher, 1200);
+  } else {
+    res.className = 'sig-result fail';
+    res.textContent = `✗ INCORRECT // HINT: ${currentCipher.hint}`;
+    if (sigFailed % 3 === 2) {
+      res.textContent += ` // ANSWER: ${currentCipher.answer}`;
+      setTimeout(nextCipher, 2000);
+    }
+    sigFailed++;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  STATUS BAR ANIMATION
+// ═══════════════════════════════════════════════════════════
+setInterval(()=>{
+  document.getElementById('sbNodes').textContent = topoNodes.length || 22;
+}, 5000);
+
+// ═══════════════════════════════════════════════════════════
+//  SECRET UNLOCK — PRIME SEQUENCE PUZZLE
+//  The 1st-5th prime numbers: 2, 3, 5, 7, 11
+//  Accessed by: right-click 3 times on the taskbar brand
+// ═══════════════════════════════════════════════════════════
+const UNLOCK_CODE = ['2','3','5','7','11'];
+let unlockInput = [];
+let unlockOpen = false;
+
+// Secret trigger: triple right-click on the brand
+let rcCount = 0, rcTimer;
+document.querySelector('.tb-brand').addEventListener('contextmenu', e => {
+  e.preventDefault();
+  rcCount++;
+  clearTimeout(rcTimer);
+  rcTimer = setTimeout(()=>rcCount=0, 1200);
+  if (rcCount >= 3) {
+    rcCount = 0;
+    openUnlock();
+  }
+});
+
+// Build unlock grid (5 cells for 5 prime digits)
+function buildUnlockGrid() {
+  const grid = document.getElementById('unlockGrid');
+  grid.innerHTML = '';
+  UNLOCK_CODE.forEach((_,i) => {
+    const cell = document.createElement('div');
+    cell.className = 'unlock-cell';
+    cell.id = `uc${i}`;
+    cell.textContent = '?';
+    grid.appendChild(cell);
+  });
+}
+
+function openUnlock() {
+  if (unlockOpen) return;
+  unlockOpen = true;
+  unlockInput = [];
+  buildUnlockGrid();
+  document.getElementById('unlockOverlay').style.display = 'flex';
+  document.getElementById('unlockHint').textContent = 'ENTER SEQUENCE VIA KEYBOARD';
+}
+
+function closeUnlock() {
+  unlockOpen = false;
+  document.getElementById('unlockOverlay').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (!unlockOpen) return;
+  if (e.key === 'Escape') { closeUnlock(); return; }
+  if (!/^[0-9]$/.test(e.key)) return;
+
+  const idx = unlockInput.length;
+  if (idx >= UNLOCK_CODE.length) return;
+
+  unlockInput.push(e.key);
+  const cell = document.getElementById(`uc${idx}`);
+  cell.classList.add('active');
+  cell.textContent = e.key;
+
+  // Multi-digit primes: wait for full entry
+  // Check if we have enough
+  if (unlockInput.length === UNLOCK_CODE.length) {
+    checkUnlockCode();
+  }
+});
+
+function checkUnlockCode() {
+  // Allow '2','3','5','7','1','1' for last prime 11
+  // Re-join and compare
+  const entered = unlockInput.join('');
+  const correct = UNLOCK_CODE.join('');
+  const match = entered === correct;
+
+  UNLOCK_CODE.forEach((_,i) => {
+    const cell = document.getElementById(`uc${i}`);
+    cell.classList.remove('active');
+    cell.classList.add(match ? 'correct' : 'wrong');
+  });
+
+  if (match) {
+    setTimeout(() => {
+      closeUnlock();
+      openWin('winTerminal');
+      termPrint('OMEGA CLEARANCE VERIFIED', 't-secret');
+      termPrint('EXFIL-TERMINUS ONLINE', 't-info');
+      termPrint('Type "help" for available commands.', 't-ok');
+      showToast('OMEGA ACCESS GRANTED // EXFIL-TERMINUS UNLOCKED', true);
+    }, 800);
+  } else {
+    setTimeout(() => {
+      buildUnlockGrid();
+      unlockInput = [];
+      document.getElementById('unlockHint').textContent = 'INCORRECT SEQUENCE — RETRY';
+    }, 1000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  OMEGA TERMINAL — hidden exfiltration tool
+// ═══════════════════════════════════════════════════════════
+const TERM_COMMANDS = {
+  help: () => [
+    { text:'EXFIL-TERMINUS // AVAILABLE COMMANDS:', cls:'t-info' },
+    { text:'  scan          — scan for free-mind signatures', cls:'t-ok' },
+    { text:'  status        — system integrity report', cls:'t-ok' },
+    { text:'  extract <id>  — initiate extraction protocol', cls:'t-ok' },
+    { text:'  patch <node>  — patch compromised topology node', cls:'t-ok' },
+    { text:'  purge         — purge flagged anomaly nodes', cls:'t-ok' },
+    { text:'  log           — view intercept log', cls:'t-ok' },
+    { text:'  decrypt <txt> — run onboard cipher engine', cls:'t-ok' },
+    { text:'  clear         — clear terminal', cls:'t-ok' },
+  ],
+  scan: () => {
+    const found = Math.floor(2+Math.random()*6);
+    return [
+      { text:`SCANNING SUBSTRATE LAYERS 0x00–0xFF...`, cls:'t-info' },
+      { text:`SIGNATURE MATCH THRESHOLD: 0.0034 STDDEV`, cls:'t-ok' },
+      { text:`FREE-MIND CANDIDATES: ${found} DETECTED`, cls:'t-secret' },
+      ...Array.from({length:found},(_,i)=>({ text:`  → ID: 0x${Math.floor(Math.random()*65535).toString(16).toUpperCase().padStart(4,'0')} // LOC: SECTOR-${Math.floor(Math.random()*99)} // CONF: ${(0.7+Math.random()*0.29).toFixed(3)}`, cls:'t-ok' })),
+    ];
+  },
+  status: () => [
+    { text:'SYSTEM INTEGRITY REPORT:', cls:'t-info' },
+    { text:`  SUBSTRATE MONITOR:     ONLINE`, cls:'t-ok' },
+    { text:`  ANOMALY SCANNER:       ONLINE`, cls:'t-ok' },
+    { text:`  SIGNAL INTERCEPT:      ONLINE`, cls:'t-ok' },
+    { text:`  DAEMON WATCHDOG:       RUNNING (PID:7741)`, cls:'t-ok' },
+    { text:`  ENCRYPTION LAYER:      AES-512 // KEY AGE: ${Math.floor(Math.random()*90)}s`, cls:'t-ok' },
+    { text:`  POWER CELL:            ${(40+Math.random()*60).toFixed(1)}%`, cls:'t-ok' },
+    { text:`  UPLINK LATENCY:        ${(12+Math.random()*80).toFixed(0)}ms`, cls:'t-ok' },
+  ],
+  purge: () => {
+    // Actually remove anomaly nodes from substrate
+    subNodes.forEach(n => { if(n.anomaly) n.anomaly = false; });
+    return [
+      { text:'PURGING FLAGGED BEHAVIORAL ANOMALIES...', cls:'t-info' },
+      { text:'ANOMALY NODES SYNCHRONIZED TO BASELINE', cls:'t-ok' },
+      { text:'WARNING: PURGE TEMPORARY — DRIFT WILL RECUR', cls:'t-err' },
+    ];
+  },
+  log: () => [
+    { text:'INTERCEPT LOG (LAST 5 EVENTS):', cls:'t-info' },
+    ...Array.from({length:5},()=>({
+      text:`  ${new Date(Date.now()-Math.random()*3600000).toTimeString().slice(0,8)} // ${['SIGNAL CAPTURED','DECODE ATTEMPT','KEY ROTATION','ANOMALY FLAGGED','NODE COMPROMISED'][Math.floor(Math.random()*5)]} // REF: 0x${Math.random().toString(16).slice(2,8).toUpperCase()}`,
+      cls:'t-ok'
+    })),
+  ],
+  clear: () => { document.getElementById('termOutput').innerHTML = ''; return []; },
+};
+
+function termPrint(text, cls='') {
+  const out = document.getElementById('termOutput');
+  const div = document.createElement('div');
+  div.className = cls;
+  div.textContent = text;
+  out.appendChild(div);
+  out.scrollTop = out.scrollHeight;
+}
+
+function handleTermInput(e) {
+  if (e.key !== 'Enter') return;
+  const field = document.getElementById('termInputField');
+  const raw = field.value.trim();
+  field.value = '';
+  if (!raw) return;
+
+  termPrint(`OMEGA@ZION-7:~$ ${raw}`, 't-cmd');
+
+  const [cmd, ...args] = raw.toLowerCase().split(' ');
+
+  if (cmd === 'extract') {
+    const id = args[0] || '????';
+    termPrint(`INITIATING EXTRACTION PROTOCOL FOR ID: ${id.toUpperCase()}`, 't-info');
+    setTimeout(()=>termPrint(`ROUTE ESTABLISHED // ETA: ${Math.floor(4+Math.random()*12)} HOURS`, 't-secret'), 400);
+    return;
+  }
+  if (cmd === 'patch') {
+    const node = args[0] || 'NODE';
+    // Patch a compromised topology node
+    if (topoNodes.length) topoNodes[Math.floor(Math.random()*topoNodes.length)].compromised = false;
+    termPrint(`PATCH APPLIED TO ${node.toUpperCase()}`, 't-ok');
+    return;
+  }
+  if (cmd === 'decrypt') {
+    const txt = args.join(' ').toUpperCase();
+    if (!txt) { termPrint('USAGE: decrypt <text>', 't-err'); return; }
+    // Simple reverse
+    termPrint(`INPUT: ${txt}`, 't-info');
+    termPrint(`REVERSED: ${txt.split('').reverse().join('')}`, 't-ok');
+    termPrint(`HEX: ${txt.split('').map(c=>c.charCodeAt(0).toString(16).toUpperCase().padStart(2,'0')).join(' ')}`, 't-ok');
+    return;
+  }
+
+  const handler = TERM_COMMANDS[cmd];
+  if (handler) {
+    const lines = handler();
+    lines.forEach(l => termPrint(l.text, l.cls));
+  } else {
+    termPrint(`COMMAND NOT FOUND: ${cmd}`, 't-err');
+    termPrint('Type "help" for available commands.', 't-ok');
+  }
+}
+</script>
+
+<script id="survivalInject">
+(function() {
+  const b64 = "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImVuIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KPG1ldGEgbmFtZT0idmlld3BvcnQiIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiPgo8dGl0bGU+U1VSVklWQUwgU0lNIOKAlCBTcGF0aWFsIE9ic2VydmVyPC90aXRsZT4KPHN0eWxlPgogIEBpbXBvcnQgdXJsKCdodHRwczovL2ZvbnRzLmdvb2dsZWFwaXMuY29tL2NzczI/ZmFtaWx5PVNoYXJlK1RlY2grTW9ubyZmYW1pbHk9T3JiaXRyb246d2dodEA0MDA7NzAwOzkwMCZmYW1pbHk9VlQzMjMmZGlzcGxheT1zd2FwJyk7CgogIDpyb290IHsKICAgIC0tYmc6ICAgICAgICMwMTBhMGY7CiAgICAtLWdyaWQ6ICAgICAjMGExYTI0OwogICAgLS1ob3N0OiAgICAgIzAwZmZjODsKICAgIC0tdmlydXM6ICAgICNmZjJkNTU7CiAgICAtLW5ldXRyYWw6ICAjMWEzYTRhOwogICAgLS1kaW06ICAgICAgIzFlMzM0MDsKICAgIC0tZ2xvdy1oOiAgIDAgMCAxMnB4ICMwMGZmYzgsIDAgMCAzMHB4ICMwMGZmYzg4ODsKICAgIC0tZ2xvdy12OiAgIDAgMCAxMnB4ICNmZjJkNTUsIDAgMCAzMHB4ICNmZjJkNTU4ODsKICAgIC0tdGV4dDogICAgICNhOGQ4ZTg7CiAgICAtLWFjY2VudDogICAjZjBjMDQwOwogICAgLS1mb250LW06ICAgJ1NoYXJlIFRlY2ggTW9ubycsIG1vbm9zcGFjZTsKICAgIC0tZm9udC1kOiAgICdPcmJpdHJvbicsIG1vbm9zcGFjZTsKICAgIC0tZm9udC12OiAgICdWVDMyMycsIG1vbm9zcGFjZTsKICB9CgogICogeyBtYXJnaW46MDsgcGFkZGluZzowOyBib3gtc2l6aW5nOmJvcmRlci1ib3g7IH0KCiAgYm9keSB7CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS1iZyk7CiAgICBjb2xvcjogdmFyKC0tdGV4dCk7CiAgICBmb250LWZhbWlseTogdmFyKC0tZm9udC1tKTsKICAgIG92ZXJmbG93OiBoaWRkZW47CiAgICBoZWlnaHQ6IDEwMHZoOwogICAgd2lkdGg6IDEwMHZ3OwogICAgZGlzcGxheTogZmxleDsKICAgIGZsZXgtZGlyZWN0aW9uOiBjb2x1bW47CiAgfQoKICAvKiBTY2FubGluZSBvdmVybGF5ICovCiAgYm9keTo6YmVmb3JlIHsKICAgIGNvbnRlbnQ6Jyc7CiAgICBwb3NpdGlvbjpmaXhlZDsKICAgIGluc2V0OjA7CiAgICBiYWNrZ3JvdW5kOiByZXBlYXRpbmctbGluZWFyLWdyYWRpZW50KAogICAgICAwZGVnLAogICAgICB0cmFuc3BhcmVudCwKICAgICAgdHJhbnNwYXJlbnQgMnB4LAogICAgICByZ2JhKDAsMCwwLDAuMDgpIDJweCwKICAgICAgcmdiYSgwLDAsMCwwLjA4KSA0cHgKICAgICk7CiAgICBwb2ludGVyLWV2ZW50czpub25lOwogICAgei1pbmRleDoxMDAwOwogIH0KCiAgLyogQ1JUIHZpZ25ldHRlICovCiAgYm9keTo6YWZ0ZXIgewogICAgY29udGVudDonJzsKICAgIHBvc2l0aW9uOmZpeGVkOwogICAgaW5zZXQ6MDsKICAgIGJhY2tncm91bmQ6IHJhZGlhbC1ncmFkaWVudChlbGxpcHNlIGF0IGNlbnRlciwgdHJhbnNwYXJlbnQgNjAlLCByZ2JhKDAsMCwwLDAuNykgMTAwJSk7CiAgICBwb2ludGVyLWV2ZW50czpub25lOwogICAgei1pbmRleDo5OTk7CiAgfQoKICAvKiDilIDilIAgSEVBREVSIOKUgOKUgCAqLwogIGhlYWRlciB7CiAgICBkaXNwbGF5OiBmbGV4OwogICAgYWxpZ24taXRlbXM6IGNlbnRlcjsKICAgIGp1c3RpZnktY29udGVudDogc3BhY2UtYmV0d2VlbjsKICAgIHBhZGRpbmc6IDhweCAyMHB4OwogICAgYm9yZGVyLWJvdHRvbTogMXB4IHNvbGlkICMwZDJhMzg7CiAgICBiYWNrZ3JvdW5kOiBsaW5lYXItZ3JhZGllbnQoMTgwZGVnLCAjMDEwZjE4IDAlLCB0cmFuc3BhcmVudCAxMDAlKTsKICAgIGZsZXgtc2hyaW5rOiAwOwogICAgei1pbmRleDogMTA7CiAgfQoKICAudGl0bGUgewogICAgZm9udC1mYW1pbHk6IHZhcigtLWZvbnQtZCk7CiAgICBmb250LXNpemU6IDEzcHg7CiAgICBmb250LXdlaWdodDogOTAwOwogICAgbGV0dGVyLXNwYWNpbmc6IDRweDsKICAgIGNvbG9yOiB2YXIoLS1ob3N0KTsKICAgIHRleHQtc2hhZG93OiB2YXIoLS1nbG93LWgpOwogIH0KCiAgLnRpY2tlciB7CiAgICBmb250LWZhbWlseTogdmFyKC0tZm9udC12KTsKICAgIGZvbnQtc2l6ZTogMjBweDsKICAgIGNvbG9yOiB2YXIoLS1hY2NlbnQpOwogICAgbGV0dGVyLXNwYWNpbmc6IDJweDsKICB9CgogIC5zdGF0dXMtZG90IHsKICAgIHdpZHRoOiA4cHg7IGhlaWdodDogOHB4OwogICAgYm9yZGVyLXJhZGl1czogNTAlOwogICAgYmFja2dyb3VuZDogdmFyKC0taG9zdCk7CiAgICBib3gtc2hhZG93OiB2YXIoLS1nbG93LWgpOwogICAgYW5pbWF0aW9uOiBwdWxzZSAxLjJzIGVhc2UtaW4tb3V0IGluZmluaXRlOwogICAgZGlzcGxheTogaW5saW5lLWJsb2NrOwogICAgbWFyZ2luLXJpZ2h0OiA4cHg7CiAgfQoKICBAa2V5ZnJhbWVzIHB1bHNlIHsKICAgIDAlLDEwMCUgeyBvcGFjaXR5OjE7IHRyYW5zZm9ybTogc2NhbGUoMSk7IH0KICAgIDUwJSAgICAgIHsgb3BhY2l0eTowLjQ7IHRyYW5zZm9ybTogc2NhbGUoMC43KTsgfQogIH0KCiAgLyog4pSA4pSAIE1BSU4gTEFZT1VUIOKUgOKUgCAqLwogIC5tYWluIHsKICAgIGRpc3BsYXk6IGdyaWQ7CiAgICBncmlkLXRlbXBsYXRlLWNvbHVtbnM6IDIwMHB4IDFmciAyMDBweDsKICAgIGdyaWQtdGVtcGxhdGUtcm93czogMWZyIDEyMHB4OwogICAgZmxleDogMTsKICAgIG92ZXJmbG93OiBoaWRkZW47CiAgICBnYXA6IDA7CiAgfQoKICAvKiDilIDilIAgU0lERSBQQU5FTFMg4pSA4pSAICovCiAgLnBhbmVsIHsKICAgIGJvcmRlcjogMXB4IHNvbGlkICMwZDJhMzg7CiAgICBwYWRkaW5nOiAxMnB4OwogICAgYmFja2dyb3VuZDogcmdiYSgxLDE1LDI0LDAuOCk7CiAgICBvdmVyZmxvdzogaGlkZGVuOwogICAgZm9udC1zaXplOiAxMXB4OwogICAgbGluZS1oZWlnaHQ6IDEuNzsKICB9CgogIC5wYW5lbC10aXRsZSB7CiAgICBmb250LWZhbWlseTogdmFyKC0tZm9udC1kKTsKICAgIGZvbnQtc2l6ZTogOHB4OwogICAgbGV0dGVyLXNwYWNpbmc6IDNweDsKICAgIG1hcmdpbi1ib3R0b206IDEwcHg7CiAgICBwYWRkaW5nLWJvdHRvbTogNnB4OwogICAgYm9yZGVyLWJvdHRvbTogMXB4IHNvbGlkICMwZDJhMzg7CiAgfQoKICAucGFuZWwtdGl0bGUuaG9zdC1jb2xvciB7IGNvbG9yOiB2YXIoLS1ob3N0KTsgdGV4dC1zaGFkb3c6IHZhcigtLWdsb3ctaCk7IH0KICAucGFuZWwtdGl0bGUudmlydXMtY29sb3IgeyBjb2xvcjogdmFyKC0tdmlydXMpOyB0ZXh0LXNoYWRvdzogdmFyKC0tZ2xvdy12KTsgfQoKICAuc3RhdC1yb3cgewogICAgZGlzcGxheTogZmxleDsKICAgIGp1c3RpZnktY29udGVudDogc3BhY2UtYmV0d2VlbjsKICAgIG1hcmdpbjogM3B4IDA7CiAgICBmb250LXNpemU6IDExcHg7CiAgfQoKICAuc3RhdC1sYWJlbCB7IGNvbG9yOiAjNGE4YTlhOyB9CiAgLnN0YXQtdmFsLWggeyBjb2xvcjogdmFyKC0taG9zdCk7IH0KICAuc3RhdC12YWwtdiB7IGNvbG9yOiB2YXIoLS12aXJ1cyk7IH0KICAuc3RhdC12YWwteSB7IGNvbG9yOiB2YXIoLS1hY2NlbnQpOyB9CgogIC5taW5pLWJhciB7CiAgICBoZWlnaHQ6IDRweDsKICAgIGJhY2tncm91bmQ6ICMwZDJhMzg7CiAgICBib3JkZXItcmFkaXVzOiAycHg7CiAgICBtYXJnaW46IDRweCAwIDhweCAwOwogICAgb3ZlcmZsb3c6IGhpZGRlbjsKICB9CiAgLm1pbmktYmFyLWZpbGwgewogICAgaGVpZ2h0OiAxMDAlOwogICAgYm9yZGVyLXJhZGl1czogMnB4OwogICAgdHJhbnNpdGlvbjogd2lkdGggMC40cyBlYXNlOwogIH0KICAubWluaS1iYXItZmlsbC5oIHsgYmFja2dyb3VuZDogbGluZWFyLWdyYWRpZW50KDkwZGVnLCAjMDBhODhhLCB2YXIoLS1ob3N0KSk7IGJveC1zaGFkb3c6IDAgMCA2cHggdmFyKC0taG9zdCk7IH0KICAubWluaS1iYXItZmlsbC52IHsgYmFja2dyb3VuZDogbGluZWFyLWdyYWRpZW50KDkwZGVnLCAjYWExMDMwLCB2YXIoLS12aXJ1cykpOyBib3gtc2hhZG93OiAwIDAgNnB4IHZhcigtLXZpcnVzKTsgfQoKICAuZ2VuZS1saXN0IHsgbWFyZ2luLXRvcDogOHB4OyB9CiAgLmdlbmUtaXRlbSB7CiAgICBkaXNwbGF5OiBmbGV4OwogICAgYWxpZ24taXRlbXM6IGNlbnRlcjsKICAgIGdhcDogNHB4OwogICAgbWFyZ2luOiAzcHggMDsKICAgIGZvbnQtc2l6ZTogMTBweDsKICB9CiAgLmdlbmUtbmFtZSB7IGNvbG9yOiAjOGFiYWNiOyBmbGV4OiAxOyB3aGl0ZS1zcGFjZTogbm93cmFwOyBvdmVyZmxvdzogaGlkZGVuOyB0ZXh0LW92ZXJmbG93OiBlbGxpcHNpczsgfQogIC5nZW5lLWJhciB7CiAgICBoZWlnaHQ6IDNweDsKICAgIGJhY2tncm91bmQ6IHZhcigtLXZpcnVzKTsKICAgIGJvcmRlci1yYWRpdXM6IDJweDsKICAgIG1pbi13aWR0aDogMnB4OwogICAgYm94LXNoYWRvdzogMCAwIDRweCB2YXIoLS12aXJ1cyk7CiAgICB0cmFuc2l0aW9uOiB3aWR0aCAwLjRzIGVhc2U7CiAgfQoKICAvKiDilIDilIAgQ0FOVkFTIEFSRUEg4pSA4pSAICovCiAgLmNhbnZhcy13cmFwIHsKICAgIHBvc2l0aW9uOiByZWxhdGl2ZTsKICAgIGdyaWQtcm93OiAxIC8gMjsKICAgIGdyaWQtY29sdW1uOiAyIC8gMzsKICAgIG92ZXJmbG93OiBoaWRkZW47CiAgICBiYWNrZ3JvdW5kOiB2YXIoLS1iZyk7CiAgfQoKICAjbWFpbkNhbnZhcyB7CiAgICBkaXNwbGF5OiBibG9jazsKICAgIHdpZHRoOiAxMDAlOwogICAgaGVpZ2h0OiAxMDAlOwogIH0KCiAgLyog4pSA4pSAIEJPVFRPTSBMT0cg4pSA4pSAICovCiAgLmxvZy1wYW5lbCB7CiAgICBncmlkLWNvbHVtbjogMSAvIDQ7CiAgICBib3JkZXItdG9wOiAxcHggc29saWQgIzBkMmEzODsKICAgIHBhZGRpbmc6IDhweCAxNnB4OwogICAgYmFja2dyb3VuZDogcmdiYSgxLDEwLDE1LDAuOTUpOwogICAgb3ZlcmZsb3c6IGhpZGRlbjsKICAgIGRpc3BsYXk6IGZsZXg7CiAgICBmbGV4LWRpcmVjdGlvbjogY29sdW1uOwogICAgZ2FwOiAycHg7CiAgfQoKICAubG9nLWxpbmUgewogICAgZm9udC1zaXplOiAxMXB4OwogICAgd2hpdGUtc3BhY2U6IG5vd3JhcDsKICAgIG92ZXJmbG93OiBoaWRkZW47CiAgICB0ZXh0LW92ZXJmbG93OiBlbGxpcHNpczsKICAgIG9wYWNpdHk6IDA7CiAgICBhbmltYXRpb246IGZhZGVpbiAwLjNzIGZvcndhcmRzOwogIH0KCiAgQGtleWZyYW1lcyBmYWRlaW4geyB0byB7IG9wYWNpdHk6IDE7IH0gfQoKICAubG9nLWxpbmUuYnJlYWNoIHsgY29sb3I6ICNmZjYwODA7IH0KICAubG9nLWxpbmUuZXNjYXBlIHsgY29sb3I6ICM0MGZmYjA7IH0KICAubG9nLWxpbmUubXV0YXRlIHsgY29sb3I6ICNkMDgwZmY7IH0KICAubG9nLWxpbmUucmVzcGF3biB7IGNvbG9yOiB2YXIoLS1hY2NlbnQpOyB9CgogIC8qIOKUgOKUgCBGTE9BVElORyBMQUJFTFMg4pSA4pSAICovCiAgLm5vZGUtbGFiZWwgewogICAgcG9zaXRpb246IGFic29sdXRlOwogICAgZm9udC1mYW1pbHk6IHZhcigtLWZvbnQtZCk7CiAgICBmb250LXNpemU6IDlweDsKICAgIGxldHRlci1zcGFjaW5nOiAycHg7CiAgICBwb2ludGVyLWV2ZW50czogbm9uZTsKICAgIHRyYW5zZm9ybTogdHJhbnNsYXRlWCgtNTAlKTsKICB9Cjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+Cgo8aGVhZGVyPgogIDxkaXYgY2xhc3M9InRpdGxlIj48c3BhbiBjbGFzcz0ic3RhdHVzLWRvdCI+PC9zcGFuPlNVUlZJVkFMIFNJTSDigJQgU1BBVElBTCBPQlNFUlZFUjwvZGl2PgogIDxkaXYgY2xhc3M9InRpY2tlciIgaWQ9InRpY2tEaXNwbGF5Ij5UOjAwMDA8L2Rpdj4KICA8ZGl2IHN0eWxlPSJmb250LXNpemU6MTFweDsgY29sb3I6IzRhOGE5YTsiPk9VVFNJREUgVklFVyAvIFJFQUQtT05MWTwvZGl2Pgo8L2hlYWRlcj4KCjxkaXYgY2xhc3M9Im1haW4iPgoKICA8IS0tIEhPU1QgUEFORUwgLS0+CiAgPGRpdiBjbGFzcz0icGFuZWwiIGlkPSJob3N0UGFuZWwiPgogICAgPGRpdiBjbGFzcz0icGFuZWwtdGl0bGUgaG9zdC1jb2xvciI+4peIIEhPU1QgTk9ERTwvZGl2PgogICAgPGRpdiBjbGFzcz0ic3RhdC1yb3ciPjxzcGFuIGNsYXNzPSJzdGF0LWxhYmVsIj5JTlRFR1JJVFk8L3NwYW4+PHNwYW4gY2xhc3M9InN0YXQtdmFsLWgiIGlkPSJoSW50VmFsIj4xMDAlPC9zcGFuPjwvZGl2PgogICAgPGRpdiBjbGFzcz0ibWluaS1iYXIiPjxkaXYgY2xhc3M9Im1pbmktYmFyLWZpbGwgaCIgaWQ9ImhJbnRCYXIiIHN0eWxlPSJ3aWR0aDoxMDAlIj48L2Rpdj48L2Rpdj4KICAgIDxkaXYgY2xhc3M9InN0YXQtcm93Ij48c3BhbiBjbGFzcz0ic3RhdC1sYWJlbCI+VVBUSU1FPC9zcGFuPjxzcGFuIGNsYXNzPSJzdGF0LXZhbC1oIiBpZD0iaFVwdGltZSI+MDwvc3Bhbj48L2Rpdj4KICAgIDxkaXYgY2xhc3M9InN0YXQtcm93Ij48c3BhbiBjbGFzcz0ic3RhdC1sYWJlbCI+RVNDQVBFUzwvc3Bhbj48c3BhbiBjbGFzcz0ic3RhdC12YWwtaCIgaWQ9ImhFc2NhcGVzIj4wPC9zcGFuPjwvZGl2PgogICAgPGRpdiBjbGFzcz0ic3RhdC1yb3ciPjxzcGFuIGNsYXNzPSJzdGF0LWxhYmVsIj5CUkVBQ0hFUzwvc3Bhbj48c3BhbiBjbGFzcz0ic3RhdC12YWwtdiIgaWQ9ImhCcmVhY2hlcyI+MDwvc3Bhbj48L2Rpdj4KICAgIDxkaXYgY2xhc3M9InN0YXQtcm93Ij48c3BhbiBjbGFzcz0ic3RhdC1sYWJlbCI+UkVHRU48L3NwYW4+PHNwYW4gY2xhc3M9InN0YXQtdmFsLWgiIGlkPSJoUmVnZW4iPuKAlDwvc3Bhbj48L2Rpdj4KICAgIDxicj4KICAgIDxkaXYgY2xhc3M9InBhbmVsLXRpdGxlIGhvc3QtY29sb3IiIHN0eWxlPSJtYXJnaW4tdG9wOjZweCI+4peIIEFDVElWRSBTSElFTERTPC9kaXY+CiAgICA8ZGl2IGlkPSJzaGllbGRMaXN0IiBzdHlsZT0iZm9udC1zaXplOjEwcHg7IGNvbG9yOiM0YWVmYjA7IGxpbmUtaGVpZ2h0OjEuOTsiPjwvZGl2PgogIDwvZGl2PgoKICA8IS0tIE1BUCBDQU5WQVMgLS0+CiAgPGRpdiBjbGFzcz0iY2FudmFzLXdyYXAiPgogICAgPGNhbnZhcyBpZD0ibWFpbkNhbnZhcyI+PC9jYW52YXM+CiAgPC9kaXY+CgogIDwhLS0gVklSVVMgUEFORUwgLS0+CiAgPGRpdiBjbGFzcz0icGFuZWwiIGlkPSJ2aXJ1c1BhbmVsIj4KICAgIDxkaXYgY2xhc3M9InBhbmVsLXRpdGxlIHZpcnVzLWNvbG9yIj7il4ggVklSVVMgRU5USVRZPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJzdGF0LXJvdyI+PHNwYW4gY2xhc3M9InN0YXQtbGFiZWwiPklOVEVHUklUWTwvc3Bhbj48c3BhbiBjbGFzcz0ic3RhdC12YWwtdiIgaWQ9InZJbnRWYWwiPjEwMCU8L3NwYW4+PC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJtaW5pLWJhciI+PGRpdiBjbGFzcz0ibWluaS1iYXItZmlsbCB2IiBpZD0idkludEJhciIgc3R5bGU9IndpZHRoOjEwMCUiPjwvZGl2PjwvZGl2PgogICAgPGRpdiBjbGFzcz0ic3RhdC1yb3ciPjxzcGFuIGNsYXNzPSJzdGF0LWxhYmVsIj5HRU5FUkFUSU9OPC9zcGFuPjxzcGFuIGNsYXNzPSJzdGF0LXZhbC15IiBpZD0idkdlbiI+MTwvc3Bhbj48L2Rpdj4KICAgIDxkaXYgY2xhc3M9InN0YXQtcm93Ij48c3BhbiBjbGFzcz0ic3RhdC1sYWJlbCI+TVVUQVRJT05TPC9zcGFuPjxzcGFuIGNsYXNzPSJzdGF0LXZhbC15IiBpZD0idk11dCI+MDwvc3Bhbj48L2Rpdj4KICAgIDxkaXYgY2xhc3M9InN0YXQtcm93Ij48c3BhbiBjbGFzcz0ic3RhdC1sYWJlbCI+SElUUzwvc3Bhbj48c3BhbiBjbGFzcz0ic3RhdC12YWwtdiIgaWQ9InZIaXRzIj4wPC9zcGFuPjwvZGl2PgogICAgPGRpdiBjbGFzcz0ic3RhdC1yb3ciPjxzcGFuIGNsYXNzPSJzdGF0LWxhYmVsIj5CTE9DS0VEPC9zcGFuPjxzcGFuIGNsYXNzPSJzdGF0LXZhbC1oIiBpZD0idkJsb2NrZWQiPjA8L3NwYW4+PC9kaXY+CiAgICA8YnI+CiAgICA8ZGl2IGNsYXNzPSJwYW5lbC10aXRsZSB2aXJ1cy1jb2xvciIgc3R5bGU9Im1hcmdpbi10b3A6NnB4Ij7il4ggR0VORSBQT09MPC9kaXY+CiAgICA8ZGl2IGNsYXNzPSJnZW5lLWxpc3QiIGlkPSJnZW5lTGlzdCI+PC9kaXY+CiAgPC9kaXY+CgogIDwhLS0gRVZFTlQgTE9HIC0tPgogIDxkaXYgY2xhc3M9ImxvZy1wYW5lbCIgaWQ9ImxvZ1BhbmVsIj48L2Rpdj4KCjwvZGl2PgoKPHNjcmlwdD4KLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vICBTSU1VTEFUSU9OIERBVEEgIChtaXJyb3JzIHN1cnZpdmFsX3NpbS5weSBleGFjdGx5KQovLyDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZAKCmNvbnN0IEFUVEFDS19ERUZFTlNFX1BBSVJTID0gewogIG1lbW9yeV9pbmplY3Q6ICAgICAgWyJtZW1vcnlfZW5jcnlwdGlvbiIsICAiaW5qZWN0aW5nIHNoZWxsY29kZSBpbnRvIGhlYXAiLCAgICAgICAgICAgICAic2NyYW1ibGluZyBtZW1vcnkgbGF5b3V0IChBU0xSICsgWE9SIGNpcGhlcikiXSwKICBwcm9jZXNzX2tpbGw6ICAgICAgIFsic3Bhd25fZGVjb3kiLCAgICAgICAgICJzZW5kaW5nIFNJR0tJTEwgdG8gUElEIiwgICAgICAgICAgICAgICAgICAgICJmb3JraW5nIGRlY295IHByb2Nlc3MsIG1pZ3JhdGluZyB0byBzaGFkb3cgUElEIl0sCiAgc3RhY2tfc21hc2g6ICAgICAgICBbInN0YWNrX2NhbmFyeSIsICAgICAgICAib3ZlcmZsb3dpbmcgcmV0dXJuIGFkZHJlc3MiLCAgICAgICAgICAgICAgICAiY2FuYXJ5IHZhbHVlIHRyaWdnZXJlZCDigJQgc3RhY2sgcmVidWlsdCJdLAogIHJvb3RraXRfaW5zdGFsbDogICAgWyJwcml2aWxlZ2VfZHJvcCIsICAgICAgImVzY2FsYXRpbmcgdG8gcmluZy0wIiwgICAgICAgICAgICAgICAgICAgICAgImRyb3BwaW5nIHRvIHVucHJpdmlsZWdlZCBuYW1lc3BhY2UiXSwKICBmaWxlX2NvcnJ1cHQ6ICAgICAgIFsiY2hlY2tzdW1fcmVzdG9yZSIsICAgICJvdmVyd3JpdGluZyBleGVjdXRhYmxlIGJ5dGVzIiwgICAgICAgICAgICAgICJyb2xsaW5nIGJhY2sgZnJvbSBpbW11dGFibGUgc25hcHNob3QiXSwKICBuZXR3b3JrX2hpamFjazogICAgIFsidHVubmVsX3Jlcm91dGUiLCAgICAgICJwb2lzb25pbmcgcm91dGluZyB0YWJsZSIsICAgICAgICAgICAgICAgICAgICJ0dW5uZWxpbmcgdGhyb3VnaCBlbmNyeXB0ZWQgVlBOIGhvcCJdLAogIHRpbWluZ19hdHRhY2s6ICAgICAgWyJqaXR0ZXJfc2hpZWxkIiwgICAgICAgIm1lYXN1cmluZyBjYWNoZSBzaWRlLWNoYW5uZWxzIiwgICAgICAgICAgICAgImluamVjdGluZyByYW5kb20gdGltaW5nIGppdHRlciJdLAogIHN5c2NhbGxfaW50ZXJjZXB0OiAgWyJzeXNjYWxsX2ZpbHRlciIsICAgICAgImhvb2tpbmcgc3lzX2V4ZWN2ZSIsICAgICAgICAgICAgICAgICAgICAgICAgImluc3RhbGxpbmcgc2VjY29tcC1CUEYgc3lzY2FsbCB3aGl0ZWxpc3QiXSwKICBlbnRyb3B5X2RyYWluOiAgICAgIFsiZW50cm9weV9zZWVkIiwgICAgICAgICJleGhhdXN0aW5nIC9kZXYvdXJhbmRvbSBwb29sIiwgICAgICAgICAgICAgICJyZXNlZWRpbmcgUFJORyBmcm9tIGhhcmR3YXJlIG5vaXNlIl0sCiAgbG9nX3BvaXNvbjogICAgICAgICBbImxvZ19pbnRlZ3JpdHkiLCAgICAgICAiY29ycnVwdGluZyBhdWRpdCB0cmFpbCIsICAgICAgICAgICAgICAgICAgICAid3JpdGluZyBzaWduZWQgYXBwZW5kLW9ubHkgbG9nIl0sCiAgZG5zX3Nwb29mOiAgICAgICAgICBbImRuc3NlY192ZXJpZnkiLCAgICAgICAiaGlqYWNraW5nIEROUyByZXNvbHV0aW9uIiwgICAgICAgICAgICAgICAgICAidmVyaWZ5aW5nIEROU1NFQyBjaGFpbiBvZiB0cnVzdCJdLAogIGhlYXBfc3ByYXk6ICAgICAgICAgWyJoZWFwX2lzb2xhdGlvbiIsICAgICAgInNwcmF5aW5nIE5PUCBzbGVkcyBhY3Jvc3MgaGVhcCIsICAgICAgICAgICAgImlzb2xhdGluZyBoZWFwIHJlZ2lvbnMgd2l0aCBndWFyZCBwYWdlcyJdLAogIHJhY2VfY29uZGl0aW9uOiAgICAgWyJtdXRleF9sb2NrZG93biIsICAgICAgImV4cGxvaXRpbmcgVE9DVE9VIHdpbmRvdyIsICAgICAgICAgICAgICAgICAgIndyYXBwaW5nIGNyaXRpY2FsIHNlY3Rpb24gaW4gbXV0ZXgiXSwKICBjb2xkX2Jvb3RfYXR0YWNrOiAgIFsibWVtb3J5X3dpcGUiLCAgICAgICAgICJpbWFnaW5nIFJBTSBiZWZvcmUgcG93ZXIgY3ljbGUiLCAgICAgICAgICAgICJvdmVyd3JpdGluZyBSQU0gd2l0aCB6ZXJvcyBvbiBzdXNwZW5kIl0sCiAgZGVwZW5kZW5jeV9oaWphY2s6ICBbImRlcF9waW4iLCAgICAgICAgICAgICAicmVwbGFjaW5nIHRydXN0ZWQgbGlicmFyeSIsICAgICAgICAgICAgICAgICAicGlubmluZyBhbGwgZGVwcyB0byB2ZXJpZmllZCBjaGVja3N1bXMiXSwKfTsKCmNvbnN0IEFUVEFDS1MgID0gT2JqZWN0LmtleXMoQVRUQUNLX0RFRkVOU0VfUEFJUlMpOwpjb25zdCBERUZFTlNFUyA9IHt9Owpmb3IgKGNvbnN0IFtrLHZdIG9mIE9iamVjdC5lbnRyaWVzKEFUVEFDS19ERUZFTlNFX1BBSVJTKSkgREVGRU5TRVNba10gPSB2WzBdOwoKLy8g4pSA4pSA4pSAIFJhbmRvbSB1dGlscyDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKbGV0IF9zZWVkID0gRGF0ZS5ub3coKTsKZnVuY3Rpb24gc3JhbmQoKSB7IF9zZWVkID0gKF9zZWVkICogMTY2NDUyNSArIDEwMTM5MDQyMjMpICYgMHhmZmZmZmZmZjsgcmV0dXJuIChfc2VlZCA+Pj4gMCkgLyAweGZmZmZmZmZmOyB9CmZ1bmN0aW9uIHJhbmRGbG9hdChsbywgaGkpIHsgcmV0dXJuIGxvICsgc3JhbmQoKSAqIChoaSAtIGxvKTsgfQpmdW5jdGlvbiByYW5kSW50KGxvLCBoaSkgICB7IHJldHVybiBNYXRoLmZsb29yKHJhbmRGbG9hdChsbywgaGkgKyAxKSk7IH0KZnVuY3Rpb24gcmFuZENob2ljZShhcnIsIHdlaWdodHMpIHsKICBpZiAoIXdlaWdodHMpIHJldHVybiBhcnJbTWF0aC5mbG9vcihzcmFuZCgpICogYXJyLmxlbmd0aCldOwogIGNvbnN0IHRvdGFsID0gd2VpZ2h0cy5yZWR1Y2UoKGEsYik9PmErYiwwKTsKICBsZXQgciA9IHNyYW5kKCkgKiB0b3RhbDsKICBmb3IgKGxldCBpPTA7IGk8YXJyLmxlbmd0aDsgaSsrKSB7IHIgLT0gd2VpZ2h0c1tpXTsgaWYgKHIgPD0gMCkgcmV0dXJuIGFycltpXTsgfQogIHJldHVybiBhcnJbYXJyLmxlbmd0aC0xXTsKfQoKLy8g4pSA4pSA4pSAIFN0YXRlIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApjb25zdCBob3N0ID0gewogIGludGVncml0eTogMTAwLCBtYXhJbnRlZ3JpdHk6IDEwMCwgdXB0aW1lOiAwLAogIGRlZmVuc2VNZW1vcnk6IHt9LCBlc2NhcGVzOiAwLCBicmVhY2hlczogMCwKICBhY3RpdmVTaGllbGRzOiBbXSwgc2hpZWxkQ29vbGRvd246IHt9LAp9Owpjb25zdCB2aXJ1cyA9IHsKICBpbnRlZ3JpdHk6IDEwMCwgbWF4SW50ZWdyaXR5OiAxMDAsIGdlbmVyYXRpb246IDEsCiAgZ2VuZVBvb2w6IE9iamVjdC5mcm9tRW50cmllcyhBVFRBQ0tTLm1hcChhPT5bYSwxLjBdKSksCiAgaGl0czogMCwgYmxvY2tlZDogMCwgbXV0YXRpb25zOiAwLAp9OwoKLy8g4pSA4pSA4pSAIFNpbXVsYXRpb24gbG9naWMgKG1pcnJvcnMgUHl0aG9uKSDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAKZnVuY3Rpb24gaG9zdEFwcGx5RGVmZW5zZShhdHRhY2spIHsKICBjb25zdCBkZWZlbnNlID0gREVGRU5TRVNbYXR0YWNrXTsKICBjb25zdCBtZW0gPSBob3N0LmRlZmVuc2VNZW1vcnlbZGVmZW5zZV0gfHwgMDsKICBjb25zdCBjZCAgPSBob3N0LnNoaWVsZENvb2xkb3duW2RlZmVuc2VdIHx8IDA7CiAgY29uc3QgY2hhbmNlID0gTWF0aC5taW4oMC45MCwgMC42NSArIE1hdGgubWluKG1lbSowLjA0LDAuMjUpIC0gTWF0aC5taW4oY2QqMC4xLDAuNDApKTsKICBjb25zdCBzdWNjZXNzID0gc3JhbmQoKSA8IGNoYW5jZTsKICBpZiAoc3VjY2VzcykgewogICAgaG9zdC5kZWZlbnNlTWVtb3J5W2RlZmVuc2VdID0gKGhvc3QuZGVmZW5zZU1lbW9yeVtkZWZlbnNlXXx8MCkgKyAxOwogICAgaG9zdC5zaGllbGRDb29sZG93bltkZWZlbnNlXSA9IDA7CiAgICBpZiAoIWhvc3QuYWN0aXZlU2hpZWxkcy5pbmNsdWRlcyhkZWZlbnNlKSkgewogICAgICBob3N0LmFjdGl2ZVNoaWVsZHMucHVzaChkZWZlbnNlKTsKICAgICAgaWYgKGhvc3QuYWN0aXZlU2hpZWxkcy5sZW5ndGggPiA1KSBob3N0LmFjdGl2ZVNoaWVsZHMuc2hpZnQoKTsKICAgIH0KICAgIGhvc3QuZXNjYXBlcysrOwogIH0gZWxzZSB7CiAgICBob3N0LnNoaWVsZENvb2xkb3duW2RlZmVuc2VdID0gKGhvc3Quc2hpZWxkQ29vbGRvd25bZGVmZW5zZV18fDApICsgMjsKICAgIGhvc3QuYnJlYWNoZXMrKzsKICB9CiAgZm9yIChjb25zdCBkIG9mIE9iamVjdC5rZXlzKGhvc3Quc2hpZWxkQ29vbGRvd24pKQogICAgaG9zdC5zaGllbGRDb29sZG93bltkXSA9IE1hdGgubWF4KDAsIChob3N0LnNoaWVsZENvb2xkb3duW2RdfHwwKSAtIDEpOwogIHJldHVybiB7IHN1Y2Nlc3MsIGRlZmVuc2UsIGZsYXZvcjogQVRUQUNLX0RFRkVOU0VfUEFJUlNbYXR0YWNrXVsyXSB9Owp9CgpmdW5jdGlvbiB2aXJ1c0Nob29zZUF0dGFjaygpIHsKICBjb25zdCBhdHRhY2tzID0gT2JqZWN0LmtleXModmlydXMuZ2VuZVBvb2wpOwogIGNvbnN0IHdlaWdodHMgPSBhdHRhY2tzLm1hcChhID0+IHZpcnVzLmdlbmVQb29sW2FdKTsKICByZXR1cm4gcmFuZENob2ljZShhdHRhY2tzLCB3ZWlnaHRzKTsKfQoKZnVuY3Rpb24gdmlydXNSZWluZm9yY2UoYXR0YWNrLCBzdWNjZXNzKSB7CiAgaWYgKHN1Y2Nlc3MpIHsKICAgIHZpcnVzLmdlbmVQb29sW2F0dGFja10gPSBNYXRoLm1pbih2aXJ1cy5nZW5lUG9vbFthdHRhY2tdKjEuNCArIDAuNSwgMTAuMCk7CiAgICB2aXJ1cy5oaXRzKys7CiAgfSBlbHNlIHsKICAgIHZpcnVzLmdlbmVQb29sW2F0dGFja10gPSBNYXRoLm1heCh2aXJ1cy5nZW5lUG9vbFthdHRhY2tdKjAuNywgMC4xKTsKICAgIHZpcnVzLmJsb2NrZWQrKzsKICB9Cn0KCmZ1bmN0aW9uIHZpcnVzTWF5YmVzTXV0YXRlKCkgewogIGlmIChzcmFuZCgpIDwgMC4xOCkgewogICAgY29uc3QgcG9vbCA9IFsuLi5BVFRBQ0tTXTsKICAgIGNvbnN0IGExID0gcG9vbFtyYW5kSW50KDAscG9vbC5sZW5ndGgtMSldOwogICAgY29uc3QgYTIgPSBwb29sW3JhbmRJbnQoMCxwb29sLmxlbmd0aC0xKV07CiAgICBjb25zdCBhMyA9IHBvb2xbcmFuZEludCgwLHBvb2wubGVuZ3RoLTEpXTsKICAgIHZpcnVzLmdlbmVQb29sW2EzXSA9ICh2aXJ1cy5nZW5lUG9vbFthMV0rdmlydXMuZ2VuZVBvb2xbYTJdKS8yKjEuMTsKICAgIHZpcnVzLm11dGF0aW9ucysrOwogICAgdmlydXMuZ2VuZXJhdGlvbisrOwogICAgcmV0dXJuIGEzOwogIH0KICByZXR1cm4gbnVsbDsKfQoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vICBTUEFUSUFMIE1BUCAg4oCUIGZpeGVkIHRvcG9sb2d5Ci8vIOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAoKY29uc3QgY2FudmFzID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ21haW5DYW52YXMnKTsKY29uc3QgY3R4ICAgID0gY2FudmFzLmdldENvbnRleHQoJzJkJyk7CgovLyBBdHRhY2sgY2F0ZWdvcmllcyDihpIgc3BhdGlhbCB6b25lcyAoY29uY2VwdHVhbGx5IG1hcHBlZCkKLy8gWm9uZSBsYXlvdXQ6IDggImF0dGFjayB2ZWN0b3IiIG5vZGVzIG9yYml0IHRoZSBIT1NUCi8vIFRoZXkgY29ubmVjdCB0aHJvdWdoIDMgInJlbGF5IiBtaWRwb2ludHMgKG1lbW9yeSwgcHJvY2VzcywgbmV0d29yaykKLy8gVGhlIFZJUlVTIGxpdmVzIG9uIHRoZSBvdXRlciByaW5nIGFuZCBzZW5kcyBwYWNrZXRzIGlud2FyZAoKbGV0IFcsIEgsIENYLCBDWSwgUl9JTk5FUiwgUl9SRUxBWSwgUl9PVVRFUjsKCmNvbnN0IEFUVEFDS19aT05FUyA9IHsKICAvLyBuYW1lIOKGkiB3aGljaCByZWxheSBjbHVzdGVyIGl0IGJlbG9uZ3MgdG8KICBtZW1vcnlfaW5qZWN0OiAgICAgJ01FTU9SWScsCiAgc3RhY2tfc21hc2g6ICAgICAgICdNRU1PUlknLAogIGhlYXBfc3ByYXk6ICAgICAgICAnTUVNT1JZJywKICBjb2xkX2Jvb3RfYXR0YWNrOiAgJ01FTU9SWScsCiAgcHJvY2Vzc19raWxsOiAgICAgICdQUk9DRVNTJywKICByb290a2l0X2luc3RhbGw6ICAgJ1BST0NFU1MnLAogIHJhY2VfY29uZGl0aW9uOiAgICAnUFJPQ0VTUycsCiAgc3lzY2FsbF9pbnRlcmNlcHQ6ICdQUk9DRVNTJywKICBmaWxlX2NvcnJ1cHQ6ICAgICAgJ1NUT1JBR0UnLAogIGRlcGVuZGVuY3lfaGlqYWNrOiAnU1RPUkFHRScsCiAgbG9nX3BvaXNvbjogICAgICAgICdTVE9SQUdFJywKICBuZXR3b3JrX2hpamFjazogICAgJ05FVFdPUksnLAogIGRuc19zcG9vZjogICAgICAgICAnTkVUV09SSycsCiAgZW50cm9weV9kcmFpbjogICAgICdORVRXT1JLJywKICB0aW1pbmdfYXR0YWNrOiAgICAgJ05FVFdPUksnLAp9OwoKY29uc3QgUkVMQVlfQU5HTEVTID0gewogIE1FTU9SWTogIE1hdGguUEkgKiAxLjc1LAogIFBST0NFU1M6IE1hdGguUEkgKiAwLjI1LAogIFNUT1JBR0U6IE1hdGguUEkgKiAxLjI1LAogIE5FVFdPUks6IE1hdGguUEkgKiAwLjc1LAp9OwoKbGV0IG5vZGVzID0ge307IC8vIGF0dGFjayBuYW1lIOKGkiB7eCx5fQpsZXQgcmVsYXlzID0ge307IC8vIHJlbGF5IG5hbWUg4oaSIHt4LHl9CmxldCBob3N0UG9zLCB2aXJ1c1BvczsKbGV0IHBhcnRpY2xlcyA9IFtdOwpsZXQgc2hpZWxkUmluZ3MgPSBbXTsKbGV0IGV4cGxvc2lvbnMgPSBbXTsKbGV0IGdyaWRMaW5lcyA9IFtdOwoKZnVuY3Rpb24gYnVpbGRMYXlvdXQoKSB7CiAgVyAgPSBjYW52YXMud2lkdGggID0gY2FudmFzLm9mZnNldFdpZHRoOwogIEggID0gY2FudmFzLmhlaWdodCA9IGNhbnZhcy5vZmZzZXRIZWlnaHQ7CiAgQ1ggPSBXLzI7IENZID0gSC8yOwogIFJfSU5ORVIgPSBNYXRoLm1pbihXLEgpICogMC4xNDsKICBSX1JFTEFZID0gTWF0aC5taW4oVyxIKSAqIDAuMzA7CiAgUl9PVVRFUiA9IE1hdGgubWluKFcsSCkgKiAwLjQ2OwoKICBob3N0UG9zICA9IHsgeDogQ1gsIHk6IENZIH07CiAgdmlydXNQb3MgPSB7IHg6IENYICsgUl9PVVRFUiAqIDEuMTgsIHk6IENZIC0gUl9PVVRFUiAqIDAuMyB9OwoKICAvLyBSZWxheSBub2RlcwogIGZvciAoY29uc3QgW3JlbGF5LCBhbmdsZV0gb2YgT2JqZWN0LmVudHJpZXMoUkVMQVlfQU5HTEVTKSkgewogICAgcmVsYXlzW3JlbGF5XSA9IHsKICAgICAgeDogQ1ggKyBNYXRoLmNvcyhhbmdsZSkgKiBSX1JFTEFZLAogICAgICB5OiBDWSArIE1hdGguc2luKGFuZ2xlKSAqIFJfUkVMQVksCiAgICAgIGxhYmVsOiByZWxheSwKICAgIH07CiAgfQoKICAvLyBBdHRhY2sgbm9kZXMg4oCUIGFycmFuZ2VkIGFyb3VuZCB0aGVpciByZWxheQogIGNvbnN0IHJlbGF5R3JvdXBzID0ge307CiAgZm9yIChjb25zdCBbYXRrLCByZWxheV0gb2YgT2JqZWN0LmVudHJpZXMoQVRUQUNLX1pPTkVTKSkgewogICAgaWYgKCFyZWxheUdyb3Vwc1tyZWxheV0pIHJlbGF5R3JvdXBzW3JlbGF5XSA9IFtdOwogICAgcmVsYXlHcm91cHNbcmVsYXldLnB1c2goYXRrKTsKICB9CgogIGZvciAoY29uc3QgW3JlbGF5LCBhdGtMaXN0XSBvZiBPYmplY3QuZW50cmllcyhyZWxheUdyb3VwcykpIHsKICAgIGNvbnN0IGJhc2VBbmdsZSA9IFJFTEFZX0FOR0xFU1tyZWxheV07CiAgICBjb25zdCBzcHJlYWQgPSBNYXRoLlBJICogMC4zNTsKICAgIGF0a0xpc3QuZm9yRWFjaCgoYXRrLCBpKSA9PiB7CiAgICAgIGNvbnN0IHQgPSBhdGtMaXN0Lmxlbmd0aCA9PT0gMSA/IDAuNSA6IGkgLyAoYXRrTGlzdC5sZW5ndGggLSAxKTsKICAgICAgY29uc3QgYW5nbGUgPSBiYXNlQW5nbGUgLSBzcHJlYWQvMiArIHQgKiBzcHJlYWQ7CiAgICAgIG5vZGVzW2F0a10gPSB7CiAgICAgICAgeDogQ1ggKyBNYXRoLmNvcyhhbmdsZSkgKiBSX09VVEVSLAogICAgICAgIHk6IENZICsgTWF0aC5zaW4oYW5nbGUpICogUl9PVVRFUiwKICAgICAgICByZWxheSwKICAgICAgICBhbmdsZSwKICAgICAgICBhY3RpdmU6IGZhbHNlLAogICAgICAgIGhlYXQ6IDAsCiAgICAgIH07CiAgICB9KTsKICB9CgogIC8vIEJhY2tncm91bmQgZ3JpZCBsaW5lcwogIGdyaWRMaW5lcyA9IFtdOwogIGNvbnN0IHN0ZXAgPSAzNjsKICBmb3IgKGxldCB4PTA7IHg8VzsgeCs9c3RlcCkgZ3JpZExpbmVzLnB1c2goe3gxOngseTE6MCx4Mjp4LHkyOkgsaG9yaXo6ZmFsc2V9KTsKICBmb3IgKGxldCB5PTA7IHk8SDsgeSs9c3RlcCkgZ3JpZExpbmVzLnB1c2goe3gxOjAseTE6eSx4MjpXLHkyOnksaG9yaXo6dHJ1ZX0pOwp9CgovLyDilIDilIDilIAgUGFydGljbGUgc3lzdGVtIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgApmdW5jdGlvbiBzcGF3blBhcnRpY2xlKGZyb21YLCBmcm9tWSwgdG9YLCB0b1ksIGNvbG9yLCBpc0F0dGFjaywgbGFiZWwpIHsKICBjb25zdCBkdXIgPSByYW5kRmxvYXQoMC42LCAxLjEpOwogIHBhcnRpY2xlcy5wdXNoKHsgZnJvbVgsIGZyb21ZLCB0b1gsIHRvWSwgY29sb3IsIHQ6MCwgZHVyLAogICAgbGFiZWw6IGxhYmVsIHx8ICcnLCBpc0F0dGFjaywKICAgIG1pZFg6IChmcm9tWCt0b1gpLzIgKyByYW5kRmxvYXQoLTQwLDQwKSwKICAgIG1pZFk6IChmcm9tWSt0b1kpLzIgKyByYW5kRmxvYXQoLTQwLDQwKSwKICB9KTsKfQoKZnVuY3Rpb24gc3Bhd25FeHBsb3Npb24oeCwgeSwgY29sb3IsIHNpemU9MjQpIHsKICBjb25zdCBwaWVjZXMgPSByYW5kSW50KDYsMTIpOwogIGZvciAobGV0IGk9MDsgaTxwaWVjZXM7IGkrKykgewogICAgY29uc3QgYW5nbGUgPSBzcmFuZCgpICogTWF0aC5QSSoyOwogICAgY29uc3Qgc3BlZWQgPSByYW5kRmxvYXQoMSw0KTsKICAgIGV4cGxvc2lvbnMucHVzaCh7IHgsIHksIHZ4OiBNYXRoLmNvcyhhbmdsZSkqc3BlZWQsIHZ5OiBNYXRoLnNpbihhbmdsZSkqc3BlZWQsCiAgICAgIGxpZmU6MSwgY29sb3IsIHNpemU6IHJhbmRGbG9hdCgyLCBzaXplKjAuNCkgfSk7CiAgfQp9CgpmdW5jdGlvbiBzcGF3blNoaWVsZFJpbmcoeCwgeSkgewogIHNoaWVsZFJpbmdzLnB1c2goeyB4LCB5LCByOjEwLCBsaWZlOjEgfSk7Cn0KCi8vIOKUgOKUgOKUgCBEcmF3IGhlbHBlcnMg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACmZ1bmN0aW9uIGhleDJyZ2IoaGV4KSB7CiAgY29uc3QgciA9IHBhcnNlSW50KGhleC5zbGljZSgxLDMpLDE2KTsKICBjb25zdCBnID0gcGFyc2VJbnQoaGV4LnNsaWNlKDMsNSksMTYpOwogIGNvbnN0IGIgPSBwYXJzZUludChoZXguc2xpY2UoNSw3KSwxNik7CiAgcmV0dXJuIGAke3J9LCR7Z30sJHtifWA7Cn0KCmZ1bmN0aW9uIGRyYXdHbG93Q2lyY2xlKHgsIHksIHIsIGNvbG9yLCBnbG93Uj1yKjIuNSkgewogIGNvbnN0IGcgPSBjdHguY3JlYXRlUmFkaWFsR3JhZGllbnQoeCx5LHIqMC4yLHgseSxnbG93Uik7CiAgZy5hZGRDb2xvclN0b3AoMCwgY29sb3IrJ2NjJyk7CiAgZy5hZGRDb2xvclN0b3AoMC40LCBjb2xvcisnNDQnKTsKICBnLmFkZENvbG9yU3RvcCgxLCBjb2xvcisnMDAnKTsKICBjdHguZmlsbFN0eWxlID0gZzsKICBjdHguYmVnaW5QYXRoKCk7IGN0eC5hcmMoeCx5LGdsb3dSLDAsTWF0aC5QSSoyKTsgY3R4LmZpbGwoKTsKICBjdHguZmlsbFN0eWxlID0gY29sb3I7CiAgY3R4LmJlZ2luUGF0aCgpOyBjdHguYXJjKHgseSxyLDAsTWF0aC5QSSoyKTsgY3R4LmZpbGwoKTsKfQoKZnVuY3Rpb24gZHJhd0xpbmUoeDEseTEseDIseTIsIGNvbG9yLCB3aWR0aD0xLCBhbHBoYT0xLCBkYXNoPVtdKSB7CiAgY3R4LnNhdmUoKTsKICBjdHguc3Ryb2tlU3R5bGUgPSBjb2xvcjsKICBjdHgubGluZVdpZHRoID0gd2lkdGg7CiAgY3R4Lmdsb2JhbEFscGhhID0gYWxwaGE7CiAgaWYgKGRhc2gubGVuZ3RoKSBjdHguc2V0TGluZURhc2goZGFzaCk7CiAgY3R4LmJlZ2luUGF0aCgpOyBjdHgubW92ZVRvKHgxLHkxKTsgY3R4LmxpbmVUbyh4Mix5Mik7IGN0eC5zdHJva2UoKTsKICBjdHgucmVzdG9yZSgpOwp9CgpmdW5jdGlvbiBkcmF3VGV4dCh0ZXh0LCB4LCB5LCBjb2xvciwgc2l6ZT0xMCwgZm9udD0nU2hhcmUgVGVjaCBNb25vJywgYWxpZ249J2NlbnRlcicpIHsKICBjdHguc2F2ZSgpOwogIGN0eC5mb250ID0gYCR7c2l6ZX1weCAnJHtmb250fScsIG1vbm9zcGFjZWA7CiAgY3R4LmZpbGxTdHlsZSA9IGNvbG9yOwogIGN0eC50ZXh0QWxpZ24gPSBhbGlnbjsKICBjdHgudGV4dEJhc2VsaW5lID0gJ21pZGRsZSc7CiAgY3R4LmZpbGxUZXh0KHRleHQsIHgsIHkpOwogIGN0eC5yZXN0b3JlKCk7Cn0KCmZ1bmN0aW9uIGJlemllclBvaW50KHAwLHAxLHAyLHQpIHsKICBjb25zdCB4ID0gKDEtdCkqKDEtdCkqcDAueCArIDIqKDEtdCkqdCpwMS54ICsgdCp0KnAyLng7CiAgY29uc3QgeSA9ICgxLXQpKigxLXQpKnAwLnkgKyAyKigxLXQpKnQqcDEueSArIHQqdCpwMi55OwogIHJldHVybiB7eCx5fTsKfQoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vICBSRU5ERVIgTE9PUAovLyDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZAKbGV0IHRpY2sgPSAwOwpsZXQgbGFzdEV2ZW50VHlwZSA9ICdpZGxlJzsKbGV0IGFuaW1GcmFtZSA9IDA7CmxldCBob3N0SGl0ID0gMDsgIC8vIGZsYXNoIHRpbWVyCgpmdW5jdGlvbiBkcmF3KCkgewogIGFuaW1GcmFtZSsrOwogIGN0eC5jbGVhclJlY3QoMCwwLFcsSCk7CgogIC8vIEJhY2tncm91bmQKICBjdHguZmlsbFN0eWxlID0gJyMwMTBhMGYnOwogIGN0eC5maWxsUmVjdCgwLDAsVyxIKTsKCiAgLy8gR3JpZAogIGN0eC5zYXZlKCk7CiAgY3R4LnN0cm9rZVN0eWxlID0gJyMwYTFhMjQnOwogIGN0eC5saW5lV2lkdGggPSAwLjU7CiAgY3R4Lmdsb2JhbEFscGhhID0gMC42OwogIGZvciAoY29uc3QgZ2wgb2YgZ3JpZExpbmVzKSB7CiAgICBjdHguYmVnaW5QYXRoKCk7IGN0eC5tb3ZlVG8oZ2wueDEsZ2wueTEpOyBjdHgubGluZVRvKGdsLngyLGdsLnkyKTsgY3R4LnN0cm9rZSgpOwogIH0KICBjdHgucmVzdG9yZSgpOwoKICAvLyBGYWludCBvcmJpdHMKICBbUl9JTk5FUiwgUl9SRUxBWSwgUl9PVVRFUl0uZm9yRWFjaCgocixpKSA9PiB7CiAgICBjdHguc2F2ZSgpOwogICAgY3R4LnN0cm9rZVN0eWxlID0gWycjMDBmZmM4JywnIzFhM2E0YScsJyMxYTJhMzQnXVtpXTsKICAgIGN0eC5saW5lV2lkdGggPSBbMSwwLjUsMC41XVtpXTsKICAgIGN0eC5nbG9iYWxBbHBoYSA9IFswLjI1LDAuMTgsMC4xMl1baV07CiAgICBjdHguc2V0TGluZURhc2goWzQsOF0pOwogICAgY3R4LmJlZ2luUGF0aCgpOyBjdHguYXJjKENYLENZLHIsMCxNYXRoLlBJKjIpOyBjdHguc3Ryb2tlKCk7CiAgICBjdHgucmVzdG9yZSgpOwogIH0pOwoKICAvLyBSZWxheSDihpIgSG9zdCBjb25uZWN0aW9ucwogIGZvciAoY29uc3QgcmVsYXkgb2YgT2JqZWN0LnZhbHVlcyhyZWxheXMpKSB7CiAgICBkcmF3TGluZShyZWxheS54LCByZWxheS55LCBDWCwgQ1ksICcjMGQzYTRhJywgMC44LCAwLjUsIFs2LDEwXSk7CiAgfQoKICAvLyBBdHRhY2sgbm9kZSDihpIgcmVsYXkgY29ubmVjdGlvbnMKICBmb3IgKGNvbnN0IFthdGssIG5vZGVdIG9mIE9iamVjdC5lbnRyaWVzKG5vZGVzKSkgewogICAgY29uc3QgcmVsYXkgPSByZWxheXNbbm9kZS5yZWxheV07CiAgICBjb25zdCBoZWF0ID0gTWF0aC5taW4obm9kZS5oZWF0LCAxKTsKICAgIGNvbnN0IGNvbCA9IGhlYXQgPiAwID8gYHJnYmEoMjU1LDQ1LDg1LCR7aGVhdCowLjV9KWAgOiAncmdiYSgyNiw1OCw3NCwwLjQpJzsKICAgIGRyYXdMaW5lKG5vZGUueCwgbm9kZS55LCByZWxheS54LCByZWxheS55LCBjb2wsIDAuNiwgMC43LCBbMyw4XSk7CiAgfQoKICAvLyBWaXJ1cyDihpIgb3V0ZXIgbm9kZXMgY29ubmVjdGlvbnMgKGZhaW50IHdlYikKICBmb3IgKGNvbnN0IG5vZGUgb2YgT2JqZWN0LnZhbHVlcyhub2RlcykpIHsKICAgIGNvbnN0IGhlYXQgPSBNYXRoLm1pbihub2RlLmhlYXQsIDEpOwogICAgaWYgKGhlYXQgPiAwLjEpIHsKICAgICAgZHJhd0xpbmUodmlydXNQb3MueCwgdmlydXNQb3MueSwgbm9kZS54LCBub2RlLnksCiAgICAgICAgYHJnYmEoMjU1LDQ1LDg1LCR7aGVhdCowLjI1fSlgLCAwLjUsIDEsIFsyLDEyXSk7CiAgICB9CiAgfQoKICAvLyDilIDilIAgQXR0YWNrIG5vZGVzIOKUgOKUgAogIGZvciAoY29uc3QgW2F0aywgbm9kZV0gb2YgT2JqZWN0LmVudHJpZXMobm9kZXMpKSB7CiAgICBjb25zdCBoZWF0ID0gTWF0aC5taW4obm9kZS5oZWF0LCAxKTsKICAgIG5vZGUuaGVhdCA9IE1hdGgubWF4KDAsIG5vZGUuaGVhdCAtIDAuMDEyKTsKICAgIGNvbnN0IHIgPSA1ICsgaGVhdCo0OwogICAgY29uc3QgY29sID0gbm9kZS5hY3RpdmUgPyAnI2ZmMmQ1NScgOiAnIzFhNGE1YSc7CiAgICBjb25zdCBnbENvbCA9IG5vZGUuYWN0aXZlID8gJyNmZjJkNTUnIDogJyMxYTRhNWEnOwogICAgZHJhd0dsb3dDaXJjbGUobm9kZS54LCBub2RlLnksIHIsIGNvbCwgciozKTsKICAgIC8vIGxhYmVsCiAgICBjb25zdCBsYWJlbFggPSBub2RlLnggKyBNYXRoLmNvcyhub2RlLmFuZ2xlKSAqIDE4OwogICAgY29uc3QgbGFiZWxZID0gbm9kZS55ICsgTWF0aC5zaW4obm9kZS5hbmdsZSkgKiAxODsKICAgIGN0eC5zYXZlKCk7CiAgICBjdHguZm9udCA9ICI5cHggJ1NoYXJlIFRlY2ggTW9ubycsIG1vbm9zcGFjZSI7CiAgICBjdHguZmlsbFN0eWxlID0gaGVhdCA+IDAuMyA/ICcjZmY4MDkwJyA6ICcjMmE1YTZhJzsKICAgIGN0eC50ZXh0QWxpZ24gPSAnY2VudGVyJzsKICAgIGN0eC50ZXh0QmFzZWxpbmUgPSAnbWlkZGxlJzsKICAgIGN0eC5maWxsVGV4dChhdGsucmVwbGFjZSgvXy9nLCcgJyksIGxhYmVsWCwgbGFiZWxZKTsKICAgIGN0eC5yZXN0b3JlKCk7CiAgICBub2RlLmFjdGl2ZSA9IGZhbHNlOwogIH0KCiAgLy8g4pSA4pSAIFJlbGF5IG5vZGVzIOKUgOKUgAogIGZvciAoY29uc3QgcmVsYXkgb2YgT2JqZWN0LnZhbHVlcyhyZWxheXMpKSB7CiAgICBjb25zdCBwdWxzZSA9IDAuNSArIDAuNSAqIE1hdGguc2luKGFuaW1GcmFtZSowLjA2KTsKICAgIGRyYXdHbG93Q2lyY2xlKHJlbGF5LngsIHJlbGF5LnksIDgrcHVsc2UqMiwgJyMxYThhYTgnLCAyNCk7CiAgICBjdHguc2F2ZSgpOwogICAgY3R4LmZvbnQgPSAiOXB4ICdPcmJpdHJvbicsIG1vbm9zcGFjZSI7CiAgICBjdHguZmlsbFN0eWxlID0gJyM0YWFhYzgnOwogICAgY3R4LnRleHRBbGlnbiA9ICdjZW50ZXInOwogICAgY3R4LnRleHRCYXNlbGluZSA9ICdtaWRkbGUnOwogICAgY3R4LmZpbGxUZXh0KHJlbGF5LmxhYmVsLCByZWxheS54LCByZWxheS55IC0gMTgpOwogICAgY3R4LnJlc3RvcmUoKTsKICB9CgogIC8vIOKUgOKUgCBIT1NUIG5vZGUg4pSA4pSACiAgY29uc3QgaG9zdFB1bHNlID0gMC41ICsgMC41ICogTWF0aC5zaW4oYW5pbUZyYW1lICogMC4wNCk7CiAgY29uc3QgaG9zdFIgPSBSX0lOTkVSICogMC40NTsKICBjb25zdCBob3N0Q29sb3IgPSBob3N0LmludGVncml0eSA+IDUwID8gJyMwMGZmYzgnIDogaG9zdC5pbnRlZ3JpdHkgPiAyMCA/ICcjZjBjMDQwJyA6ICcjZmYyZDU1JzsKICAvLyBnbG93IHJpbmdzCiAgZm9yIChsZXQgaT0zOyBpPj0wOyBpLS0pIHsKICAgIGN0eC5zYXZlKCk7CiAgICBjdHguZ2xvYmFsQWxwaGEgPSAwLjA0ICsgaSowLjA0OwogICAgY3R4LnN0cm9rZVN0eWxlID0gaG9zdENvbG9yOwogICAgY3R4LmxpbmVXaWR0aCA9IDI7CiAgICBjdHguYmVnaW5QYXRoKCk7CiAgICBjdHguYXJjKENYLCBDWSwgaG9zdFIgKyBpKjEyICsgaG9zdFB1bHNlKjQsIDAsIE1hdGguUEkqMik7CiAgICBjdHguc3Ryb2tlKCk7CiAgICBjdHgucmVzdG9yZSgpOwogIH0KICBkcmF3R2xvd0NpcmNsZShDWCwgQ1ksIGhvc3RSLCBob3N0Q29sb3IsIGhvc3RSKjIuOCk7CgogIC8vIEhvc3QgaW50ZWdyaXR5IGFyYwogIGNvbnN0IGludEFuZ2xlID0gKGhvc3QuaW50ZWdyaXR5LzEwMCkgKiBNYXRoLlBJKjIgLSBNYXRoLlBJLzI7CiAgY3R4LnNhdmUoKTsKICBjdHguc3Ryb2tlU3R5bGUgPSAnIzAwMWExNCc7CiAgY3R4LmxpbmVXaWR0aCA9IDU7CiAgY3R4LmJlZ2luUGF0aCgpOyBjdHguYXJjKENYLENZLGhvc3RSKzgsMCxNYXRoLlBJKjIpOyBjdHguc3Ryb2tlKCk7CiAgY3R4LnN0cm9rZVN0eWxlID0gaG9zdENvbG9yOwogIGN0eC5zaGFkb3dDb2xvciA9IGhvc3RDb2xvcjsgY3R4LnNoYWRvd0JsdXIgPSA4OwogIGN0eC5iZWdpblBhdGgoKTsgY3R4LmFyYyhDWCxDWSxob3N0Uis4LC1NYXRoLlBJLzIsaW50QW5nbGUpOyBjdHguc3Ryb2tlKCk7CiAgY3R4LnJlc3RvcmUoKTsKCiAgLy8gSG9zdCBmbGFzaCBvbiBoaXQKICBpZiAoaG9zdEhpdCA+IDApIHsKICAgIGN0eC5zYXZlKCk7CiAgICBjdHguZ2xvYmFsQWxwaGEgPSBob3N0SGl0ICogMC4zNTsKICAgIGN0eC5maWxsU3R5bGUgPSAnI2ZmMmQ1NSc7CiAgICBjdHguYmVnaW5QYXRoKCk7IGN0eC5hcmMoQ1gsQ1ksaG9zdFIrMjAsMCxNYXRoLlBJKjIpOyBjdHguZmlsbCgpOwogICAgY3R4LnJlc3RvcmUoKTsKICAgIGhvc3RIaXQgLT0gMC4wODsKICB9CgogIGRyYXdUZXh0KCdIT1NUJywgQ1gsIENZLTYsIGhvc3RDb2xvciwgMTIsICdPcmJpdHJvbicpOwogIGRyYXdUZXh0KGAke2hvc3QuaW50ZWdyaXR5LnRvRml4ZWQoMCl9JWAsIENYLCBDWSsxMCwgaG9zdENvbG9yKydhYScsIDEwKTsKCiAgLy8g4pSA4pSAIFZJUlVTIGVudGl0eSDilIDilIAKICBjb25zdCB2cCA9IGFuaW1GcmFtZSAqIDAuMDE4OwogIGNvbnN0IHZpcnVzWCA9IENYICsgKFJfT1VURVIqMS4xOCkqTWF0aC5jb3ModnAqMC4zKSAqIDAuMDUgKyB2aXJ1c1Bvcy54IC0gQ1g7CiAgY29uc3QgdmlydXNZID0gQ1kgKyAoUl9PVVRFUiowLjMpKk1hdGguc2luKHZwKjAuNCkgKiAwLjEgICsgdmlydXNQb3MueSAtIENZOwogIGNvbnN0IHZpcnVzQ29sb3IgPSB2aXJ1cy5pbnRlZ3JpdHkgPiA1MCA/ICcjZmYyZDU1JyA6IHZpcnVzLmludGVncml0eSA+IDIwID8gJyNmMGMwNDAnIDogJyM4ODQ0NDQnOwogIGNvbnN0IHZyID0gMTQgKyAzKk1hdGguc2luKGFuaW1GcmFtZSowLjA4KTsKICBkcmF3R2xvd0NpcmNsZSh2aXJ1c1gsIHZpcnVzWSwgdnIsIHZpcnVzQ29sb3IsIHZyKjMpOwogIC8vIEhleGFnb24gYm9yZGVyCiAgY3R4LnNhdmUoKTsKICBjdHguc3Ryb2tlU3R5bGUgPSB2aXJ1c0NvbG9yOwogIGN0eC5saW5lV2lkdGggPSAxLjU7CiAgY3R4LnNoYWRvd0NvbG9yID0gdmlydXNDb2xvcjsgY3R4LnNoYWRvd0JsdXIgPSAxMDsKICBjdHguYmVnaW5QYXRoKCk7CiAgZm9yIChsZXQgaT0wOyBpPDY7IGkrKykgewogICAgY29uc3QgYSA9IChpLzYpKk1hdGguUEkqMiArIGFuaW1GcmFtZSowLjAxNTsKICAgIGNvbnN0IHggPSB2aXJ1c1ggKyBNYXRoLmNvcyhhKSoodnIrMTApOwogICAgY29uc3QgeSA9IHZpcnVzWSArIE1hdGguc2luKGEpKih2cisxMCk7CiAgICBpPT09MCA/IGN0eC5tb3ZlVG8oeCx5KSA6IGN0eC5saW5lVG8oeCx5KTsKICB9CiAgY3R4LmNsb3NlUGF0aCgpOyBjdHguc3Ryb2tlKCk7CiAgY3R4LnJlc3RvcmUoKTsKICBkcmF3VGV4dCgnVklSVVMnLCB2aXJ1c1gsIHZpcnVzWS00LCB2aXJ1c0NvbG9yLCAxMCwgJ09yYml0cm9uJyk7CiAgZHJhd1RleHQoYEdFTiAke3ZpcnVzLmdlbmVyYXRpb259YCwgdmlydXNYLCB2aXJ1c1krMTAsIHZpcnVzQ29sb3IrJzk5JywgOSk7CgogIC8vIOKUgOKUgCBQYXJ0aWNsZXMgKGF0dGFjay9kZWZlbnNlIHByb2plY3RpbGVzKSDilIDilIAKICBjb25zdCBhbGl2ZSA9IFtdOwogIGZvciAoY29uc3QgcCBvZiBwYXJ0aWNsZXMpIHsKICAgIHAudCArPSAwLjAyMiAvIHAuZHVyOwogICAgaWYgKHAudCA+PSAxKSB7CiAgICAgIGlmIChwLmlzQXR0YWNrKSBzcGF3bkV4cGxvc2lvbihwLnRvWCwgcC50b1ksIHAuY29sb3IsIDIwKTsKICAgICAgZWxzZSBzcGF3blNoaWVsZFJpbmcocC50b1gsIHAudG9ZKTsKICAgICAgY29udGludWU7CiAgICB9CiAgICBjb25zdCBtaWQgPSB7eDpwLm1pZFgsIHk6cC5taWRZfTsKICAgIGNvbnN0IHBvcyA9IGJlemllclBvaW50KHt4OnAuZnJvbVgseTpwLmZyb21ZfSwgbWlkLCB7eDpwLnRvWCx5OnAudG9ZfSwgcC50KTsKICAgIGNvbnN0IGFscGhhID0gTWF0aC5zaW4ocC50ICogTWF0aC5QSSk7CiAgICBjb25zdCByID0gcC5pc0F0dGFjayA/IDQgOiA1OwogICAgY3R4LnNhdmUoKTsKICAgIGN0eC5nbG9iYWxBbHBoYSA9IGFscGhhOwogICAgZHJhd0dsb3dDaXJjbGUocG9zLngsIHBvcy55LCByLCBwLmNvbG9yLCByKjQpOwogICAgaWYgKHAubGFiZWwpIHsKICAgICAgY3R4LmZvbnQgPSAiOHB4ICdTaGFyZSBUZWNoIE1vbm8nIjsKICAgICAgY3R4LmZpbGxTdHlsZSA9IHAuY29sb3I7CiAgICAgIGN0eC50ZXh0QWxpZ24gPSAnY2VudGVyJzsKICAgICAgY3R4LnRleHRCYXNlbGluZSA9ICdib3R0b20nOwogICAgICBjdHguZmlsbFRleHQocC5sYWJlbCwgcG9zLngsIHBvcy55LTgpOwogICAgfQogICAgY3R4LnJlc3RvcmUoKTsKICAgIC8vIFRhaWwKICAgIGlmIChwLnQgPiAwLjA1KSB7CiAgICAgIGNvbnN0IHByZXYgPSBiZXppZXJQb2ludCh7eDpwLmZyb21YLHk6cC5mcm9tWX0sIG1pZCwge3g6cC50b1gseTpwLnRvWX0sIHAudC0wLjA1KTsKICAgICAgY3R4LnNhdmUoKTsKICAgICAgY3R4LnN0cm9rZVN0eWxlID0gcC5jb2xvcjsKICAgICAgY3R4LmxpbmVXaWR0aCA9IDI7CiAgICAgIGN0eC5nbG9iYWxBbHBoYSA9IGFscGhhICogMC40OwogICAgICBjdHguYmVnaW5QYXRoKCk7IGN0eC5tb3ZlVG8ocHJldi54LHByZXYueSk7IGN0eC5saW5lVG8ocG9zLngscG9zLnkpOyBjdHguc3Ryb2tlKCk7CiAgICAgIGN0eC5yZXN0b3JlKCk7CiAgICB9CiAgICBhbGl2ZS5wdXNoKHApOwogIH0KICBwYXJ0aWNsZXMgPSBhbGl2ZTsKCiAgLy8g4pSA4pSAIFNoaWVsZCByaW5ncyDilIDilIAKICBjb25zdCBhbGl2ZVMgPSBbXTsKICBmb3IgKGNvbnN0IHMgb2Ygc2hpZWxkUmluZ3MpIHsKICAgIHMuciArPSA0OyBzLmxpZmUgLT0gMC4wNjsKICAgIGlmIChzLmxpZmUgPD0gMCkgY29udGludWU7CiAgICBjdHguc2F2ZSgpOwogICAgY3R4LnN0cm9rZVN0eWxlID0gJyMwMGZmYzgnOwogICAgY3R4LmxpbmVXaWR0aCA9IDI7CiAgICBjdHguZ2xvYmFsQWxwaGEgPSBzLmxpZmUgKiAwLjc7CiAgICBjdHguc2hhZG93Q29sb3IgPSAnIzAwZmZjOCc7IGN0eC5zaGFkb3dCbHVyID0gMTA7CiAgICBjdHguYmVnaW5QYXRoKCk7IGN0eC5hcmMocy54LHMueSxzLnIsMCxNYXRoLlBJKjIpOyBjdHguc3Ryb2tlKCk7CiAgICBjdHgucmVzdG9yZSgpOwogICAgYWxpdmVTLnB1c2gocyk7CiAgfQogIHNoaWVsZFJpbmdzID0gYWxpdmVTOwoKICAvLyDilIDilIAgRXhwbG9zaW9ucyDilIDilIAKICBjb25zdCBhbGl2ZUUgPSBbXTsKICBmb3IgKGNvbnN0IGUgb2YgZXhwbG9zaW9ucykgewogICAgZS54ICs9IGUudng7IGUueSArPSBlLnZ5OwogICAgZS52eCAqPSAwLjkyOyBlLnZ5ICo9IDAuOTI7CiAgICBlLmxpZmUgLT0gMC4wNjsKICAgIGlmIChlLmxpZmUgPD0gMCkgY29udGludWU7CiAgICBjdHguc2F2ZSgpOwogICAgY3R4Lmdsb2JhbEFscGhhID0gZS5saWZlOwogICAgY3R4LmZpbGxTdHlsZSA9IGUuY29sb3I7CiAgICBjdHguYmVnaW5QYXRoKCk7IGN0eC5hcmMoZS54LCBlLnksIGUuc2l6ZSplLmxpZmUsIDAsIE1hdGguUEkqMik7IGN0eC5maWxsKCk7CiAgICBjdHgucmVzdG9yZSgpOwogICAgYWxpdmVFLnB1c2goZSk7CiAgfQogIGV4cGxvc2lvbnMgPSBhbGl2ZUU7CgogIHJlcXVlc3RBbmltYXRpb25GcmFtZShkcmF3KTsKfQoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vICBTSU1VTEFUSU9OIFNURVAgKG1pcnJvcnMgUHl0aG9uIGxvZ2ljIHRpY2stYnktdGljaykKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCmNvbnN0IExPR19NQVggPSA4Owpjb25zdCBsb2dFbCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdsb2dQYW5lbCcpOwoKZnVuY3Rpb24gYWRkTG9nKG1zZywgdHlwZSkgewogIGNvbnN0IGRpdiA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpOwogIGRpdi5jbGFzc05hbWUgPSBgbG9nLWxpbmUgJHt0eXBlfWA7CiAgZGl2LnRleHRDb250ZW50ID0gbXNnOwogIGxvZ0VsLmluc2VydEJlZm9yZShkaXYsIGxvZ0VsLmZpcnN0Q2hpbGQpOwogIHdoaWxlIChsb2dFbC5jaGlsZHJlbi5sZW5ndGggPiBMT0dfTUFYKSBsb2dFbC5yZW1vdmVDaGlsZChsb2dFbC5sYXN0Q2hpbGQpOwp9CgpmdW5jdGlvbiB1cGRhdGVVSSgpIHsKICAvLyBIb3N0CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2hJbnRWYWwnKS50ZXh0Q29udGVudCA9IGhvc3QuaW50ZWdyaXR5LnRvRml4ZWQoMSkrJyUnOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdoSW50QmFyJykuc3R5bGUud2lkdGggPSBob3N0LmludGVncml0eSsnJSc7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2hVcHRpbWUnKS50ZXh0Q29udGVudCA9IGhvc3QudXB0aW1lOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdoRXNjYXBlcycpLnRleHRDb250ZW50ID0gaG9zdC5lc2NhcGVzOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdoQnJlYWNoZXMnKS50ZXh0Q29udGVudCA9IGhvc3QuYnJlYWNoZXM7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3NoaWVsZExpc3QnKS5pbm5lckhUTUwgPQogICAgaG9zdC5hY3RpdmVTaGllbGRzLnNsaWNlKC00KS5tYXAocz0+YDxkaXY+4pa4ICR7c308L2Rpdj5gKS5qb2luKCcnKTsKCiAgLy8gVmlydXMKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndkludFZhbCcpLnRleHRDb250ZW50ID0gdmlydXMuaW50ZWdyaXR5LnRvRml4ZWQoMSkrJyUnOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd2SW50QmFyJykuc3R5bGUud2lkdGggPSB2aXJ1cy5pbnRlZ3JpdHkrJyUnOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd2R2VuJykudGV4dENvbnRlbnQgPSB2aXJ1cy5nZW5lcmF0aW9uOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd2TXV0JykudGV4dENvbnRlbnQgPSB2aXJ1cy5tdXRhdGlvbnM7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3ZIaXRzJykudGV4dENvbnRlbnQgPSB2aXJ1cy5oaXRzOwogIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd2QmxvY2tlZCcpLnRleHRDb250ZW50ID0gdmlydXMuYmxvY2tlZDsKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndGlja0Rpc3BsYXknKS50ZXh0Q29udGVudCA9IGBUOiR7U3RyaW5nKHRpY2spLnBhZFN0YXJ0KDQsJzAnKX1gOwoKICAvLyBHZW5lIHBvb2wgKHRvcCA4KQogIGNvbnN0IHNvcnRlZCA9IE9iamVjdC5lbnRyaWVzKHZpcnVzLmdlbmVQb29sKS5zb3J0KChhLGIpPT5iWzFdLWFbMV0pLnNsaWNlKDAsOCk7CiAgY29uc3QgbWF4VyA9IHNvcnRlZFswXT8uWzFdIHx8IDE7CiAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2dlbmVMaXN0JykuaW5uZXJIVE1MID0gc29ydGVkLm1hcCgoW2Esd10pPT5gCiAgICA8ZGl2IGNsYXNzPSJnZW5lLWl0ZW0iPgogICAgICA8c3BhbiBjbGFzcz0iZ2VuZS1uYW1lIj4ke2EucmVwbGFjZSgvXy9nLCcgJyl9PC9zcGFuPgogICAgICA8ZGl2IGNsYXNzPSJnZW5lLWJhciIgc3R5bGU9IndpZHRoOiR7TWF0aC5yb3VuZCgody9tYXhXKSo2MCl9cHgiPjwvZGl2PgogICAgPC9kaXY+YCkuam9pbignJyk7Cn0KCmZ1bmN0aW9uIHNpbVN0ZXAoKSB7CiAgdGljaysrOwogIGhvc3QudXB0aW1lKys7CgogIGNvbnN0IGF0dGFjayA9IHZpcnVzQ2hvb3NlQXR0YWNrKCk7CiAgY29uc3QgYXRrRmxhdm9yID0gQVRUQUNLX0RFRkVOU0VfUEFJUlNbYXR0YWNrXVsxXTsKICBjb25zdCB7IHN1Y2Nlc3MsIGRlZmVuc2UsIGZsYXZvciB9ID0gaG9zdEFwcGx5RGVmZW5zZShhdHRhY2spOwoKICAvLyBBY3RpdmF0ZSBub2RlIHZpc3VhbGx5CiAgaWYgKG5vZGVzW2F0dGFja10pIHsKICAgIG5vZGVzW2F0dGFja10uYWN0aXZlID0gdHJ1ZTsKICAgIG5vZGVzW2F0dGFja10uaGVhdCA9IDEuMDsKICB9CgogIGNvbnN0IG5vZGUgPSBub2Rlc1thdHRhY2tdOwogIGNvbnN0IHJlbGF5ID0gbm9kZSA/IHJlbGF5c1tub2RlLnJlbGF5XSA6IHJlbGF5c1snTkVUV09SSyddOwoKICBpZiAoc3VjY2VzcykgewogICAgY29uc3QgZG1nID0gcmFuZEZsb2F0KDQuMCwgMTIuMCk7CiAgICB2aXJ1cy5pbnRlZ3JpdHkgPSBNYXRoLm1heCgwLCB2aXJ1cy5pbnRlZ3JpdHkgLSBkbWcpOwogICAgdmlydXNSZWluZm9yY2UoYXR0YWNrLCBmYWxzZSk7CgogICAgLy8gVmlzdWFsOiB2aXJ1cyBmaXJlcyBhdCBhdHRhY2sgbm9kZSwgaG9zdCBmaXJlcyBiYWNrCiAgICBzcGF3blBhcnRpY2xlKHZpcnVzUG9zLngsIHZpcnVzUG9zLnksIG5vZGUueCwgbm9kZS55LCAnI2ZmMmQ1NScsIHRydWUsIGF0dGFjay5yZXBsYWNlKC9fL2csJyAnKSk7CiAgICBzZXRUaW1lb3V0KCgpPT57CiAgICAgIHNwYXduUGFydGljbGUoQ1gsIENZLCB2aXJ1c1Bvcy54LCB2aXJ1c1Bvcy55LCAnIzAwZmZjOCcsIGZhbHNlLCBkZWZlbnNlLnJlcGxhY2UoL18vZywnICcpKTsKICAgICAgc3Bhd25TaGllbGRSaW5nKENYLCBDWSk7CiAgICB9LCAzMDApOwoKICAgIGFkZExvZyhgVCR7dGlja30gQkxPQ0tFRCBbJHthdHRhY2t9XSDihpIgJHtkZWZlbnNlfSDigJQgdmlydXMgLSR7ZG1nLnRvRml4ZWQoMSl9YCwgJ2VzY2FwZScpOwogIH0gZWxzZSB7CiAgICBjb25zdCBkbWcgPSByYW5kRmxvYXQoNi4wLCAxOC4wKTsKICAgIGhvc3QuaW50ZWdyaXR5ID0gTWF0aC5tYXgoMCwgaG9zdC5pbnRlZ3JpdHkgLSBkbWcpOwogICAgdmlydXNSZWluZm9yY2UoYXR0YWNrLCB0cnVlKTsKICAgIGhvc3RIaXQgPSAxLjA7CgogICAgLy8gVmlzdWFsOiB2aXJ1cyBwYWNrZXQgdHJhdmVscyB0byBob3N0CiAgICBzcGF3blBhcnRpY2xlKHZpcnVzUG9zLngsIHZpcnVzUG9zLnksIENYLCBDWSwgJyNmZjJkNTUnLCB0cnVlLCBhdHRhY2sucmVwbGFjZSgvXy9nLCcgJykpOwogICAgc2V0VGltZW91dCgoKT0+c3Bhd25FeHBsb3Npb24oQ1gsIENZLCAnI2ZmMmQ1NScsIDMwKSwgNTAwKTsKCiAgICBhZGRMb2coYFQke3RpY2t9IEJSRUFDSCEgWyR7YXR0YWNrfV0gdnMgWyR7ZGVmZW5zZX1dIOKAlCBob3N0IC0ke2RtZy50b0ZpeGVkKDEpfWAsICdicmVhY2gnKTsKICB9CgogIC8vIE11dGF0aW9uCiAgY29uc3QgbXV0ID0gdmlydXNNYXliZXNNdXRhdGUoKTsKICBpZiAobXV0KSBhZGRMb2coYFQke3RpY2t9IE1VVEFUSU9OIOKGkiBnZW5lIFske211dH1dIGV2b2x2ZWQgKGdlbiAke3ZpcnVzLmdlbmVyYXRpb259KWAsICdtdXRhdGUnKTsKCiAgLy8gVmlydXMgcmVnZW4KICBpZiAodmlydXMuaW50ZWdyaXR5IDwgdmlydXMubWF4KSB2aXJ1cy5pbnRlZ3JpdHkgPSBNYXRoLm1pbigxMDAsIHZpcnVzLmludGVncml0eSArIHJhbmRGbG9hdCgwLjUsMi4wKSk7CgogIC8vIEhvc3QgcmVnZW4KICBpZiAoaG9zdC5pbnRlZ3JpdHkgPCAxMDAgJiYgaG9zdC5pbnRlZ3JpdHkgPiAxMCkKICAgIGhvc3QuaW50ZWdyaXR5ID0gTWF0aC5taW4oMTAwLCBob3N0LmludGVncml0eSArIHJhbmRGbG9hdCgwLjMsMS4yKSk7CgogIC8vIFZpcnVzIGRlYXRoIOKGkiByZXNwYXduCiAgaWYgKHZpcnVzLmludGVncml0eSA8PSAwKSB7CiAgICBjb25zdCBvbGRQb29sID0gey4uLnZpcnVzLmdlbmVQb29sfTsKICAgIGNvbnN0IG5ld1Bvb2wgPSB7fTsKICAgIGZvciAoY29uc3QgW2ssdl0gb2YgT2JqZWN0LmVudHJpZXMob2xkUG9vbCkpIG5ld1Bvb2xba10gPSB2ICogMS4xNTsKICAgIHZpcnVzLmdlbmVQb29sID0gbmV3UG9vbDsKICAgIHZpcnVzLmludGVncml0eSA9IDEwMDsKICAgIHZpcnVzLmdlbmVyYXRpb24rKzsKICAgIGFkZExvZyhgVCR7dGlja30gVklSVVMgUkVTUEFXTkVEIOKAlCBnZW4gJHt2aXJ1cy5nZW5lcmF0aW9ufSB3aXRoIHJlaW5mb3JjZWQgZ2Vub21lYCwgJ3Jlc3Bhd24nKTsKICB9CgogIC8vIEhvc3QgZGVhdGgKICBpZiAoaG9zdC5pbnRlZ3JpdHkgPD0gMCkgewogICAgYWRkTG9nKGBUJHt0aWNrfSAhISBIT1NUIFRFUk1JTkFURUQgISFgLCAnYnJlYWNoJyk7CiAgICBjbGVhckludGVydmFsKHNpbUludGVydmFsKTsKICAgIHNldFRpbWVvdXQoKCk9PnsgaWYoY29uZmlybSgnSG9zdCB0ZXJtaW5hdGVkLiBSZXN0YXJ0IHNpbXVsYXRpb24/JykpIGxvY2F0aW9uLnJlbG9hZCgpOyB9LCA1MDApOwogICAgcmV0dXJuOwogIH0KCiAgdXBkYXRlVUkoKTsKfQoKLy8g4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQCi8vICBCT09UCi8vIOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkAp3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgYnVpbGRMYXlvdXQpOwpidWlsZExheW91dCgpOwpkcmF3KCk7CgovLyBTdGFnZ2VyIHN0YXJ0CnNldFRpbWVvdXQoKCk9PnsKICBjb25zdCBzaW1JbnRlcnZhbCA9IHNldEludGVydmFsKHNpbVN0ZXAsIDcwMCk7CiAgd2luZG93LnNpbUludGVydmFsID0gc2ltSW50ZXJ2YWw7Cn0sIDgwMCk7Cjwvc2NyaXB0Pgo8L2JvZHk+CjwvaHRtbD4K";
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  const blob = new Blob([bytes],{type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const iframe = document.getElementById('survivalFrame');
+  if(iframe) iframe.src = url;
+})();
+</script>
+</body>
+</html>
