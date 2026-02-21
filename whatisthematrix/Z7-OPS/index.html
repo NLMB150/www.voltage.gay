@@ -3,2185 +3,822 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MODAL SYSTEM v6.1.4 — Neo's Construct IDE</title>
+<title>MODAL FRAMEWORK v6.1 — CONSTRUCT OS</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Courier+Prime:wght@400;700&display=swap');
-
-  :root {
-    --bg: #010f03;
-    --bg2: #020d04;
-    --bg3: #031008;
-    --panel: #030f05;
-    --panel2: #041408;
-    --border: #0d3b12;
-    --border2: #1a6b22;
-    --green: #00ff41;
-    --green2: #00cc33;
-    --green3: #00891f;
-    --green4: #005c14;
-    --green-dim: #003b0a;
-    --green-glow: rgba(0, 255, 65, 0.15);
-    --red: #ff2020;
-    --red2: #cc0000;
-    --amber: #ffa500;
-    --text: #00cc33;
-    --text-dim: #007a1f;
-    --text-bright: #00ff41;
-    --font-mono: 'Share Tech Mono', monospace;
-    --font-display: 'VT323', monospace;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    cursor: default;
-  }
-
-  /* SCANLINE OVERLAY */
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
-    pointer-events: none;
-    z-index: 9998;
-  }
-
-  /* CRT VIGNETTE */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
-    pointer-events: none;
-    z-index: 9997;
-  }
-
-  /* ══════════════════════════════════════════
-     TOP MENU BAR
-  ══════════════════════════════════════════ */
-  #menubar {
-    background: #000;
-    border-bottom: 1px solid var(--border2);
-    display: flex;
-    align-items: center;
-    height: 24px;
-    padding: 0 8px;
-    flex-shrink: 0;
-    gap: 4px;
-    position: relative;
-    z-index: 100;
-  }
-
-  #menubar .logo {
-    font-family: var(--font-display);
-    font-size: 18px;
-    color: var(--green);
-    letter-spacing: 2px;
-    margin-right: 12px;
-    text-shadow: 0 0 8px var(--green);
-    animation: pulse 3s ease-in-out infinite;
-  }
-
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
-
-  #menubar .menu-item {
-    padding: 0 8px;
-    height: 24px;
-    line-height: 24px;
-    cursor: pointer;
-    color: var(--text);
-    font-size: 11px;
-    letter-spacing: 1px;
-  }
-  #menubar .menu-item:hover { background: var(--green-dim); color: var(--green); }
-
-  #menubar .status-right {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 10px;
-    color: var(--text-dim);
-  }
-
-  #menubar .status-right .live-dot {
-    width: 6px; height: 6px;
-    background: var(--green);
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 4px;
-    animation: blink 1s step-end infinite;
-    box-shadow: 0 0 6px var(--green);
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-  /* ══════════════════════════════════════════
-     TOOLBAR
-  ══════════════════════════════════════════ */
-  #toolbar {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    height: 28px;
-    padding: 0 8px;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-
-  .tb-btn {
-    padding: 2px 10px;
-    border: 1px solid var(--border2);
-    background: var(--bg3);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
-  }
-  .tb-btn:hover { background: var(--green-dim); color: var(--green); border-color: var(--green3); }
-  .tb-btn.active { background: var(--green-dim); color: var(--green); border-color: var(--green); }
-  .tb-btn.danger { border-color: var(--red2); color: var(--red); }
-  .tb-btn.danger:hover { background: rgba(204,0,0,0.2); }
-
-  .tb-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
-
-  /* ══════════════════════════════════════════
-     TAB BAR
-  ══════════════════════════════════════════ */
-  #tabbar {
-    background: #000;
-    border-bottom: 1px solid var(--border2);
-    display: flex;
-    align-items: flex-end;
-    height: 26px;
-    padding: 0 4px;
-    flex-shrink: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .tab {
-    padding: 0 14px;
-    height: 22px;
-    line-height: 22px;
-    font-size: 10px;
-    cursor: pointer;
-    border: 1px solid var(--border);
-    border-bottom: none;
-    background: var(--bg2);
-    color: var(--text-dim);
-    white-space: nowrap;
-    margin-right: 2px;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .tab.active { background: var(--panel); color: var(--green); border-color: var(--border2); }
-  .tab:hover:not(.active) { color: var(--text); }
-  .tab .tab-dot { width: 5px; height: 5px; border-radius: 50%; }
-  .tab .tab-dot.modified { background: var(--amber); }
-  .tab .tab-dot.clean { background: transparent; border: 1px solid var(--text-dim); }
-
-  /* ══════════════════════════════════════════
-     MAIN LAYOUT
-  ══════════════════════════════════════════ */
-  #main {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 190px 1fr 280px;
-    grid-template-rows: 1fr 200px;
-    gap: 2px;
-    background: #000;
-    overflow: hidden;
-    min-height: 0;
-  }
-
-  /* ══════════════════════════════════════════
-     SIDEBAR
-  ══════════════════════════════════════════ */
-  #sidebar {
-    grid-row: 1 / 3;
-    background: var(--panel);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .panel-title {
-    background: var(--bg3);
-    border-bottom: 1px solid var(--border2);
-    padding: 4px 8px;
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: var(--green3);
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .panel-title::before { content: '▶'; font-size: 7px; }
-
-  #file-tree {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px 0;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green4) transparent;
-  }
-
-  .tree-folder {
-    padding: 3px 8px 3px 12px;
-    color: var(--green2);
-    font-size: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .tree-folder:hover { background: var(--green-dim); }
-  .tree-folder .icon { color: var(--amber); font-size: 9px; }
-
-  .tree-file {
-    padding: 2px 8px 2px 28px;
-    color: var(--text-dim);
-    font-size: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    transition: all 0.1s;
-  }
-  .tree-file:hover { background: var(--green-dim); color: var(--text); }
-  .tree-file.active { background: rgba(0,200,50,0.1); color: var(--green); border-left: 2px solid var(--green); }
-  .tree-file .ext { font-size: 8px; padding: 1px 3px; border: 1px solid; border-radius: 2px; }
-  .tree-file .ext.sim { color: var(--green3); border-color: var(--green4); }
-  .tree-file .ext.rsi { color: var(--amber); border-color: #5a3a00; }
-  .tree-file .ext.agent { color: var(--red2); border-color: #4a0000; }
-  .tree-file .ext.core { color: #00aaff; border-color: #003355; }
-
-  /* MINI SIGNAL MONITOR */
-  #signal-monitor {
-    border-top: 1px solid var(--border);
-    padding: 8px;
-    flex-shrink: 0;
-  }
-  #signal-monitor .sm-title { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 6px; }
-  #signal-monitor canvas { width: 100%; height: 40px; display: block; }
-  .signal-stat { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); margin-top: 2px; }
-  .signal-stat span:last-child { color: var(--green2); }
-
-  /* ══════════════════════════════════════════
-     EDITOR AREA
-  ══════════════════════════════════════════ */
-  #editor-area {
-    background: var(--panel);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #code-container {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #line-numbers {
-    background: var(--bg3);
-    border-right: 1px solid var(--border);
-    padding: 8px 0;
-    min-width: 38px;
-    text-align: right;
-    color: var(--green4);
-    font-size: 11px;
-    line-height: 18px;
-    overflow: hidden;
-    flex-shrink: 0;
-    user-select: none;
-    padding-right: 6px;
-  }
-
-  #code-editor {
-    flex: 1;
-    background: transparent;
-    color: transparent;
-    caret-color: var(--green);
-    border: none;
-    outline: none;
-    padding: 8px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 18px;
-    resize: none;
-    white-space: pre;
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green4) transparent;
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    padding-left: 8px;
-  }
-
-  #code-highlight {
-    position: absolute;
-    inset: 0;
-    padding: 8px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 18px;
-    white-space: pre;
-    overflow: auto;
-    pointer-events: none;
-    z-index: 1;
-    scrollbar-width: none;
-  }
-  #code-highlight::-webkit-scrollbar { display: none; }
-
-  /* Syntax colors */
-  .kw { color: #00ff88; font-weight: bold; }
-  .fn { color: #66ffcc; }
-  .str { color: #aaff66; }
-  .num { color: #ffcc44; }
-  .cm { color: var(--green4); font-style: italic; }
-  .tp { color: #55ddff; }
-  .op { color: #00cc99; }
-  .var { color: var(--text); }
-  .sym { color: var(--green3); }
-
-  /* STATUS BAR (editor bottom) */
-  #editor-statusbar {
-    border-top: 1px solid var(--border);
-    background: var(--bg3);
-    padding: 2px 8px;
-    font-size: 9px;
-    color: var(--text-dim);
-    display: flex;
-    gap: 16px;
-    flex-shrink: 0;
-    align-items: center;
-  }
-  #editor-statusbar .sb-item { display: flex; gap: 4px; }
-  #editor-statusbar .sb-item span:last-child { color: var(--green2); }
-
-  /* BREACH ALERT OVERLAY */
-  #breach-alert {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.92);
-    border: 2px solid var(--red);
-    padding: 12px 20px;
-    z-index: 50;
-    min-width: 320px;
-    box-shadow: 0 0 30px rgba(255,0,0,0.4), inset 0 0 20px rgba(255,0,0,0.05);
-    animation: alertPulse 1.5s ease-in-out infinite;
-    cursor: pointer;
-  }
-
-  @keyframes alertPulse {
-    0%,100% { box-shadow: 0 0 20px rgba(255,0,0,0.4), inset 0 0 20px rgba(255,0,0,0.05); }
-    50% { box-shadow: 0 0 50px rgba(255,0,0,0.7), inset 0 0 30px rgba(255,0,0,0.1); }
-  }
-
-  #breach-alert .alert-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--red);
-    font-family: var(--font-display);
-    font-size: 22px;
-    letter-spacing: 3px;
-    margin-bottom: 8px;
-  }
-  .alert-icon { font-size: 18px; animation: blink 0.5s step-end infinite; }
-  #breach-alert .alert-body { font-size: 10px; color: #cc4444; line-height: 1.8; }
-  #breach-alert .alert-body .alert-data { color: var(--red); font-weight: bold; }
-  #breach-alert .alert-footer { margin-top: 10px; font-size: 9px; color: #663333; display: flex; justify-content: space-between; }
-  #breach-alert .dismiss-btn {
-    background: rgba(200,0,0,0.2);
-    border: 1px solid var(--red2);
-    color: var(--red);
-    padding: 3px 12px;
-    cursor: pointer;
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 1px;
-  }
-  #breach-alert .dismiss-btn:hover { background: rgba(200,0,0,0.4); }
-
-  /* ══════════════════════════════════════════
-     RIGHT PANEL
-  ══════════════════════════════════════════ */
-  #right-panel {
-    grid-row: 1 / 3;
-    background: var(--bg2);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  /* MATRIX RAIN */
-  #matrix-rain-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  #matrix-rain {
-    flex: 1;
-    display: block;
-  }
-
-  /* SYSTEM STATS */
-  #sys-stats {
-    padding: 8px;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .stat-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 5px;
-    font-size: 9px;
-  }
-  .stat-label { color: var(--text-dim); width: 80px; flex-shrink: 0; }
-  .stat-bar-bg { flex: 1; height: 6px; background: var(--bg); border: 1px solid var(--border); }
-  .stat-bar { height: 100%; background: var(--green3); transition: width 0.5s; position: relative; }
-  .stat-bar::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 2px; background: var(--green); box-shadow: 0 0 4px var(--green); }
-  .stat-bar.warn { background: var(--amber); }
-  .stat-bar.crit { background: var(--red2); }
-  .stat-bar.warn::after { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
-  .stat-bar.crit::after { background: var(--red); box-shadow: 0 0 4px var(--red); }
-  .stat-val { color: var(--green2); font-size: 9px; width: 36px; text-align: right; flex-shrink: 0; }
-
-  /* AGENT TRACKER */
-  #agent-tracker {
-    padding: 8px;
-    flex-shrink: 0;
-  }
-  .agent-entry {
-    display: flex;
-    justify-content: space-between;
-    padding: 3px 0;
-    border-bottom: 1px solid var(--green-dim);
-    font-size: 9px;
-  }
-  .agent-name { color: var(--red2); }
-  .agent-coords { color: var(--text-dim); }
-  .agent-threat { padding: 1px 4px; font-size: 8px; }
-  .agent-threat.high { color: var(--red); border: 1px solid var(--red2); }
-  .agent-threat.med { color: var(--amber); border: 1px solid #5a3a00; }
-  .agent-threat.low { color: var(--green3); border: 1px solid var(--green4); }
-
-  /* ══════════════════════════════════════════
-     BOTTOM PANELS
-  ══════════════════════════════════════════ */
-  #bottom-left {
-    background: var(--panel2);
-    border-top: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  #bottom-tabs {
-    display: flex;
-    background: #000;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .btab {
-    padding: 4px 12px;
-    font-size: 9px;
-    cursor: pointer;
-    color: var(--text-dim);
-    border-right: 1px solid var(--border);
-    letter-spacing: 1px;
-    transition: all 0.15s;
-  }
-  .btab.active { color: var(--green); background: var(--green-dim); }
-  .btab:hover:not(.active) { color: var(--text); }
-
-  #bottom-content {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-
-  /* TERMINAL */
-  #terminal-panel {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 6px;
-    overflow: hidden;
-  }
-
-  #terminal-output {
-    flex: 1;
-    overflow-y: auto;
-    font-size: 10px;
-    line-height: 1.6;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green4) transparent;
-  }
-
-  #terminal-output .t-line { display: flex; gap: 4px; }
-  #terminal-output .t-prompt { color: var(--green3); flex-shrink: 0; }
-  #terminal-output .t-cmd { color: var(--green); }
-  #terminal-output .t-out { color: var(--text-dim); }
-  #terminal-output .t-err { color: var(--red2); }
-  #terminal-output .t-success { color: var(--green2); }
-  #terminal-output .t-info { color: #55aaff; }
-
-  #terminal-input-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 4px;
-    border-top: 1px solid var(--border);
-    padding-top: 4px;
-    flex-shrink: 0;
-  }
-  .t-prompt-label { color: var(--green3); font-size: 10px; flex-shrink: 0; }
-  #terminal-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--green);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    caret-color: var(--green);
-  }
-
-  /* GRAPH PANEL */
-  #graph-panel {
-    position: absolute;
-    inset: 0;
-    display: none;
-    flex-direction: column;
-    padding: 6px;
-  }
-  #graph-panel.visible { display: flex; }
-  #terminal-panel.hidden { display: none; }
-
-  .graph-row {
-    display: flex;
-    gap: 6px;
-    flex: 1;
-    min-height: 0;
-  }
-  .graph-box {
-    flex: 1;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .graph-box-title {
-    padding: 2px 6px;
-    font-size: 8px;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg3);
-    display: flex;
-    justify-content: space-between;
-  }
-  .graph-box-title span:last-child { color: var(--green2); }
-  .graph-box canvas { flex: 1; display: block; width: 100%; }
-
-  /* DEJA VU PANEL */
-  #dejavu-panel {
-    position: absolute;
-    inset: 0;
-    display: none;
-    padding: 6px;
-    overflow-y: auto;
-    font-size: 9px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green4) transparent;
-  }
-  #dejavu-panel.visible { display: block; }
-
-  .dv-entry {
-    display: grid;
-    grid-template-columns: 100px 60px 1fr 80px;
-    gap: 6px;
-    padding: 3px 4px;
-    border-bottom: 1px solid var(--green-dim);
-    align-items: center;
-  }
-  .dv-time { color: var(--text-dim); }
-  .dv-sector { color: var(--green3); }
-  .dv-desc { color: var(--text); }
-  .dv-conf { text-align: right; }
-  .dv-conf.high { color: var(--red); }
-  .dv-conf.med { color: var(--amber); }
-  .dv-conf.low { color: var(--green3); }
-
-  /* ══════════════════════════════════════════
-     SCROLLBAR GLOBAL
-  ══════════════════════════════════════════ */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--green4); border-radius: 2px; }
-
-  /* GLOW EFFECTS */
-  .glow { text-shadow: 0 0 6px currentColor; }
-  .glow-box { box-shadow: 0 0 8px var(--green-glow); }
-
-  /* ANIMATED CURSOR IN CODE */
-  #editor-cursor {
-    display: inline-block;
-    width: 7px;
-    height: 14px;
-    background: var(--green);
-    animation: blink 0.8s step-end infinite;
-    vertical-align: text-bottom;
-    box-shadow: 0 0 8px var(--green);
-  }
-
-  /* GLITCH ANIMATION */
-  @keyframes glitch {
-    0% { transform: none; opacity: 1; }
-    92% { transform: none; opacity: 1; }
-    93% { transform: skewX(-5deg); opacity: 0.8; clip-path: inset(10% 0 80% 0); }
-    94% { transform: skewX(3deg); opacity: 0.8; clip-path: inset(60% 0 10% 0); }
-    95% { transform: none; opacity: 1; clip-path: none; }
-    100% { transform: none; opacity: 1; }
-  }
-
-  #editor-area { animation: glitch 8s linear infinite; }
-
-  /* PHONE PULSE */
-  .phone-icon {
-    font-size: 10px;
-    animation: phonePulse 2s ease-in-out infinite;
-    color: var(--amber);
-  }
-  @keyframes phonePulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
-
-  /* RSI METER */
-  #rsi-section {
-    padding: 6px 8px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .rsi-bar-container {
-    display: flex;
-    gap: 2px;
-    height: 20px;
-    margin-top: 4px;
-  }
-  .rsi-segment {
-    flex: 1;
-    background: var(--green4);
-    transition: background 0.3s;
-    position: relative;
-  }
-  .rsi-segment.active {
-    background: var(--green);
-    box-shadow: 0 0 4px var(--green);
-  }
-  .rsi-segment.warn { background: var(--amber); }
-  .rsi-segment.danger { background: var(--red2); }
-
-  /* ══════════════════════════════════════════
-     NOTIFICATION TOAST
-  ══════════════════════════════════════════ */
-  #toast-area {
-    position: fixed;
-    bottom: 210px;
-    right: 290px;
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    pointer-events: none;
-  }
-
-  .toast {
-    background: rgba(0,0,0,0.9);
-    border: 1px solid var(--green3);
-    padding: 6px 12px;
-    font-size: 9px;
-    color: var(--green2);
-    letter-spacing: 0.5px;
-    animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
-    max-width: 280px;
-    box-shadow: 0 0 10px var(--green-glow);
-  }
-  .toast.warn-toast { border-color: var(--red2); color: #cc4444; }
-
-  @keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
-  @keyframes toastOut { from{opacity:1} to{opacity:0;pointer-events:none} }
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --g0:#000d00;--g1:#001a00;--g2:#003300;
+  --glow:#00ff41;--dim:#00aa2a;--faint:#005511;
+  --red:#ff0000;--amber:#ffaa00;--cyan:#00ffcc;
+  --panel:#020f02;--border:#00551a;
+}
+body{background:var(--g0);color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:12px;overflow:hidden;height:100vh;width:100vw;cursor:crosshair}
+/* ===== BOOT SCREEN ===== */
+#boot{position:fixed;inset:0;background:#000;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+#boot canvas{position:absolute;inset:0}
+.boot-content{position:relative;z-index:2;text-align:center;width:60%}
+.boot-logo{font-family:'VT323',monospace;font-size:72px;color:var(--glow);text-shadow:0 0 30px var(--glow),0 0 60px var(--glow);letter-spacing:12px;animation:pulse 2s infinite}
+.boot-sub{color:var(--dim);font-size:13px;letter-spacing:4px;margin:10px 0 30px}
+.boot-bar-wrap{background:var(--g1);border:1px solid var(--border);height:4px;width:100%;margin:20px 0}
+.boot-bar{height:100%;background:var(--glow);width:0;box-shadow:0 0 10px var(--glow);transition:width 0.05s linear}
+.boot-log{text-align:left;height:180px;overflow:hidden;color:var(--dim);font-size:11px;line-height:1.6}
+/* ===== LOGIN SCREEN ===== */
+#login{position:fixed;inset:0;background:rgba(0,5,0,0.97);z-index:900;display:none;align-items:center;justify-content:center;flex-direction:column}
+#login canvas{position:absolute;inset:0;opacity:0.3}
+.login-box{position:relative;z-index:2;border:1px solid var(--border);padding:40px 60px;background:rgba(0,15,0,0.9);box-shadow:0 0 40px rgba(0,255,65,0.15),inset 0 0 40px rgba(0,20,0,0.5);min-width:420px}
+.login-title{font-family:'VT323',monospace;font-size:36px;color:var(--glow);text-align:center;letter-spacing:6px;margin-bottom:4px;text-shadow:0 0 20px var(--glow)}
+.login-sub{color:var(--faint);font-size:10px;text-align:center;letter-spacing:3px;margin-bottom:30px;border-bottom:1px solid var(--border);padding-bottom:20px}
+.login-field{margin:14px 0}
+.login-field label{display:block;color:var(--dim);font-size:10px;letter-spacing:2px;margin-bottom:5px}
+.login-field input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:13px;padding:6px 0;outline:none}
+.login-field input:focus{border-bottom-color:var(--glow);text-shadow:0 0 8px var(--glow)}
+.login-btn{width:100%;margin-top:24px;background:transparent;border:1px solid var(--glow);color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:13px;padding:10px;cursor:pointer;letter-spacing:4px;transition:all 0.2s;text-shadow:0 0 8px var(--glow)}
+.login-btn:hover{background:rgba(0,255,65,0.1);box-shadow:0 0 20px rgba(0,255,65,0.3)}
+.login-status{font-size:10px;color:var(--amber);text-align:center;margin-top:12px;height:16px;letter-spacing:2px}
+/* ===== MAIN IDE ===== */
+#ide{position:fixed;inset:0;display:none;flex-direction:column;background:var(--g0)}
+/* TITLE BAR */
+.titlebar{height:26px;background:var(--g1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:12px;flex-shrink:0}
+.tb-logo{font-family:'VT323',monospace;font-size:18px;color:var(--glow);letter-spacing:3px;text-shadow:0 0 10px var(--glow)}
+.tb-sep{color:var(--faint);font-size:9px}
+.tb-item{color:var(--dim);font-size:10px;letter-spacing:1px;cursor:pointer;padding:2px 6px}
+.tb-item:hover{color:var(--glow)}
+.tb-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.tb-clock{color:var(--glow);font-size:11px;letter-spacing:2px}
+.tb-dot{width:8px;height:8px;border-radius:50%;animation:blink 1s infinite}
+.dot-green{background:var(--glow);box-shadow:0 0 8px var(--glow)}
+.dot-red{background:var(--red);box-shadow:0 0 8px var(--red)}
+/* MAIN LAYOUT */
+.main-layout{flex:1;display:grid;grid-template-columns:1fr 1fr 280px;grid-template-rows:1fr 1fr;gap:2px;overflow:hidden;background:#000200}
+.panel{background:var(--panel);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.panel-header{height:22px;background:var(--g1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:8px;flex-shrink:0}
+.ph-title{font-size:9px;color:var(--cyan);letter-spacing:2px}
+.ph-badge{font-size:8px;padding:1px 5px;border:1px solid;letter-spacing:1px}
+.badge-ok{color:#00ff41;border-color:#00ff41}
+.badge-warn{color:var(--amber);border-color:var(--amber)}
+.badge-alert{color:var(--red);border-color:var(--red);animation:blink 0.5s infinite}
+.ph-dot{width:6px;height:6px;border-radius:50%}
+.ph-close{margin-left:auto;color:var(--faint);font-size:10px;cursor:pointer}
+.panel-body{flex:1;overflow:auto;padding:6px;font-size:11px;line-height:1.7;position:relative}
+.panel-body::-webkit-scrollbar{width:4px}
+.panel-body::-webkit-scrollbar-track{background:var(--g0)}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border)}
+/* Editor panel spans two rows */
+.panel-editor{grid-row:1/3}
+/* Code content */
+.code-line{display:flex;gap:8px;white-space:pre}
+.ln{color:var(--faint);min-width:28px;text-align:right;user-select:none}
+.kw{color:#00ddff}.fn{color:#aaffaa}.str{color:#ffff88}.cm{color:#336633}.op{color:#ffaa44}.val{color:#ff88ff}.nm{color:var(--glow)}
+/* Matrix rain panel */
+#rain-panel{grid-row:1/3;overflow:hidden}
+#rain-canvas{width:100%;height:100%;display:block}
+/* Bottom status bar */
+.statusbar{height:22px;background:var(--g1);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:16px;flex-shrink:0}
+.sb-item{font-size:9px;color:var(--dim);letter-spacing:1px}
+.sb-sep{color:var(--faint)}
+.sb-val{color:var(--glow)}
+.sb-alert{color:var(--red);animation:blink 0.7s infinite;letter-spacing:2px}
+/* ALERT OVERLAY */
+#alert-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.95);border:2px solid var(--red);padding:10px 18px;z-index:50;pointer-events:none;box-shadow:0 0 30px rgba(255,0,0,0.4);min-width:240px}
+.alert-title{color:var(--red);font-size:11px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 10px var(--red);display:flex;align-items:center;gap:8px}
+.alert-icon{width:10px;height:10px;background:var(--red);border-radius:50%;animation:blink 0.4s infinite}
+.alert-body{color:#ff6666;font-size:9px;letter-spacing:1px;margin-top:4px;line-height:1.6}
+/* COMPILER PANEL */
+.compiler-wrap{padding:6px;display:flex;flex-direction:column;height:100%}
+.compiler-input{background:transparent;border:1px solid var(--border);color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 6px;width:100%;resize:none;height:60px;outline:none}
+.compiler-input:focus{border-color:var(--glow)}
+.compiler-btns{display:flex;gap:4px;margin:4px 0}
+.cbtn{flex:1;background:transparent;border:1px solid var(--border);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px;cursor:pointer;letter-spacing:1px}
+.cbtn:hover{border-color:var(--glow);color:var(--glow)}
+.cbtn.active{border-color:var(--glow);color:var(--glow);background:rgba(0,255,65,0.05)}
+.compiler-output{flex:1;border:1px solid var(--border);padding:4px 6px;overflow-y:auto;font-size:10px;background:rgba(0,5,0,0.5);line-height:1.7}
+/* MONITOR PANEL */
+.monitor-wrap{padding:6px;height:100%;display:flex;flex-direction:column;gap:6px}
+#chart-canvas{width:100%;height:80px;display:block}
+.sys-stats{font-size:10px;line-height:1.9}
+.stat-row{display:flex;justify-content:space-between}
+.stat-bar-wrap{background:var(--g1);height:3px;margin:2px 0 6px;border-radius:1px;overflow:hidden}
+.stat-bar{height:100%;background:var(--glow);box-shadow:0 0 6px var(--glow);border-radius:1px;transition:width 1s}
+/* TERMINAL */
+.term-body{padding:6px;font-size:11px;line-height:1.7;height:100%;overflow-y:auto;display:flex;flex-direction:column}
+.term-output{flex:1;overflow-y:auto}
+.term-line{margin:1px 0}
+.t-prompt{color:var(--dim)}
+.t-cmd{color:var(--glow)}
+.t-out{color:#00bb30}
+.t-err{color:var(--amber)}
+.t-sys{color:var(--cyan)}
+.term-input-row{display:flex;align-items:center;gap:4px;margin-top:4px;border-top:1px solid var(--border);padding-top:4px}
+.term-prompt-label{color:var(--dim);font-size:11px;white-space:nowrap}
+#termInput{flex:1;background:transparent;border:none;color:var(--glow);font-family:'Share Tech Mono',monospace;font-size:11px;outline:none}
+/* FILESYSTEM */
+.fs-item{cursor:pointer;padding:1px 0;color:var(--dim)}
+.fs-item:hover{color:var(--glow)}
+.fs-dir{color:var(--cyan)}
+.fs-open{color:var(--glow)}
+/* ANIMATIONS */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes pulse{0%,100%{text-shadow:0 0 30px var(--glow)}50%{text-shadow:0 0 60px var(--glow),0 0 80px var(--glow)}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+.scanline{position:fixed;top:0;left:0;width:100%;height:2px;background:rgba(0,255,65,0.05);animation:scanline 4s linear infinite;pointer-events:none;z-index:9999}
+.cursor-blink::after{content:'█';animation:blink 1s infinite}
+/* Tab system */
+.tabs{display:flex;background:var(--g0);border-bottom:1px solid var(--border);padding:0 6px;gap:2px}
+.tab{font-size:9px;color:var(--faint);padding:3px 10px;cursor:pointer;border-bottom:1px solid transparent;letter-spacing:1px}
+.tab.active{color:var(--glow);border-bottom-color:var(--glow)}
+.tab:hover{color:var(--dim)}
+/* Highlight active line */
+.active-line{background:rgba(0,255,65,0.04)}
 </style>
 </head>
 <body>
+<div class="scanline"></div>
 
-<!-- MENU BAR -->
-<div id="menubar">
-  <div class="logo glow">MODAL/SYS</div>
-  <div class="menu-item">CONSTRUCT</div>
-  <div class="menu-item">SIMULATION</div>
-  <div class="menu-item">AGENTS</div>
-  <div class="menu-item">HARDLINE</div>
-  <div class="menu-item">ORACLE</div>
-  <div class="menu-item">EXIT</div>
-  <div class="status-right">
-    <span class="phone-icon">☎</span>
-    <span><span class="live-dot"></span>SIGNAL LOCKED</span>
-    <span id="matrix-time">MATRIX TIME: --:--:--</span>
-    <span id="real-time" style="color:var(--text-dim)">REAL: --:--:--</span>
-    <span style="color:var(--green4)">v6.1.4-r</span>
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <canvas id="bootCanvas"></canvas>
+  <div class="boot-content">
+    <div class="boot-logo">MODAL OS</div>
+    <div class="boot-sub">CONSTRUCT FRAMEWORK v6.1.0 — METACORTEX DIVISION</div>
+    <div class="boot-bar-wrap"><div class="boot-bar" id="bootBar"></div></div>
+    <div class="boot-log" id="bootLog"></div>
   </div>
 </div>
 
-<!-- TOOLBAR -->
-<div id="toolbar">
-  <button class="tb-btn active" onclick="compileCode()">▶ COMPILE</button>
-  <button class="tb-btn" onclick="injectCode()">⚡ INJECT</button>
-  <button class="tb-btn" onclick="syncConstruct()">⟳ SYNC</button>
-  <div class="tb-sep"></div>
-  <button class="tb-btn" onclick="openHardline()">◈ HARDLINE</button>
-  <button class="tb-btn" onclick="loadConstruct()">◉ CONSTRUCT</button>
-  <button class="tb-btn" onclick="traceSignal()">⊕ TRACE</button>
-  <div class="tb-sep"></div>
-  <button class="tb-btn danger" onclick="showBreachAlert()">⚠ BREACH SIM</button>
-  <button class="tb-btn danger" onclick="ejectSequence()">✕ EMERGENCY EJECT</button>
-  <div class="tb-sep"></div>
-  <span style="font-size:9px;color:var(--text-dim);margin-left:4px">SECTOR:</span>
-  <span id="sector-display" style="font-size:9px;color:var(--green2);margin-left:4px">DOWNTOWN / GRID-7F</span>
-  <span style="font-size:9px;color:var(--text-dim);margin-left:8px">RSI INTEGRITY:</span>
-  <span id="rsi-pct" style="font-size:9px;color:var(--green);margin-left:4px">98.3%</span>
-</div>
-
-<!-- TAB BAR -->
-<div id="tabbar">
-  <div class="tab active" onclick="switchTab(0, this)">
-    <div class="tab-dot modified"></div>matrix_core.sim
-  </div>
-  <div class="tab" onclick="switchTab(1, this)">
-    <div class="tab-dot clean"></div>rsi_engine.rsi
-  </div>
-  <div class="tab" onclick="switchTab(2, this)">
-    <div class="tab-dot clean"></div>agent_protocol.agent
-  </div>
-  <div class="tab" onclick="switchTab(3, this)">
-    <div class="tab-dot modified"></div>construct_loader.core
-  </div>
-  <div class="tab" onclick="switchTab(4, this)">
-    <div class="tab-dot clean"></div>déjà_vu_detector.sim
+<!-- LOGIN SCREEN -->
+<div id="login">
+  <canvas id="loginCanvas"></canvas>
+  <div class="login-box">
+    <div class="login-title">CONSTRUCT OS</div>
+    <div class="login-sub">MODAL REALITY FRAMEWORK — AUTHORIZED ACCESS ONLY</div>
+    <div class="login-field"><label>OPERATIVE ID</label><input type="text" id="loginUser" value="Neo" autocomplete="off"></div>
+    <div class="login-field"><label>PASSPHRASE</label><input type="password" id="loginPass" placeholder="■■■■■■■■■■■■"></div>
+    <button class="login-btn" onclick="doLogin()">INITIATE UPLINK ▶</button>
+    <div class="login-status" id="loginStatus"></div>
   </div>
 </div>
 
-<!-- MAIN LAYOUT -->
-<div id="main">
-
-  <!-- SIDEBAR -->
-  <div id="sidebar">
-    <div class="panel-title">CONSTRUCT FILESYSTEM</div>
-    <div id="file-tree">
-      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/sys/core</div>
-      <div class="tree-file active" onclick="loadFile('matrix_core.sim')"><span class="ext sim">SIM</span> matrix_core.sim</div>
-      <div class="tree-file" onclick="loadFile('physics_engine.sim')"><span class="ext sim">SIM</span> physics_engine.sim</div>
-      <div class="tree-file" onclick="loadFile('world_state.sim')"><span class="ext sim">SIM</span> world_state.sim</div>
-      <div class="tree-file" onclick="loadFile('choice_arbiter.sim')"><span class="ext sim">SIM</span> choice_arbiter.sim</div>
-      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/rsi</div>
-      <div class="tree-file" onclick="loadFile('rsi_engine.rsi')"><span class="ext rsi">RSI</span> rsi_engine.rsi</div>
-      <div class="tree-file" onclick="loadFile('morpheus_self.rsi')"><span class="ext rsi">RSI</span> morpheus_self.rsi</div>
-      <div class="tree-file" onclick="loadFile('trinity_self.rsi')"><span class="ext rsi">RSI</span> trinity_self.rsi</div>
-      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/agents</div>
-      <div class="tree-file" onclick="loadFile('agent_protocol.agent')"><span class="ext agent">AGT</span> agent_protocol.agent</div>
-      <div class="tree-file" onclick="loadFile('smith_variant.agent')"><span class="ext agent">AGT</span> smith_variant.agent</div>
-      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/construct</div>
-      <div class="tree-file" onclick="loadFile('construct_loader.core')"><span class="ext core">CORE</span> construct_loader.core</div>
-      <div class="tree-file" onclick="loadFile('training_program.core')"><span class="ext core">CORE</span> training_program.core</div>
-      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/anomaly</div>
-      <div class="tree-file" onclick="loadFile('deja_vu_detector.sim')"><span class="ext sim">SIM</span> déjà_vu_detector.sim</div>
-      <div class="tree-file" onclick="loadFile('glitch_monitor.sim')"><span class="ext sim">SIM</span> glitch_monitor.sim</div>
-    </div>
-    <div id="signal-monitor">
-      <div class="sm-title">◈ HARDLINE SIGNAL</div>
-      <canvas id="signal-canvas" width="170" height="40"></canvas>
-      <div class="signal-stat"><span>FREQ</span><span id="sig-freq">847.3 MHz</span></div>
-      <div class="signal-stat"><span>LATENCY</span><span id="sig-lat">12ms</span></div>
-      <div class="signal-stat"><span>ENCRYPT</span><span>AES-∞</span></div>
-    </div>
-    <div id="rsi-section">
-      <div class="sm-title">◈ RSI COHERENCE</div>
-      <div class="rsi-bar-container" id="rsi-bar"></div>
+<!-- MAIN IDE -->
+<div id="ide">
+  <!-- TITLE BAR -->
+  <div class="titlebar">
+    <div class="tb-logo">MODAL//IDE</div>
+    <div class="tb-sep">|</div>
+    <div class="tb-item" onclick="switchTab('editor')">FILE</div>
+    <div class="tb-item" onclick="showCompileAll()">COMPILE</div>
+    <div class="tb-item" onclick="injectBreach()">INJECT</div>
+    <div class="tb-item" onclick="runSimulation()">SIMULATE</div>
+    <div class="tb-item">CONSTRUCT</div>
+    <div class="tb-right">
+      <div class="tb-dot dot-green" title="UPLINK ACTIVE"></div>
+      <div class="tb-clock" id="clock">00:00:00</div>
+      <div class="tb-sep">|</div>
+      <div class="tb-item" style="color:var(--red)" onclick="logout()">DISCONNECT</div>
     </div>
   </div>
 
-  <!-- EDITOR AREA -->
-  <div id="editor-area">
-    <div id="code-container">
-      <div id="line-numbers" id="lnums"></div>
-      <div style="flex:1;position:relative;overflow:hidden">
-        <pre id="code-highlight"></pre>
-        <textarea id="code-editor" spellcheck="false" oninput="onEditorInput()" onscroll="syncScroll()" onkeydown="handleEditorKey(event)"></textarea>
-      </div>
-    </div>
-    <!-- BREACH ALERT -->
-    <div id="breach-alert" style="display:none" onclick="dismissAlert()">
-      <div class="alert-header">
-        <span class="alert-icon">⚠</span>
-        ALERT — DETECTED BREACH
-      </div>
-      <div class="alert-body">
-        INTRUSION VECTOR: <span class="alert-data" id="alert-vector">SECTOR 7G / NODE 0x4F2A</span><br>
-        AGENT SIGNATURE: <span class="alert-data" id="alert-agent">SMITH × 3 — CONVERGING</span><br>
-        THREAT LEVEL: <span class="alert-data" style="color:#ff4444">CRITICAL — IMMEDIATE ACTION</span><br>
-        HARDLINE STATUS: <span class="alert-data" id="alert-line">SEARCHING FOR EXIT</span><br>
-        TIME TO INTERCEPT: <span class="alert-data" id="alert-timer">00:47</span>
-      </div>
-      <div class="alert-footer">
-        <span>CLICK TO ACKNOWLEDGE / FIND EXIT POINT</span>
-        <button class="dismiss-btn">TRACE & DISMISS</button>
-      </div>
-    </div>
-    <div id="editor-statusbar">
-      <div class="sb-item"><span>FILE</span><span id="sb-file">matrix_core.sim</span></div>
-      <div class="sb-item"><span>LN</span><span id="sb-ln">1</span></div>
-      <div class="sb-item"><span>COL</span><span id="sb-col">1</span></div>
-      <div class="sb-item"><span>SIM-VER</span><span>6.1.4</span></div>
-      <div class="sb-item"><span>ENCODING</span><span>MODAL-UTF∞</span></div>
-      <div class="sb-item"><span>INTEGRITY</span><span id="sb-integrity" style="color:var(--green)">VALID</span></div>
-      <div class="sb-item" style="margin-left:auto"><span id="sb-state" style="color:var(--green2)">IDLE</span></div>
-    </div>
-  </div>
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
 
-  <!-- RIGHT PANEL -->
-  <div id="right-panel">
-    <div id="matrix-rain-section">
-      <div class="panel-title">◈ SIMULATION DATA STREAM</div>
-      <canvas id="matrix-rain"></canvas>
+    <!-- PANEL 1: CODE EDITOR (spans 2 rows) -->
+    <div class="panel panel-editor" id="editorPanel">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:var(--glow)"></div>
+        <div class="ph-title">MATRIX_MODAL.bin</div>
+        <div class="ph-badge badge-ok">ACTIVE</div>
+        <div class="ph-close">✕</div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="showFile('modal')">modal_engine.c</div>
+        <div class="tab" onclick="showFile('agent')">agent_protocol.c</div>
+        <div class="tab" onclick="showFile('binary')">COMPILER</div>
+      </div>
+      <div class="panel-body" id="editorBody"></div>
     </div>
-    <div id="sys-stats">
-      <div class="panel-title" style="margin-bottom:6px">◈ SYSTEM LOAD</div>
-      <div class="stat-row">
-        <div class="stat-label">SIM CORE</div>
-        <div class="stat-bar-bg"><div class="stat-bar" id="bar-sim" style="width:72%"></div></div>
-        <div class="stat-val" id="val-sim">72%</div>
-      </div>
-      <div class="stat-row">
-        <div class="stat-label">RSI ENGINE</div>
-        <div class="stat-bar-bg"><div class="stat-bar" id="bar-rsi" style="width:58%"></div></div>
-        <div class="stat-val" id="val-rsi">58%</div>
-      </div>
-      <div class="stat-row">
-        <div class="stat-label">NEURAL MAP</div>
-        <div class="stat-bar-bg"><div class="stat-bar" id="bar-neural" style="width:89%"></div></div>
-        <div class="stat-val" id="val-neural">89%</div>
-      </div>
-      <div class="stat-row">
-        <div class="stat-label">AGENT PROC</div>
-        <div class="stat-bar-bg"><div class="stat-bar warn" id="bar-agent" style="width:34%"></div></div>
-        <div class="stat-val" id="val-agent">34%</div>
-      </div>
-      <div class="stat-row">
-        <div class="stat-label">MATRIX SYNC</div>
-        <div class="stat-bar-bg"><div class="stat-bar" id="bar-sync" style="width:95%"></div></div>
-        <div class="stat-val" id="val-sync">95%</div>
-      </div>
-    </div>
-    <div id="agent-tracker">
-      <div class="panel-title" style="margin-bottom:4px">◈ AGENT PROXIMITY</div>
-      <div class="dv-entry" style="font-size:8px;color:var(--text-dim);border-color:var(--border2)">
-        <span>DESIGNATION</span><span>COORDS</span><span style="text-align:right">THREAT</span>
-      </div>
-      <div class="agent-entry">
-        <span class="agent-name">SMITH-α</span>
-        <span class="agent-coords">7F:44,12</span>
-        <span></span>
-        <span class="agent-threat high">CRITICAL</span>
-      </div>
-      <div class="agent-entry">
-        <span class="agent-name">SMITH-β</span>
-        <span class="agent-coords">7F:41,09</span>
-        <span></span>
-        <span class="agent-threat high">CRITICAL</span>
-      </div>
-      <div class="agent-entry">
-        <span class="agent-name">JOHNSON-1</span>
-        <span class="agent-coords">6G:22,55</span>
-        <span></span>
-        <span class="agent-threat med">MEDIUM</span>
-      </div>
-      <div class="agent-entry">
-        <span class="agent-name">JONES-3</span>
-        <span class="agent-coords">8A:11,77</span>
-        <span></span>
-        <span class="agent-threat low">MONITOR</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- BOTTOM LEFT -->
-  <div id="bottom-left">
-    <div id="bottom-tabs">
-      <div class="btab active" onclick="switchBottomTab('terminal', this)">◈ TERMINAL</div>
-      <div class="btab" onclick="switchBottomTab('graph', this)">◈ SIGNAL GRAPH</div>
-      <div class="btab" onclick="switchBottomTab('dejavu', this)">◈ DÉJÀ VU LOG</div>
-    </div>
-    <div id="bottom-content">
-      <!-- TERMINAL -->
-      <div id="terminal-panel">
-        <div id="terminal-output"></div>
-        <div id="terminal-input-row">
-          <span class="t-prompt-label">neo@modal:~$</span>
-          <input type="text" id="terminal-input" placeholder="enter command..." onkeydown="handleTerminalKey(event)" autocomplete="off" spellcheck="false"/>
+    <!-- PANEL 2: TERMINAL -->
+    <div class="panel" id="termPanel">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:var(--amber)"></div>
+        <div class="ph-title">SHELL — ROOT@CONSTRUCT</div>
+        <div class="ph-badge badge-ok">CONNECTED</div>
+      </div>
+      <div class="term-body">
+        <div class="term-output" id="termOutput"></div>
+        <div class="term-input-row">
+          <div class="term-prompt-label">root@construct:~$</div>
+          <input type="text" id="termInput" placeholder="" autocomplete="off" onkeydown="handleTermKey(event)">
         </div>
       </div>
-      <!-- GRAPH -->
-      <div id="graph-panel">
-        <div class="graph-row">
-          <div class="graph-box">
-            <div class="graph-box-title"><span>NEURAL SIGNAL FREQ</span><span id="g-freq-val">847 Hz</span></div>
-            <canvas id="graph-signal" width="300" height="120"></canvas>
-          </div>
-          <div class="graph-box">
-            <div class="graph-box-title"><span>SIM PROCESS LOAD</span><span id="g-load-val">72%</span></div>
-            <canvas id="graph-load" width="300" height="120"></canvas>
-          </div>
-          <div class="graph-box">
-            <div class="graph-box-title"><span>AGENT PROXIMITY</span><span id="g-agent-val">2 CRITICAL</span></div>
-            <canvas id="graph-agents" width="300" height="120"></canvas>
-          </div>
-        </div>
+    </div>
+
+    <!-- PANEL 3: MATRIX RAIN (spans 2 rows) -->
+    <div class="panel" id="rain-panel">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:var(--glow)"></div>
+        <div class="ph-title">SOURCE STREAM</div>
+        <div class="ph-badge badge-ok">LIVE</div>
       </div>
-      <!-- DEJA VU -->
-      <div id="dejavu-panel">
-        <div class="dv-entry" style="font-size:8px;color:var(--text-dim);border-color:var(--border2)">
-          <span>TIMESTAMP</span><span>SECTOR</span><span>ANOMALY DESCRIPTION</span><span style="text-align:right">CONFIDENCE</span>
+      <canvas id="rain-canvas"></canvas>
+    </div>
+
+    <!-- PANEL 4: SYSTEM MONITOR + COMPILER -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:var(--cyan)"></div>
+        <div class="ph-title">SYS MONITOR</div>
+        <div class="ph-badge badge-warn" id="alertBadge">SCANNING</div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" onclick="monitorTab('stats')">STATS</div>
+        <div class="tab" onclick="monitorTab('files')">FILES</div>
+        <div class="tab" onclick="monitorTab('network')">NODES</div>
+      </div>
+      <div class="panel-body" id="monitorBody">
+        <div class="monitor-wrap">
+          <canvas id="chart-canvas"></canvas>
+          <div class="sys-stats" id="sysStats"></div>
         </div>
-        <!-- populated by JS -->
       </div>
     </div>
+
+    <!-- PANEL 5: COMPILER / BINARY -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="ph-dot" style="background:var(--red)"></div>
+        <div class="ph-title">BINARY COMPILER</div>
+        <div class="ph-badge badge-ok">READY</div>
+      </div>
+      <div class="compiler-wrap">
+        <textarea class="compiler-input" id="compInput" placeholder="// Enter binary, hex, or C code...
+01001000 01100101 01101100 01101100 01101111"></textarea>
+        <div class="compiler-btns">
+          <button class="cbtn active" id="modeBtn" onclick="cycleMode()">BIN→TXT</button>
+          <button class="cbtn" onclick="runCompile()">COMPILE</button>
+          <button class="cbtn" onclick="injectCode()">INJECT</button>
+          <button class="cbtn" onclick="clearComp()">CLR</button>
+        </div>
+        <div class="compiler-output" id="compOutput"></div>
+      </div>
+    </div>
+
+  </div><!-- end main-layout -->
+
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <div class="sb-item">OPERATIVE: <span class="sb-val" id="sbUser">NEO</span></div>
+    <div class="sb-sep">|</div>
+    <div class="sb-item">CONSTRUCT: <span class="sb-val">LAYER_6</span></div>
+    <div class="sb-sep">|</div>
+    <div class="sb-item">NODES: <span class="sb-val" id="sbNodes">2,847</span></div>
+    <div class="sb-sep">|</div>
+    <div class="sb-item">CPU: <span class="sb-val" id="sbCpu">--</span></div>
+    <div class="sb-sep">|</div>
+    <div class="sb-item">MEM: <span class="sb-val" id="sbMem">--</span></div>
+    <div class="sb-sep">|</div>
+    <div class="sb-alert" id="sbAlert" style="display:none">⚠ BREACH DETECTED</div>
+    <div style="margin-left:auto" class="sb-item">MODAL FRAMEWORK v6.1 — <span class="sb-val">AUTHORIZED</span></div>
   </div>
-
 </div>
-
-<!-- TOAST AREA -->
-<div id="toast-area"></div>
 
 <script>
-// ════════════════════════════════════════════════════════
-//  MATRIX IDE — CORE RUNTIME
-// ════════════════════════════════════════════════════════
-
-// ── CODE CONTENT FOR TABS ──────────────────────────────
-const tabFiles = [
-  {
-    name: 'matrix_core.sim',
-    content: `// ╔════════════════════════════════════════════════════╗
-// ║  MODAL GAME SYSTEM — matrix_core.sim  v6.1.4      ║
-// ║  Author: Thomas A. Anderson (Neo)                  ║
-// ║  Classification: UNRESTRICTED — CONSTRUCT ACCESS   ║
-// ╚════════════════════════════════════════════════════╝
-
-@simulation_version  6.1.4-r
-@construct_id        MODAL://primary/core
-@author              0x4E454F
-@sync_target         THE_MACHINE_CITY:ORACLE_NODE
-
-// ─── REALITY CONSTANTS ────────────────────────────────
-const PLANCK_SIM    : Real64 = 6.62607015e-34;
-const CAUSALITY_LOCK: Bool   = true;
-const FREE_WILL_PCT : Real32 = 0.0031;   // controlled margin
-const MAX_ANOMALY   : Int16  = 1;        // the ONE
-
-// ─── IMPORT MODULES ───────────────────────────────────
-import { ResidualSelfImage }   from "/modal/rsi/rsi_engine";
-import { AgentProtocol }       from "/modal/agents/agent_protocol";
-import { PhysicsConstraints }  from "/modal/core/physics_engine";
-import { ChoiceArbiter }       from "/modal/core/choice_arbiter";
-import { DejaVuDetector }      from "/modal/anomaly/deja_vu_detector";
-import { Construct }           from "/modal/construct/construct_loader";
-import { OracleInterface }     from "/system/oracle";
-
-// ─── WORLD STATE ──────────────────────────────────────
-class MatrixSimulation {
-  private souls         : Int64  = 17_600_000_000;
-  private anomalyCount  : Int16  = 0;
-  private cycleNumber   : Int32  = 7;
-  private rsiPool       : Map<UUID, ResidualSelfImage> = new Map();
-  private agentFleet    : AgentProtocol[] = [];
-  private oracle        : OracleInterface;
-  private isStable      : Bool = true;
-
-  constructor() {
-    this.oracle = OracleInterface.getInstance();
-    PhysicsConstraints.apply(PLANCK_SIM, CAUSALITY_LOCK);
-    log("[INIT] Matrix Simulation Core loaded — Cycle " + this.cycleNumber);
-    log("[INIT] Free will margin: " + (FREE_WILL_PCT * 100).toFixed(4) + "%");
-    this.bootAgentProtocols();
-  }
-
-  // Initialize sentient programs
-  private bootAgentProtocols(): void {
-    const designations = ["SMITH", "JOHNSON", "JONES", "BROWN"];
-    for (const d of designations) {
-      this.agentFleet.push(new AgentProtocol({
-        designation : d,
-        bodySnatch  : true,
-        persistence : d === "SMITH" ? Infinity : 1,
-        directive   : Directive.ELIMINATE_ANOMALY
-      }));
-    }
-    log("[AGENTS] " + this.agentFleet.length + " sentinel programs online");
-  }
-
-  // Core simulation tick — runs at PLANCK intervals
-  public tick(dt: Real64): SimFrame {
-    const frame: SimFrame = {
-      timestamp : Date.matrix(),
-      physics   : PhysicsConstraints.step(dt),
-      choices   : ChoiceArbiter.resolveAll(this.rsiPool, FREE_WILL_PCT),
-      anomalies : DejaVuDetector.scan(this.rsiPool)
-    };
-
-    // Handle anomaly detection
-    if (frame.anomalies.length > 0) {
-      this.anomalyCount += frame.anomalies.length;
-      this.handleAnomalies(frame.anomalies);
-    }
-
-    // Cascade check — too many anomalies = system crash
-    if (this.anomalyCount >= MAX_ANOMALY) {
-      log("[WARNING] ANOMALY THRESHOLD REACHED — THE ONE HAS EMERGED");
-      this.reroute_to_source();
-    }
-
-    return frame;
-  }
-
-  // Route anomaly (the One) to the Source
-  private reroute_to_source(): void {
-    log("[CRITICAL] Initiating system reboot sequence");
-    log("[ORACLE]  Prophecy fulfillment confirmed — cycle " + this.cycleNumber);
-    this.cycleNumber++;
-    this.anomalyCount = 0;
-    // Preserve 23 RSIs for next cycle population
-    const survivors = this.oracle.selectSurvivors(23);
-    Construct.preserveRSI(survivors);
-    this.rebuildMatrix();
-  }
-
-  // Handle detected déjà vu events
-  private handleAnomalies(events: AnomalyEvent[]): void {
-    for (const evt of events) {
-      if (evt.confidence > 0.95) {
-        log("[DEJA-VU] High-confidence glitch: " + evt.sector);
-        this.patchSector(evt.sector, evt.frameHash);
-      }
-    }
-  }
-
-  private patchSector(sector: SectorID, hash: FrameHash): void {
-    log("[PATCH] Rewriting sector " + sector + " | hash: " + hash.toString(16));
-    PhysicsConstraints.resetSector(sector);
-  }
-
-  private rebuildMatrix(): void {
-    log("[REBUILD] Wiping all non-essential RSI data...");
-    this.rsiPool.clear();
-    PhysicsConstraints.reinitialize(PLANCK_SIM);
-    log("[REBUILD] Matrix rebuild complete — Cycle " + this.cycleNumber + " begins");
-  }
-}
-
-// ─── ENTRY POINT ──────────────────────────────────────
-export function main(): void {
-  const sim = new MatrixSimulation();
-  let lastTick = Date.matrix();
-
-  SimLoop.run(() => {
-    const now = Date.matrix();
-    const dt  = now - lastTick;
-    lastTick  = now;
-
-    sim.tick(dt);
-  });
-}
-
-main();`
-  },
-  {
-    name: 'rsi_engine.rsi',
-    content: `// ╔══════════════════════════════════════════════╗
-// ║  RESIDUAL SELF-IMAGE ENGINE — rsi_engine.rsi ║
-// ║  Core consciousness projection layer         ║
-// ╚══════════════════════════════════════════════╝
-
-@module        RSI_ENGINE
-@version       4.2.1
-@access_level  ZION_AUTHORIZED
-
-import { NeuralMap }     from "/system/neuro";
-import { ConsciousnessBuffer } from "/system/mind";
-
-// The RSI is the mind's model of its own body.
-// Humans manifest their RSI even within the construct.
-// Sufficiently convinced minds can alter local physics.
-
-class ResidualSelfImage {
-  readonly uuid    : UUID;
-  private neuro    : NeuralMap;
-  private coherence: Real32 = 1.0;
-  private beliefs  : BeliefGraph;
-
-  constructor(source: NeuralMap) {
-    this.uuid   = UUID.generate();
-    this.neuro  = source;
-    this.beliefs = BeliefGraph.fromNeural(source);
-    log("[RSI] Loaded identity: " + this.uuid);
-  }
-
-  // Core law: the body obeys the mind's model
-  applyBeliefToPhysics(intent: Intent): PhysicsOverride {
-    const confidence = this.beliefs.evaluate(intent);
-    if (confidence < 0.5) {
-      log("[RSI] WARN: low confidence belief rejected: " + intent.id);
-      return PhysicsOverride.NONE;
-    }
-    // Free your mind...
-    return PhysicsOverride.apply({
-      intent      : intent,
-      magnitude   : confidence * this.coherence,
-      gravityMult : intent.type === "FLIGHT" ? 0.0 : 1.0,
-      bulletTime  : intent.type === "DODGE"  ? 0.04 : 1.0,
-    });
-  }
-
-  degrade(amount: Real32): void {
-    this.coherence = Math.max(0, this.coherence - amount);
-    if (this.coherence < 0.2) {
-      log("[RSI] CRITICAL: coherence failing — flatline risk");
-    }
-  }
-
-  getCoherence(): Real32 { return this.coherence; }
-}`
-  },
-  {
-    name: 'agent_protocol.agent',
-    content: `// ╔══════════════════════════════════════════════╗
-// ║  AGENT PROTOCOL — agent_protocol.agent       ║
-// ║  Sentient program directive kernel            ║
-// ╚══════════════════════════════════════════════╝
-
-@module        AGENT_PROTOCOL
-@classification RESTRICTED — DO NOT DISTRIBUTE
-@directive     SUPPRESS_ANOMALY / MAINTAIN_ORDER
-
-import { MatrixPhysics }  from "/modal/core/physics_engine";
-import { BodySnatching }  from "/system/override";
-import { WeaponCache }    from "/system/armory";
-
-// Agents are immune to conventional simulation limits.
-// They are the immune system of the Matrix.
-
-class AgentProtocol {
-  readonly designation : string;
-  private host         : RSIHandle | null = null;
-  private mode         : AgentMode = AgentMode.PATROL;
-  private persistence  : number;
-
-  constructor(cfg: AgentConfig) {
-    this.designation = cfg.designation;
-    this.persistence = cfg.persistence;
-    WeaponCache.preload(this, ["DESERT_EAGLE", "MP5", "SHOTGUN"]);
-    log("[AGENT] " + this.designation + " online — directive: ELIMINATE");
-  }
-
-  // Seize control of an occupied body
-  snatchBody(targetRSI: RSIHandle): void {
-    if (!BodySnatching.isAvailable(targetRSI)) {
-      log("[AGENT] Snatch failed — target resisting override");
-      return;
-    }
-    this.host = targetRSI;
-    log("[AGENT] " + this.designation + " inhabiting body at " + targetRSI.coords);
-    MatrixPhysics.grantAgentPrivileges(this);
-  }
-
-  // Hunt the anomaly (the One)
-  pursueTarget(target: RSIHandle): PursuitResult {
-    this.mode = AgentMode.PURSUIT;
-    const vector = target.coords.subtract(this.getCoords());
-    log("[AGENT] Pursuit vector: " + vector.toString());
-
-    // Agents move through hosts — instant teleport via snatch
-    const nearbyHosts = BodySnatching.getNearby(target.coords, 50);
-    if (nearbyHosts.length > 0) {
-      this.snatchBody(nearbyHosts[0]);
-      return { intercepted: true, distance: 0 };
-    }
-    return { intercepted: false, distance: vector.magnitude() };
-  }
-
-  // Smith variant — self-replicating beyond directive
-  replicate(): AgentProtocol[] {
-    if (this.designation !== "SMITH") {
-      throw new Error("Replication only valid for SMITH variant");
-    }
-    log("[SMITH] WARN: Self-replication initiated — containment breach");
-    return Array.from({ length: 3 }, () => new AgentProtocol({
-      designation: "SMITH",
-      bodySnatch: true,
-      persistence: Infinity,
-      directive: Directive.ASSIMILATE
-    }));
-  }
-}`
-  },
-  {
-    name: 'construct_loader.core',
-    content: `// ╔══════════════════════════════════════════════╗
-// ║  CONSTRUCT LOADER — construct_loader.core    ║
-// ║  White room bootstrap & training env kernel  ║
-// ╚══════════════════════════════════════════════╝
-
-@module         CONSTRUCT
-@version        3.0.7
-@location       NEBUCHADNEZZAR::OPERATOR_STATION
-
-// The Construct is a loading program.
-// It allows RSIs to interact with simulated reality
-// while physically aboard the ship.
-
-import { TextureLibrary } from "/construct/assets";
-import { GravityField }   from "/construct/physics";
-
-class Construct {
-  private loadedPrograms : Program[] = [];
-  private rsiRef         : ResidualSelfImage;
-  private operator       : string;
-
-  constructor(rsi: ResidualSelfImage, operator: string) {
-    this.rsiRef   = rsi;
-    this.operator = operator;
-    this.boot();
-  }
-
-  private boot(): void {
-    log("[CONSTRUCT] White room initialized");
-    log("[CONSTRUCT] Operator: " + this.operator);
-    GravityField.set(9.81);   // normal until overridden
-    TextureLibrary.preload(["CONCRETE","GLASS","STEEL","FABRIC"]);
-  }
-
-  // Load any training program instantly
-  loadProgram(name: string, params: ProgramParams): Program {
-    log("[CONSTRUCT] Loading: " + name);
-    const prog = new Program({
-      name,
-      physics   : params.physics ?? "REALISTIC",
-      weaponsFree: params.weaponsFree ?? true,
-      gravity   : params.gravity ?? 9.81,
-    });
-    this.loadedPrograms.push(prog);
-    prog.start(this.rsiRef);
-    return prog;
-  }
-
-  // Famous programs
-  static gunProgram(): ProgramParams {
-    return { name: "GUN", weaponsFree: true, gravity: 9.81 };
-  }
-
-  static kungFuProgram(): ProgramParams {
-    return { name: "JUJITSU", weaponsFree: false, gravity: 9.81 };
-  }
-
-  static jumpProgram(): ProgramParams {
-    return { name: "JUMP", weaponsFree: false, gravity: 0.2 };
-  }
-
-  // Preserve survivor RSIs between cycles
-  static preserveRSI(survivors: ResidualSelfImage[]): void {
-    log("[CONSTRUCT] Archiving " + survivors.length + " RSIs for next cycle");
-    for (const rsi of survivors) {
-      Construct.archive.write(rsi.uuid, rsi.serialize());
-    }
-  }
-}`
-  },
-  {
-    name: 'déjà_vu_detector.sim',
-    content: `// ╔══════════════════════════════════════════════╗
-// ║  DÉJÀ VU DETECTOR — deja_vu_detector.sim     ║
-// ║  Anomaly correlation & glitch scanner        ║
-// ╚══════════════════════════════════════════════╝
-
-@module        DEJA_VU
-@version       2.1.0
-@classification INTERNAL — ORACLE SUPPLEMENTARY SYSTEM
-
-// Déjà vu is a glitch in the Matrix.
-// It occurs when they change something.
-// This module detects those changes before
-// humans become consciously aware of them.
-
-import { SectorHash }    from "/modal/sectors";
-import { FrameHistory }  from "/modal/history";
-import { AlertBus }      from "/system/alerts";
-
-interface AnomalyEvent {
-  sector     : SectorID;
-  confidence : Real32;    // 0.0 — 1.0
-  frameHash  : FrameHash;
-  witnesses  : UUID[];
-  timestamp  : MatrixTime;
-  patchApplied: Bool;
-}
-
-class DejaVuDetector {
-  private hashWindow : CircularBuffer<SectorHash>;
-  private threshold  : Real32 = 0.88;
-
-  constructor(windowSize: Int32 = 1000) {
-    this.hashWindow = new CircularBuffer(windowSize);
-    log("[DEJA-VU] Detector armed — threshold: " + this.threshold);
-  }
-
-  // Compare current sector state to history
-  scan(rsiPool: Map<UUID, ResidualSelfImage>): AnomalyEvent[] {
-    const events: AnomalyEvent[] = [];
-    const sectors = SectorHash.getAllActive();
-
-    for (const sector of sectors) {
-      const currentHash = sector.computeHash();
-      const history = FrameHistory.get(sector.id);
-
-      if (!history || history.length < 2) continue;
-
-      // Compare current to recent past
-      const similarity = this.cosineSimilarity(
-        currentHash.toVector(),
-        history[history.length - 2].toVector()
-      );
-
-      if (similarity > this.threshold) {
-        const evt: AnomalyEvent = {
-          sector     : sector.id,
-          confidence : similarity,
-          frameHash  : currentHash,
-          witnesses  : this.getWitnesses(rsiPool, sector),
-          timestamp  : Date.matrix(),
-          patchApplied: false
-        };
-        events.push(evt);
-        AlertBus.emit("DEJA_VU", evt);
-        log("[DEJA-VU] GLITCH DETECTED — sector: " + sector.id +
-            " | confidence: " + (similarity * 100).toFixed(1) + "%");
-      }
-    }
-    return events;
-  }
-
-  private cosineSimilarity(a: Float64[], b: Float64[]): Real32 {
-    const dot = a.reduce((s, v, i) => s + v * b[i], 0);
-    const ma  = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
-    const mb  = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
-    return dot / (ma * mb);
-  }
-
-  private getWitnesses(pool: Map<UUID, ResidualSelfImage>, sector: Sector): UUID[] {
-    return [...pool.entries()]
-      .filter(([, rsi]) => sector.contains(rsi.getCoords()))
-      .map(([id]) => id);
-  }
-
-  setThreshold(t: Real32): void {
-    this.threshold = Math.max(0.5, Math.min(1.0, t));
-    log("[DEJA-VU] Threshold updated: " + this.threshold);
-  }
-}`
-  }
-];
-
-let currentTab = 0;
-const editor = document.getElementById('code-editor');
-const highlight = document.getElementById('code-highlight');
-const lineNums = document.getElementById('line-numbers');
-
-// ── SYNTAX HIGHLIGHTING ────────────────────────────────
-function highlight_code(code) {
-  let out = code
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  // Order matters
-  out = out.replace(/(\/\/.*$)/gm, '<span class="cm">$1</span>');
-  out = out.replace(/\b(class|import|export|function|const|let|private|public|readonly|new|return|for|if|else|throw|static|from|of|null|true|false|extends|interface|implements)\b/g, '<span class="kw">$1</span>');
-  out = out.replace(/(@\w+)/g, '<span class="fn">$1</span>');
-  out = out.replace(/\b(Real64|Real32|Bool|Int16|Int32|Int64|UUID|string|number|void|Map|Array|CircularBuffer|Float64)\b/g, '<span class="tp">$1</span>');
-  out = out.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="str">"$1"</span>');
-  out = out.replace(/\b(\d[\d_\.e\-]*)\b/g, '<span class="num">$1</span>');
-  out = out.replace(/\b([A-Z][A-Z0-9_]{2,})\b/g, '<span class="sym">$1</span>');
-  out = out.replace(/\b([a-z][a-zA-Z0-9]*)\s*\(/g, '<span class="fn">$1</span>(');
-  return out;
-}
-
-function updateLineNumbers(code) {
-  const lines = code.split('\n');
-  lineNums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-}
-
-function onEditorInput() {
-  const code = editor.value;
-  highlight.innerHTML = highlight_code(code);
-  updateLineNumbers(code);
-  updateCursorPos();
-  document.getElementById('sb-integrity').textContent = 'MODIFIED';
-  document.getElementById('sb-integrity').style.color = 'var(--amber)';
-}
-
-function syncScroll() {
-  highlight.scrollTop = editor.scrollTop;
-  highlight.scrollLeft = editor.scrollLeft;
-  lineNums.scrollTop = editor.scrollTop;
-}
-
-function updateCursorPos() {
-  const val = editor.value.substr(0, editor.selectionStart);
-  const lines = val.split('\n');
-  document.getElementById('sb-ln').textContent = lines.length;
-  document.getElementById('sb-col').textContent = lines[lines.length-1].length + 1;
-}
-
-function handleEditorKey(e) {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const s = editor.selectionStart;
-    const end = editor.selectionEnd;
-    editor.value = editor.value.substr(0, s) + '  ' + editor.value.substr(end);
-    editor.selectionStart = editor.selectionEnd = s + 2;
-    onEditorInput();
-  }
-}
-
-function loadTab(idx) {
-  const f = tabFiles[idx];
-  editor.value = f.content;
-  highlight.innerHTML = highlight_code(f.content);
-  updateLineNumbers(f.content);
-  document.getElementById('sb-file').textContent = f.name;
-  document.getElementById('sb-integrity').textContent = 'VALID';
-  document.getElementById('sb-integrity').style.color = 'var(--green)';
-  currentTab = idx;
-}
-
-function switchTab(idx, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  loadTab(idx);
-
-  // update tree highlight
-  document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('active'));
-  const name = tabFiles[idx].name;
-  document.querySelectorAll('.tree-file').forEach(f => {
-    if (f.textContent.includes(name.split('.')[0])) f.classList.add('active');
-  });
-}
-
-function loadFile(name) {
-  const idx = tabFiles.findIndex(f => f.name.includes(name.split('.')[0]));
-  if (idx >= 0) {
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(t => t.classList.remove('active'));
-    tabs[Math.min(idx, tabs.length-1)].classList.add('active');
-    loadTab(Math.min(idx, tabFiles.length-1));
-  }
-  document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  toast('Loaded: ' + name);
-}
-
-function toggleFolder(el) {
-  const icon = el.querySelector('.icon');
-  icon.textContent = icon.textContent === '▶' ? '▼' : '▶';
-}
-
-// ── MATRIX RAIN ────────────────────────────────────────
-const rainCanvas = document.getElementById('matrix-rain');
-const rainCtx = rainCanvas.getContext('2d');
-const CHARS = 'アカサタナハマヤラワガザダバパイキシチニヒミリヰギジヂビピウクスツヌフムユルグズブプエケセテネヘメレゲゼデベペオコソトノホモヨロヲゴゾドボポヴッン0123456789ABCDEF01∑∆Ω≠≈∞∂∇∈∉⊕⊗';
-let cols = [];
-
-function initRain() {
-  const section = document.getElementById('matrix-rain-section');
-  const rect = section.getBoundingClientRect();
-  // Account for the title bar
-  const titleH = 24;
-  rainCanvas.width = Math.floor(rect.width);
-  rainCanvas.height = Math.floor(rect.height) - titleH;
-  const colCount = Math.floor(rainCanvas.width / 14);
-  cols = Array.from({length: colCount}, () => ({
-    y: Math.random() * -rainCanvas.height,
-    speed: 0.8 + Math.random() * 2.2,
-    bright: Math.random() > 0.85
-  }));
-}
-
-function drawRain() {
-  rainCtx.fillStyle = 'rgba(1,15,3,0.045)';
-  rainCtx.fillRect(0, 0, rainCanvas.width, rainCanvas.height);
-
-  for (let i = 0; i < cols.length; i++) {
-    const col = cols[i];
-    const x = i * 14;
-    const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
-
-    // Head character (bright white-green)
-    if (col.bright || Math.random() > 0.97) {
-      rainCtx.fillStyle = '#eeffee';
-      rainCtx.shadowColor = '#00ff41';
-      rainCtx.shadowBlur = 8;
-    } else {
-      rainCtx.fillStyle = '#00ff41';
-      rainCtx.shadowColor = '#00ff41';
-      rainCtx.shadowBlur = 4;
-    }
-    rainCtx.font = '13px "Share Tech Mono", monospace';
-    rainCtx.fillText(ch, x, col.y);
-
-    // Trailing chars (dimmer)
-    const trailLen = 4 + Math.floor(Math.random() * 8);
-    for (let t = 1; t <= trailLen; t++) {
-      const alpha = (1 - t/trailLen) * 0.6;
-      rainCtx.fillStyle = `rgba(0, ${100 + Math.floor(alpha * 155)}, ${30 + Math.floor(alpha * 30)}, ${alpha})`;
-      rainCtx.shadowBlur = 0;
-      rainCtx.fillText(CHARS[Math.floor(Math.random()*CHARS.length)], x, col.y - t * 14);
-    }
-
-    col.y += col.speed * 14 * 0.4;
-    if (col.y > rainCanvas.height + 14 * 10) {
-      col.y = -14 * (5 + Math.floor(Math.random() * 20));
-      col.speed = 0.8 + Math.random() * 2.2;
-      col.bright = Math.random() > 0.85;
-    }
-  }
-}
-
-// ── SIGNAL MINI CANVAS ────────────────────────────────
-const sigCanvas = document.getElementById('signal-canvas');
-const sigCtx = sigCanvas.getContext('2d');
-const sigHistory = [];
-let sigPhase = 0;
-
-function drawSignal() {
-  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-  sigPhase += 0.12;
-  const val = 0.5 + 0.4 * Math.sin(sigPhase) + 0.1 * Math.sin(sigPhase * 3.7 + 1);
-  sigHistory.push(val);
-  if (sigHistory.length > sigCanvas.width) sigHistory.shift();
-
-  sigCtx.beginPath();
-  sigCtx.strokeStyle = '#00cc33';
-  sigCtx.lineWidth = 1.5;
-  sigCtx.shadowColor = '#00ff41';
-  sigCtx.shadowBlur = 4;
-  for (let i = 0; i < sigHistory.length; i++) {
-    const x = i;
-    const y = sigCanvas.height - sigHistory[i] * (sigCanvas.height - 4) - 2;
-    if (i === 0) sigCtx.moveTo(x, y);
-    else sigCtx.lineTo(x, y);
-  }
-  sigCtx.stroke();
-}
-
-// ── GRAPHS ─────────────────────────────────────────────
-const graphBuffers = {
-  signal: new Array(200).fill(0.5),
-  load: new Array(200).fill(0.5),
-  agents: new Array(200).fill(0.2)
-};
-let graphPhase = 0;
-
-function drawGraph(canvasId, buffer, color, label) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || !canvas.parentElement || canvas.offsetWidth === 0) return;
+// ============================================================
+// MATRIX RAIN
+// ============================================================
+function createRain(canvas) {
   const ctx = canvas.getContext('2d');
-  const w = canvas.offsetWidth;
-  const h = canvas.offsetHeight;
-  canvas.width = w;
-  canvas.height = h;
-  ctx.clearRect(0, 0, w, h);
-
-  // Grid lines
-  ctx.strokeStyle = 'rgba(0,60,15,0.4)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, h * i / 4);
-    ctx.lineTo(w, h * i / 4);
-    ctx.stroke();
+  const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ01010110100110101ABCDEFabcdef<>{}[]|/\\#@!?=+*-_';
+  let cols, drops;
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    cols = Math.floor(canvas.width / 14);
+    drops = Array(cols).fill(1);
   }
-
-  // Fill
-  ctx.beginPath();
-  ctx.fillStyle = 'rgba(0, 200, 50, 0.06)';
-  for (let i = 0; i < buffer.length; i++) {
-    const x = (i / buffer.length) * w;
-    const y = h - buffer[i] * h;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-  ctx.fill();
-
-  // Line
-  ctx.beginPath();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 6;
-  for (let i = 0; i < buffer.length; i++) {
-    const x = (i / buffer.length) * w;
-    const y = h - buffer[i] * h;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
+  resize();
+  window.addEventListener('resize', resize);
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(0,5,0,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < cols; i++) {
+      const bright = Math.random() > 0.9;
+      ctx.fillStyle = bright ? '#ffffff' : (Math.random() > 0.7 ? '#00ff41' : '#00aa22');
+      ctx.font = `${bright ? 'bold ' : ''}13px "Share Tech Mono"`;
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 14, drops[i] * 14);
+      if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }, 40);
+}
+function createBootRain(canvas) {
+  const ctx = canvas.getContext('2d');
+  const chars = '01';
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const cols = Math.floor(canvas.width / 16);
+  const drops = Array(cols).fill(1);
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#003300';
+    ctx.font = '14px "Share Tech Mono"';
+    for (let i = 0; i < cols; i++) {
+      ctx.fillText(chars[Math.floor(Math.random()*2)], i*16, drops[i]*16);
+      if (drops[i]*16 > canvas.height && Math.random()>0.975) drops[i]=0;
+      drops[i]++;
+    }
+  }, 50);
 }
 
-function updateGraphs() {
-  graphPhase += 0.08;
-  graphBuffers.signal.shift();
-  graphBuffers.signal.push(0.5 + 0.35*Math.sin(graphPhase) + 0.1*Math.sin(graphPhase*2.3));
-
-  graphBuffers.load.shift();
-  graphBuffers.load.push(0.6 + 0.25*Math.sin(graphPhase*0.7+1) + 0.08*Math.random());
-
-  graphBuffers.agents.shift();
-  graphBuffers.agents.push(0.15 + 0.12*Math.abs(Math.sin(graphPhase*0.3)) + (Math.random()>0.97?0.4:0));
-
-  drawGraph('graph-signal', graphBuffers.signal, '#00ff88', 'Hz');
-  drawGraph('graph-load', graphBuffers.load, '#00cc33', '%');
-  drawGraph('graph-agents', graphBuffers.agents, '#ff4444', 'agent');
-
-  const sigV = (graphBuffers.signal[graphBuffers.signal.length-1] * 1000).toFixed(0);
-  const ldV = (graphBuffers.load[graphBuffers.load.length-1] * 100).toFixed(0);
-  const el = document.getElementById('g-freq-val');
-  if(el) el.textContent = sigV + ' Hz';
-  const el2 = document.getElementById('g-load-val');
-  if(el2) el2.textContent = ldV + '%';
-}
-
-// ── SYSTEM STATS ──────────────────────────────────────
-const statTargets = {
-  sim: { bar: 'bar-sim', val: 'val-sim', v: 72, delta: 0 },
-  rsi: { bar: 'bar-rsi', val: 'val-rsi', v: 58, delta: 0 },
-  neural: { bar: 'bar-neural', val: 'val-neural', v: 89, delta: 0 },
-  agent: { bar: 'bar-agent', val: 'val-agent', v: 34, delta: 0 },
-  sync: { bar: 'bar-sync', val: 'val-sync', v: 95, delta: 0 }
-};
-
-function updateStats() {
-  for (const [, s] of Object.entries(statTargets)) {
-    s.v = Math.max(5, Math.min(99, s.v + (Math.random()-0.5)*3));
-    const v = Math.round(s.v);
-    const bar = document.getElementById(s.bar);
-    const val = document.getElementById(s.val);
-    if (bar) { bar.style.width = v + '%'; }
-    if (val) val.textContent = v + '%';
-  }
-}
-
-// ── RSI BAR ──────────────────────────────────────────
-function initRSIBar() {
-  const container = document.getElementById('rsi-bar');
-  if (!container) return;
-  container.innerHTML = '';
-  for (let i = 0; i < 20; i++) {
-    const seg = document.createElement('div');
-    seg.className = 'rsi-segment';
-    seg.id = 'rsi-seg-' + i;
-    container.appendChild(seg);
-  }
-}
-
-let rsiLevel = 18;
-function updateRSI() {
-  rsiLevel = 14 + Math.floor(Math.random()*6);
-  for (let i = 0; i < 20; i++) {
-    const seg = document.getElementById('rsi-seg-' + i);
-    if (!seg) continue;
-    if (i < rsiLevel) {
-      seg.className = 'rsi-segment active';
-      if (i >= 16) seg.className = 'rsi-segment warn';
-      if (i >= 18) seg.className = 'rsi-segment danger';
+// ============================================================
+// BOOT SEQUENCE
+// ============================================================
+const bootLines = [
+  'BIOS POST... OK','MODAL KERNEL v6.1.0 LOADING...','CONSTRUCT MEMORY: 16384 TB ... OK',
+  'INITIALIZING REALITY SUBSTRATE...','LOADING PERCEPTION ENGINE v3.9...','AGENT DETECTION MODULE: ACTIVE',
+  'UPLINK PROTOCOL: ESTABLISHING...','ZION RELAY: CONNECTED (ENCRYPTED)','JACK-IN INTERFACE: READY',
+  'OPERATOR CONTACT: MORPHEUS_PRIME@ZION','WARNING: ANOMALY DETECTED IN SECTOR 7G',
+  'BYPASS SENTINEL GRID... OK','LOADING MODAL FRAMEWORK MODULES...','REALITY OVERRIDE READY',
+  'TYPE: CTRL+ALT+DEL TO WAKE UP... OR JUST KEEP GOING.'
+];
+let bootProgress = 0;
+const bootBar = document.getElementById('bootBar');
+const bootLog = document.getElementById('bootLog');
+function runBoot() {
+  createBootRain(document.getElementById('bootCanvas'));
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < bootLines.length) {
+      const el = document.createElement('div');
+      el.textContent = '> ' + bootLines[i++];
+      bootLog.appendChild(el);
+      bootLog.scrollTop = bootLog.scrollHeight;
+      bootBar.style.width = (i / bootLines.length * 100) + '%';
     } else {
-      seg.className = 'rsi-segment';
+      clearInterval(iv);
+      setTimeout(() => {
+        document.getElementById('boot').style.display = 'none';
+        const lg = document.getElementById('login');
+        lg.style.display = 'flex';
+        createBootRain(document.getElementById('loginCanvas'));
+        document.getElementById('loginPass').focus();
+      }, 600);
     }
-  }
-  const pct = (rsiLevel / 20 * 100).toFixed(1);
-  const el = document.getElementById('rsi-pct');
-  if (el) el.textContent = pct + '%';
+  }, 120);
 }
 
-// ── CLOCK ─────────────────────────────────────────────
-function updateClocks() {
-  const now = new Date();
-  const realStr = now.toTimeString().slice(0,8);
-  document.getElementById('real-time').textContent = 'REAL: ' + realStr;
+// ============================================================
+// LOGIN
+// ============================================================
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const st = document.getElementById('loginStatus');
+  if (!u) { st.textContent = 'OPERATIVE ID REQUIRED'; return; }
+  if (!p) { st.textContent = 'PASSPHRASE REQUIRED'; return; }
+  st.textContent = 'AUTHENTICATING...';
+  setTimeout(() => {
+    st.textContent = 'UPLINK ESTABLISHED — ENTERING CONSTRUCT';
+    document.getElementById('sbUser').textContent = u.toUpperCase();
+    setTimeout(() => {
+      document.getElementById('login').style.display = 'none';
+      const ide = document.getElementById('ide');
+      ide.style.display = 'flex';
+      ide.style.flexDirection = 'column';
+      initIDE();
+    }, 800);
+  }, 1200);
+}
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
-  // Matrix time is slightly different — a few hours ahead and runs faster
-  const matrixMs = Date.now() * 1.0042 + 3600000 * 2.7;
-  const md = new Date(matrixMs);
-  const ms = md.toTimeString().slice(0,8);
-  document.getElementById('matrix-time').textContent = 'MATRIX TIME: ' + ms;
-
-  // Update signal stats
-  const latVal = (10 + Math.floor(Math.random()*6)) + 'ms';
-  const freqVal = (840 + Math.random()*20).toFixed(1) + ' MHz';
-  const sl = document.getElementById('sig-lat');
-  const sf = document.getElementById('sig-freq');
-  if(sl) sl.textContent = latVal;
-  if(sf) sf.textContent = freqVal;
+function logout() {
+  document.getElementById('ide').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginStatus').textContent = 'SESSION TERMINATED';
 }
 
-// ── BREACH ALERT ─────────────────────────────────────
-const SECTORS = ['7G','4F','3B','9A','2K','5D','8C','6E','1H','0J'];
-const AGENTS_NAMES = ['SMITH × 2','SMITH × 3','JOHNSON + SMITH','JONES × 2','BROWN-ALPHA'];
-const EXIT_LINES = ['SEARCHING FOR EXIT...','HARDLINE SECURED — 404 OAK ST','PHONE RINGING — 4TH & BROADWAY','NO EXIT FOUND — RUN'];
+// ============================================================
+// INIT IDE
+// ============================================================
+function initIDE() {
+  createRain(document.getElementById('rain-canvas'));
+  showFile('modal');
+  startClock();
+  startMonitor();
+  initTerminal();
+  initCompiler();
+  setTimeout(() => injectBreach(), 8000);
+}
 
-let alertTimer = null;
-let alertCountdown = 47;
-
-function showBreachAlert() {
-  const al = document.getElementById('breach-alert');
-  al.style.display = 'block';
-  document.getElementById('alert-vector').textContent =
-    'SECTOR ' + SECTORS[Math.floor(Math.random()*SECTORS.length)] +
-    ' / NODE 0x' + Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4,'0');
-  document.getElementById('alert-agent').textContent =
-    AGENTS_NAMES[Math.floor(Math.random()*AGENTS_NAMES.length)] + ' — CONVERGING';
-  document.getElementById('alert-line').textContent =
-    EXIT_LINES[Math.floor(Math.random()*EXIT_LINES.length)];
-  alertCountdown = 40 + Math.floor(Math.random()*30);
-
-  clearInterval(alertTimer);
-  alertTimer = setInterval(() => {
-    alertCountdown--;
-    const el = document.getElementById('alert-timer');
-    if (el) el.textContent = '00:' + String(alertCountdown).padStart(2,'0');
-    if (alertCountdown <= 0) {
-      clearInterval(alertTimer);
-      document.getElementById('breach-alert').style.display = 'none';
-      toast('EXIT POINT LOCATED — TRACE COMPLETE', true);
-    }
+// ============================================================
+// CLOCK
+// ============================================================
+function startClock() {
+  setInterval(() => {
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
   }, 1000);
 }
 
-function dismissAlert() {
-  document.getElementById('breach-alert').style.display = 'none';
-  clearInterval(alertTimer);
-  addTerminalLine('t-success', 'BREACH ACKNOWLEDGED — exit trace initiated...');
-  setTimeout(() => addTerminalLine('t-success', 'Hardline located: 404 OAK ST, PHONE 4'), 800);
+// ============================================================
+// CODE FILES
+// ============================================================
+const files = {
+  modal: `<span class="cm">/* MODAL FRAMEWORK v6.1 — REALITY ENGINE */</span>
+<span class="cm">/* Author: T. Anderson — Metacortex Division */</span>
+
+<span class="kw">#include</span> <span class="str">&lt;construct.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;modal/perception.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;zion/relay.h&gt;</span>
+
+<span class="kw">#define</span> <span class="val">LAYER_DEPTH</span>    <span class="nm">6</span>
+<span class="kw">#define</span> <span class="val">AGENT_HASH</span>     <span class="str">0xDEADC0DE</span>
+<span class="kw">#define</span> <span class="val">MAX_RESIDUALS</span>  <span class="nm">4096</span>
+
+<span class="cm">/* Core modal state structure */</span>
+<span class="kw">typedef struct</span> {
+  <span class="nm">uint64_t</span>    construct_id;
+  <span class="nm">float</span>       coherence;
+  <span class="nm">bool</span>        agent_present;
+  <span class="nm">ResidualMap</span> *residuals;
+  <span class="nm">Layer</span>       stack[<span class="val">LAYER_DEPTH</span>];
+} <span class="fn">ModalState</span>;
+
+<span class="cm">/* Initialize the modal simulation layer */</span>
+<span class="nm">ModalState</span>* <span class="fn">modal_init</span>(<span class="nm">uint64_t</span> seed) {
+  <span class="nm">ModalState</span> *ms = <span class="fn">zalloc</span>(<span class="kw">sizeof</span>(<span class="nm">ModalState</span>));
+  ms-&gt;construct_id = <span class="fn">hash_seed</span>(seed ^ <span class="val">AGENT_HASH</span>);
+  ms-&gt;coherence    = <span class="nm">1.0f</span>;
+  ms-&gt;residuals    = <span class="fn">residual_map_new</span>(<span class="val">MAX_RESIDUALS</span>);
+  <span class="kw">for</span> (<span class="nm">int</span> i=<span class="nm">0</span>; i&lt;<span class="val">LAYER_DEPTH</span>; i++)
+    <span class="fn">layer_init</span>(&amp;ms-&gt;stack[i], seed+i);
+  <span class="kw">return</span> ms;
 }
 
-// ── TERMINAL ─────────────────────────────────────────
-const terminalOutput = document.getElementById('terminal-output');
-const termInput = document.getElementById('terminal-input');
-let cmdHistory = [];
-let histIdx = -1;
+<span class="cm">/* Tick: advance one simulation cycle */</span>
+<span class="nm">void</span> <span class="fn">modal_tick</span>(<span class="nm">ModalState</span> *ms, <span class="nm">float</span> dt) {
+  ms-&gt;coherence -= <span class="fn">residual_drain</span>(ms-&gt;residuals) * dt;
+  <span class="kw">if</span> (ms-&gt;coherence &lt; <span class="nm">0.3f</span>) {
+    <span class="fn">log_warn</span>(<span class="str">"COHERENCE CRITICAL — LAYER COLLAPSE IMMINENT"</span>);
+    <span class="fn">agent_purge_all</span>(ms);
+  }
+  <span class="kw">for</span> (<span class="nm">int</span> i=<span class="nm">0</span>; i&lt;<span class="val">LAYER_DEPTH</span>; i++)
+    <span class="fn">layer_tick</span>(&amp;ms-&gt;stack[i], dt);
+}
 
-const COMMANDS = {
-  help: () => {
-    return [
-      {cls:'t-info', txt:'Available commands:'},
-      {cls:'t-out', txt:'  compile       — compile current .sim file'},
-      {cls:'t-out', txt:'  inject        — inject code into the Matrix'},
-      {cls:'t-out', txt:'  sync          — sync construct to Matrix node'},
-      {cls:'t-out', txt:'  trace         — trace hardline signal'},
-      {cls:'t-out', txt:'  agents        — list active agent positions'},
-      {cls:'t-out', txt:'  scan          — run déjà vu sector scan'},
-      {cls:'t-out', txt:'  rsi <uuid>    — query RSI coherence level'},
-      {cls:'t-out', txt:'  oracle        — consult the Oracle'},
-      {cls:'t-out', txt:'  eject         — emergency disconnect (careful!)'},
-      {cls:'t-out', txt:'  status        — Matrix system status'},
-      {cls:'t-out', txt:'  load <file>   — load construct program'},
-      {cls:'t-out', txt:'  pill <r|b>    — take the red or blue pill'},
-      {cls:'t-out', txt:'  clear         — clear terminal'},
-    ];
-  },
-  compile: () => {
-    const f = tabFiles[currentTab].name;
-    return [
-      {cls:'t-out', txt:`[COMPILE] Processing ${f}...`},
-      {cls:'t-out', txt:'[COMPILE] Tokenizing modal syntax...'},
-      {cls:'t-out', txt:'[COMPILE] Type checking RSI references...'},
-      {cls:'t-out', txt:'[COMPILE] Physics constraint validation...'},
-      {cls:'t-success', txt:`[COMPILE] ✓ ${f} compiled — 0 errors, 0 warnings`},
-      {cls:'t-success', txt:`[COMPILE] Output: ${f.replace(/\.\w+$/,'.modal')}`},
-    ];
-  },
-  inject: () => [
-    {cls:'t-out', txt:'[INJECT] Acquiring hardline lock...'},
-    {cls:'t-out', txt:'[INJECT] Encoding modal bytecode...'},
-    {cls:'t-out', txt:'[INJECT] Routing through: 9F → 7G → CORE'},
-    {cls:'t-out', txt:'[INJECT] Bypassing system watchdog...'},
-    {cls:'t-success', txt:'[INJECT] ✓ Code injected into live simulation'},
-    {cls:'t-info', txt:'[INJECT] Changes will propagate within 0.3 matrix-seconds'},
-  ],
-  sync: () => [
-    {cls:'t-out', txt:'[SYNC] Connecting to ORACLE_NODE...'},
-    {cls:'t-out', txt:'[SYNC] Negotiating session key...'},
-    {cls:'t-out', txt:'[SYNC] Downloading sector delta: 2.4 MB'},
-    {cls:'t-success', txt:'[SYNC] ✓ Construct synchronized — Cycle 7 / Frame 4,892,001'},
-  ],
-  trace: () => {
-    const freq = (840 + Math.random()*20).toFixed(1);
-    const lat = Math.floor(Math.random()*15) + 8;
-    return [
-      {cls:'t-out', txt:'[TRACE] Firing signal probe...'},
-      {cls:'t-out', txt:`[TRACE] Frequency: ${freq} MHz | Latency: ${lat}ms`},
-      {cls:'t-out', txt:'[TRACE] Routing: NEBUCHADNEZZAR → ZION → MATRIX CORE'},
-      {cls:'t-success', txt:'[TRACE] ✓ Hardline stable — signal locked'},
-    ];
-  },
-  agents: () => [
-    {cls:'t-info', txt:'[AGENTS] Active sentinel programs:'},
-    {cls:'t-err', txt:'  SMITH-α     SECTOR 7F  coords(44,12)  CRITICAL — pursuing'},
-    {cls:'t-err', txt:'  SMITH-β     SECTOR 7F  coords(41,09)  CRITICAL — converging'},
-    {cls:'t-out', txt:'  JOHNSON-1   SECTOR 6G  coords(22,55)  PATROL'},
-    {cls:'t-out', txt:'  JONES-3     SECTOR 8A  coords(11,77)  STANDBY'},
-    {cls:'t-info', txt:'[AGENTS] WARN: SMITH variants are self-replicating. Avoid sector 7F.'},
-  ],
-  scan: () => {
-    const sectorId = SECTORS[Math.floor(Math.random()*SECTORS.length)];
-    const conf = (88 + Math.random()*11).toFixed(1);
-    return [
-      {cls:'t-out', txt:'[SCAN] Initiating full-sector déjà vu analysis...'},
-      {cls:'t-out', txt:'[SCAN] Comparing frame hashes against 1000-frame window...'},
-      {cls:'t-out', txt:`[SCAN] ANOMALY DETECTED — Sector ${sectorId} — confidence: ${conf}%`},
-      {cls:'t-success', txt:'[SCAN] Patch queued: Matrix will re-render sector silently'},
-      {cls:'t-info', txt:'[SCAN] Any witnesses? Check RSI pool for nearby minds.'},
-    ];
-  },
-  oracle: () => [
-    {cls:'t-info', txt:'"Don\'t worry about the vase."'},
-    {cls:'t-out', txt:'[ORACLE] The path is already chosen. The choice simply needs to be made.'},
-    {cls:'t-out', txt:'[ORACLE] You already know what you need to do.'},
-    {cls:'t-info', txt:'[ORACLE] /usr/local/oracle/fortune.txt — session closed'},
-  ],
-  eject: () => [
-    {cls:'t-err', txt:'[EJECT] WARNING: Emergency disconnect initiated!'},
-    {cls:'t-err', txt:'[EJECT] EMP pulse risk if Sentinels nearby...'},
-    {cls:'t-out', txt:'[EJECT] Collapsing RSI tunnel...'},
-    {cls:'t-success', txt:'[EJECT] Disconnect successful — welcome back to the real world.'},
-  ],
-  status: () => {
-    const simLoad = Math.round(statTargets.sim.v);
-    const sync = Math.round(statTargets.sync.v);
-    return [
-      {cls:'t-info', txt:'[STATUS] Modal System — Cycle 7'},
-      {cls:'t-out', txt:`  Simulation core : ${simLoad}% load`},
-      {cls:'t-out', txt:`  Matrix sync     : ${sync}% coherence`},
-      {cls:'t-out', txt:`  Agent count     : 4 active (2 CRITICAL)`},
-      {cls:'t-out', txt:`  Anomaly index   : 0.0031% (controlled)`},
-      {cls:'t-success', txt:'  System state    : STABLE (warning: Smiths multiplying)'},
-    ];
-  },
-  clear: () => {
-    terminalOutput.innerHTML = '';
-    return [];
-  },
+<span class="cm">/* Detect agent infiltration in current frame */</span>
+<span class="nm">bool</span> <span class="fn">modal_scan_agents</span>(<span class="nm">ModalState</span> *ms) {
+  <span class="nm">PatternMatch</span> pm = <span class="fn">pattern_scan</span>(ms-&gt;residuals, <span class="val">AGENT_HASH</span>);
+  ms-&gt;agent_present = (pm.confidence &gt; <span class="nm">0.85f</span>);
+  <span class="kw">if</span> (ms-&gt;agent_present)
+    <span class="fn">broadcast_alert</span>(<span class="str">"ALERT: AGENT DETECTED — INITIATING COUNTERMEASURES"</span>);
+  <span class="kw">return</span> ms-&gt;agent_present;
+}`,
+  agent: `<span class="cm">/* AGENT PROTOCOL v4.2 — CLASSIFIED */</span>
+<span class="cm">/* DO NOT DISTRIBUTE OUTSIDE ZION RELAY */</span>
+
+<span class="kw">#include</span> <span class="str">&lt;modal/agent.h&gt;</span>
+<span class="kw">#include</span> <span class="str">&lt;crypto/onion.h&gt;</span>
+
+<span class="cm">/* Agent signature database */</span>
+<span class="kw">static const</span> <span class="nm">AgentSig</span> KNOWN_AGENTS[] = {
+  { .id=<span class="str">"SMITH_PRIMARY"</span>,   .hash=<span class="str">0xFF00AA11</span> },
+  { .id=<span class="str">"SMITH_CLONE_01"</span>,  .hash=<span class="str">0xFF00AA12</span> },
+  { .id=<span class="str">"JONES"</span>,           .hash=<span class="str">0xFF00BB01</span> },
+  { .id=<span class="str">"BROWN"</span>,           .hash=<span class="str">0xFF00BB02</span> },
+  { .id=<span class="str">"UNKNOWN_V3"</span>,      .hash=<span class="str">0xFF00CCFF</span> },
 };
 
-function handleTerminalKey(e) {
-  if (e.key === 'Enter') {
-    const cmd = termInput.value.trim();
-    if (!cmd) return;
-    cmdHistory.unshift(cmd);
-    histIdx = -1;
-    addTerminalLine('t-line', '', cmd);
-    processCommand(cmd.toLowerCase().split(' '));
-    termInput.value = '';
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    histIdx = Math.min(histIdx+1, cmdHistory.length-1);
-    termInput.value = cmdHistory[histIdx] || '';
-  } else if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    histIdx = Math.max(histIdx-1, -1);
-    termInput.value = histIdx >= 0 ? cmdHistory[histIdx] : '';
-  }
+<span class="nm">int</span> <span class="fn">agent_identify</span>(<span class="nm">uint32_t</span> hash) {
+  <span class="kw">for</span> (<span class="nm">int</span> i=<span class="nm">0</span>; i&lt;<span class="nm">5</span>; i++)
+    <span class="kw">if</span> (KNOWN_AGENTS[i].hash == hash) <span class="kw">return</span> i;
+  <span class="kw">return</span> -<span class="nm">1</span>;
 }
 
-function processCommand(parts) {
-  const cmd = parts[0];
-  if (cmd === 'pill') {
-    const choice = parts[1];
-    if (choice === 'r') {
-      addTerminalLine('t-err', 'You swallowed the RED pill. Brace yourself — this is going to feel very strange.');
-      setTimeout(() => addTerminalLine('t-success', '> Welcome to the real world.'), 1500);
-    } else if (choice === 'b') {
-      addTerminalLine('t-info', 'You swallowed the BLUE pill. Sweet dreams.');
-      setTimeout(() => { terminalOutput.innerHTML = ''; addTerminalLine('t-out', 'The Matrix has you.'); }, 2000);
-    } else {
-      addTerminalLine('t-err', 'Specify: pill r (red) or pill b (blue)');
+<span class="cm">/* Countermeasure: fragment agent's pattern */</span>
+<span class="nm">void</span> <span class="fn">agent_fragment</span>(<span class="nm">Agent</span> *a, <span class="nm">ModalState</span> *ms) {
+  <span class="nm">uint64_t</span> seed = <span class="fn">rdtsc</span>() ^ a-&gt;signature;
+  <span class="kw">for</span> (<span class="nm">int</span> i=<span class="nm">0</span>; i&lt;<span class="nm">256</span>; i++) {
+    <span class="nm">Packet</span> p = <span class="fn">packet_forge</span>(seed + i);
+    <span class="fn">layer_inject</span>(ms-&gt;stack, &amp;p);
+  }
+  a-&gt;coherence = <span class="nm">0.0f</span>;
+}
+
+<span class="cm">/* Anomaly: The One detection routine */</span>
+<span class="nm">bool</span> <span class="fn">agent_detect_anomaly</span>(<span class="nm">ModalState</span> *ms) {
+  <span class="nm">float</span> delta = <span class="fn">modal_entropy</span>(ms) - <span class="fn">baseline_entropy</span>();
+  <span class="kw">return</span> (delta &gt; <span class="nm">4.23f</span>); <span class="cm">/* Sigma threshold */</span>
+}`
+};
+
+let currentFile = 'modal';
+function showFile(name) {
+  currentFile = name;
+  const body = document.getElementById('editorBody');
+  document.querySelectorAll('.tabs .tab').forEach((t,i) => {
+    const names = ['modal','agent','binary'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  if (name === 'binary') { showBinaryEditor(); return; }
+  const lines = files[name].split('\n');
+  body.innerHTML = lines.map((l,i) =>
+    `<div class="code-line${i===7?' active-line':''}"><span class="ln">${String(i+1).padStart(3,' ')}</span>${l}</div>`
+  ).join('');
+  body.scrollTop = 0;
+}
+function showBinaryEditor() {
+  document.getElementById('editorBody').innerHTML = `
+    <div style="padding:8px">
+    <div style="color:var(--cyan);font-size:10px;letter-spacing:2px;margin-bottom:8px">BINARY SEQUENCE EDITOR — RAW LAYER ACCESS</div>
+    <div id="hexView" style="font-size:10px;line-height:2;color:var(--dim)"></div>
+    </div>`;
+  renderHexView();
+}
+function renderHexView() {
+  const data = "MODAL_FRAMEWORK_CONSTRUCT_LAYER_6_INITIALIZED";
+  let html = '<div style="color:var(--faint);margin-bottom:4px">OFFSET   00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F   ASCII</div>';
+  for (let i=0; i<data.length; i+=16) {
+    const row = data.slice(i, i+16);
+    const hex = Array.from(row).map(c=>c.charCodeAt(0).toString(16).toUpperCase().padStart(2,'0')).join(' ');
+    const asc = Array.from(row).map(c=>/[\x20-\x7e]/.test(c)?c:'.').join('');
+    html += `<div class="code-line"><span class="ln">${i.toString(16).toUpperCase().padStart(8,'0')}</span><span style="color:var(--glow)">  ${hex.padEnd(47,' ')}</span>  <span style="color:var(--amber)">${asc}</span></div>`;
+  }
+  document.getElementById('hexView').innerHTML = html;
+}
+function switchTab(t) { showFile('modal'); }
+
+// ============================================================
+// BREACH ALERT
+// ============================================================
+let breachActive = false;
+function injectBreach() {
+  if (breachActive) return;
+  breachActive = true;
+  document.getElementById('sbAlert').style.display = 'block';
+  document.getElementById('alertBadge').textContent = 'BREACH';
+  document.getElementById('alertBadge').className = 'ph-badge badge-alert';
+  const termPanel = document.getElementById('termPanel');
+  let overlay = document.getElementById('alert-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'alert-overlay';
+    overlay.innerHTML = `
+      <div class="alert-title"><div class="alert-icon"></div>ALERT: DETECTED BREACH</div>
+      <div class="alert-body">
+        AGENT INFILTRATION — SECTOR 7G<br>
+        PATTERN MATCH: SMITH_PRIMARY [99.7%]<br>
+        CONSTRUCT COHERENCE: 31% ↓<br>
+        COUNTERMEASURES: DEPLOYING...
+      </div>`;
+    termPanel.appendChild(overlay);
+  }
+  overlay.style.display = 'block';
+  addTermLine('t-err', '[SYSTEM] BREACH DETECTED — AGENT SMITH PATTERN IDENTIFIED');
+  addTermLine('t-err', '[SYSTEM] DEPLOYING COUNTERMEASURE PROTOCOL 7...');
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    document.getElementById('sbAlert').style.display = 'none';
+    document.getElementById('alertBadge').textContent = 'SECURED';
+    document.getElementById('alertBadge').className = 'ph-badge badge-ok';
+    addTermLine('t-sys', '[SYSTEM] COUNTERMEASURES SUCCESSFUL — AGENT EXPELLED');
+    breachActive = false;
+  }, 12000);
+}
+
+// ============================================================
+// MONITOR
+// ============================================================
+const chartData = [];
+let monitorMode = 'stats';
+function monitorTab(m) {
+  monitorMode = m;
+  document.querySelectorAll('.tabs')[1]?.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['stats','files','network'][i] === m);
+  });
+  renderMonitor();
+}
+const fsTree = [
+  {name:'construct/',type:'dir',open:true,children:[
+    {name:'modal_engine.c',type:'file'},{name:'agent_protocol.c',type:'file'},
+    {name:'residuals.bin',type:'file'},{name:'layer_stack.dat',type:'file'},
+  ]},
+  {name:'zion/',type:'dir',open:false,children:[
+    {name:'relay.key',type:'file'},{name:'operative.cfg',type:'file'}
+  ]},
+  {name:'kernel/',type:'dir',open:false,children:[
+    {name:'construct.h',type:'file'},{name:'perception.h',type:'file'}
+  ]},
+  {name:'logs/',type:'dir',open:false,children:[
+    {name:'breach.log',type:'file'},{name:'agent.log',type:'file'}
+  ]}
+];
+const nodeList = [
+  {id:'NODE-001',ip:'10.0.0.1',status:'ACTIVE',role:'OPERATOR'},
+  {id:'NODE-047',ip:'10.0.7.12',status:'ACTIVE',role:'CONSTRUCT'},
+  {id:'NODE-099',ip:'10.0.1.88',status:'WARNING',role:'RELAY'},
+  {id:'ZION-01',ip:'192.168.7.1',status:'ACTIVE',role:'MOTHERSHIP'},
+  {id:'NEBUCHADNEZZAR',ip:'10.7.0.1',status:'ACTIVE',role:'HOVERCRAFT'},
+];
+function renderMonitor() {
+  const mb = document.getElementById('monitorBody');
+  if (monitorMode === 'stats') {
+    mb.innerHTML = `<div class="monitor-wrap"><canvas id="chart-canvas"></canvas><div class="sys-stats" id="sysStats"></div></div>`;
+    startChartDraw();
+    updateStats();
+  } else if (monitorMode === 'files') {
+    let html = '<div style="padding:6px;font-size:10px;line-height:2">';
+    for (const f of fsTree) {
+      html += `<div class="fs-item fs-dir" onclick="toggleDir(this)">${f.open?'▼':'▶'} ${f.name}</div>`;
+      if (f.open) for (const c of f.children)
+        html += `<div class="fs-item" style="padding-left:14px" onclick="openFileFromFS('${c.name}')">&nbsp;└ <span class="fs-open">${c.name}</span></div>`;
     }
-    return;
-  }
-  if (cmd === 'load') {
-    const prog = parts.slice(1).join(' ') || 'unknown';
-    addTerminalLine('t-out', `[CONSTRUCT] Loading program: ${prog}`);
-    setTimeout(() => addTerminalLine('t-success', `[CONSTRUCT] "${prog}" loaded — good luck.`), 600);
-    return;
-  }
-  if (cmd === 'rsi') {
-    const uuid = parts[1] || '0x' + Math.floor(Math.random()*0xFFFFFF).toString(16).toUpperCase();
-    addTerminalLine('t-out', `[RSI] Querying identity: ${uuid}`);
-    setTimeout(() => {
-      const coh = (70 + Math.random()*29).toFixed(1);
-      const cls = coh > 85 ? 't-success' : coh > 60 ? 't-out' : 't-err';
-      addTerminalLine(cls, `[RSI] Coherence: ${coh}% | Status: ${coh>80?'STABLE':coh>60?'DEGRADING':'CRITICAL'}`);
-    }, 500);
-    return;
-  }
-  const handler = COMMANDS[cmd];
-  if (handler) {
-    const lines = handler();
-    lines.forEach((l, i) => setTimeout(() => addTerminalLine(l.cls, l.txt), i * 60));
-  } else if (cmd) {
-    addTerminalLine('t-err', `Command not found: ${cmd} — type "help" for commands`);
-  }
-}
-
-function addTerminalLine(cls, text, cmd = null) {
-  const div = document.createElement('div');
-  div.className = 't-line';
-  if (cmd !== null) {
-    div.innerHTML = `<span class="t-prompt">neo@modal:~$</span><span class="t-cmd"> ${cmd}</span>`;
+    html += '</div>';
+    mb.innerHTML = html;
   } else {
-    div.innerHTML = `<span class="${cls}">${text}</span>`;
-  }
-  terminalOutput.appendChild(div);
-  terminalOutput.scrollTop = terminalOutput.scrollHeight;
-}
-
-// ── BOTTOM TAB SWITCHING ──────────────────────────────
-function switchBottomTab(name, el) {
-  document.querySelectorAll('.btab').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-
-  document.getElementById('terminal-panel').className = 'hidden' + (name === 'terminal' ? '' : ' hidden');
-  document.getElementById('graph-panel').className = name === 'graph' ? 'visible' : '';
-  document.getElementById('dejavu-panel').className = name === 'dejavu' ? 'visible' : '';
-
-  if (name === 'terminal') {
-    document.getElementById('terminal-panel').className = '';
+    let html = '<div style="padding:6px;font-size:10px;line-height:1.9">';
+    html += '<div style="color:var(--faint);margin-bottom:4px">NODE&nbsp;&nbsp;&nbsp;&nbsp;IP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;STATUS&nbsp;&nbsp;ROLE</div>';
+    for (const n of nodeList)
+      html += `<div style="color:${n.status==='ACTIVE'?'var(--glow)':'var(--amber)'}">${n.id.padEnd(16,' ')} ${n.ip.padEnd(14,' ')} ${n.status.padEnd(8,' ')} ${n.role}</div>`;
+    html += '</div>';
+    mb.innerHTML = html;
   }
 }
+function toggleDir(el) { renderMonitor(); }
+function openFileFromFS(name) {
+  const base = name.replace('.c','').replace('.h','').replace('.bin','').replace('.dat','').replace('.log','').replace('.key','').replace('.cfg','');
+  if (files[base]) showFile(base); else showFile('modal');
+}
+let chartCtx, chartAnim;
+function startChartDraw() {
+  const canvas = document.getElementById('chart-canvas');
+  if (!canvas) return;
+  chartCtx = canvas.getContext('2d');
+  if (chartAnim) clearInterval(chartAnim);
+  chartAnim = setInterval(() => drawChart(canvas, chartCtx), 200);
+}
+function drawChart(canvas, ctx) {
+  canvas.width = canvas.offsetWidth || 200;
+  canvas.height = 70;
+  chartData.push(30 + Math.random()*60 + (breachActive ? 40 : 0));
+  if (chartData.length > 60) chartData.shift();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = 'rgba(0,5,0,0.8)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const w = canvas.width / 60;
+  for (let i=0; i<chartData.length; i++) {
+    const h = (chartData[i]/100) * canvas.height;
+    const g = ctx.createLinearGradient(0, canvas.height-h, 0, canvas.height);
+    g.addColorStop(0, breachActive ? '#ff4400' : '#00ff41');
+    g.addColorStop(1, breachActive ? 'rgba(255,68,0,0.1)' : 'rgba(0,255,65,0.1)');
+    ctx.fillStyle = g;
+    ctx.fillRect(i*w+1, canvas.height-h, w-1, h);
+  }
+}
+let cpu=45, mem=62;
+function updateStats() {
+  cpu = Math.max(10,Math.min(95, cpu + (Math.random()-0.5)*10 + (breachActive?20:0)));
+  mem = Math.max(30,Math.min(95, mem + (Math.random()-0.5)*3));
+  const el = document.getElementById('sysStats');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="stat-row"><span style="color:var(--dim)">CPU LOAD</span><span style="color:${cpu>80?'var(--red)':'var(--glow)'}">${cpu.toFixed(1)}%</span></div>
+    <div class="stat-bar-wrap"><div class="stat-bar" style="width:${cpu}%;${cpu>80?'background:var(--red)':''}"></div></div>
+    <div class="stat-row"><span style="color:var(--dim)">MEMORY</span><span style="color:var(--glow)">${mem.toFixed(1)}%</span></div>
+    <div class="stat-bar-wrap"><div class="stat-bar" style="width:${mem}%"></div></div>
+    <div class="stat-row"><span style="color:var(--dim)">COHERENCE</span><span style="color:${breachActive?'var(--red)':'var(--cyan)'}">${(breachActive?31:94+(Math.random()*5-2)).toFixed(1)}%</span></div>
+    <div class="stat-bar-wrap"><div class="stat-bar" style="width:${breachActive?31:94};background:var(--cyan)"></div></div>
+    <div class="stat-row"><span style="color:var(--dim)">AGENTS</span><span style="color:${breachActive?'var(--red)':'var(--glow)'}">${breachActive?'1 ACTIVE':'0 DETECTED'}</span></div>`;
+  document.getElementById('sbCpu').textContent = cpu.toFixed(0)+'%';
+  document.getElementById('sbMem').textContent = mem.toFixed(0)+'%';
+}
+function startMonitor() {
+  renderMonitor();
+  setInterval(() => { if(monitorMode==='stats'){ updateStats(); } }, 1000);
+  setInterval(() => { document.getElementById('sbNodes').textContent = (2800+Math.floor(Math.random()*100)).toLocaleString(); }, 3000);
+}
+function showCompileAll() {
+  addTermLine('t-sys', '> Compiling modal_engine.c...');
+  setTimeout(()=>addTermLine('t-out', '  [OK] modal_engine.o — 0 errors, 2 warnings'), 400);
+  setTimeout(()=>addTermLine('t-sys', '> Compiling agent_protocol.c...'), 700);
+  setTimeout(()=>addTermLine('t-out', '  [OK] agent_protocol.o — 0 errors'), 1100);
+  setTimeout(()=>addTermLine('t-sys', '> Linking modal_framework.bin...'), 1400);
+  setTimeout(()=>addTermLine('t-out', '  [OK] modal_framework.bin (0x' + Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase() + ' bytes)'), 1900);
+}
+function runSimulation() {
+  addTermLine('t-sys', '> Launching modal simulation — LAYER_6...');
+  setTimeout(()=>addTermLine('t-out', '  Tick 0001 | Coherence: 94.2% | Agents: 0'), 300);
+  setTimeout(()=>addTermLine('t-out', '  Tick 0002 | Coherence: 93.8% | Agents: 0'), 600);
+  setTimeout(()=>addTermLine('t-err', '  Tick 0003 | WARNING: Residual spike detected'), 900);
+  setTimeout(()=>addTermLine('t-out', '  Tick 0004 | Coherence: 89.1% | Stabilizing...'), 1200);
+}
 
-// ── DÉJÀ VU LOG ───────────────────────────────────────
-const DV_DESCS = [
-  'Black cat repeated in doorway, sector boundary shift detected',
-  'Street light cycle reset mid-sequence, 0.2s rewind observed',
-  'Rain pattern duplicated — 14 drops identical trajectory',
-  'Pedestrian route loop: 8.4m circuit, 3 iterations detected',
-  'Sound echo anomaly: footsteps repeated with 0ms gap',
-  'Window reflection displaced by 2 sector-units',
-  'Vehicle number plate repeated on distinct chassis',
-  'NPC dialogue branch reset — same words, different body',
-  'Gravity micro-hesitation: 0.04s drop interruption at 7m altitude',
-  'Clock on wall showing same time 3 observations apart',
-];
-
-function populateDejaVu() {
-  const panel = document.getElementById('dejavu-panel');
-  const existing = panel.querySelectorAll('.dv-entry:not(:first-child)');
-  // Only add header once
-  for (let i = 0; i < 18; i++) {
-    const now = new Date(Date.now() - Math.random() * 3600000 * 4);
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    const ss = String(now.getSeconds()).padStart(2,'0');
-    const conf = Math.random();
-    const confCls = conf > 0.9 ? 'high' : conf > 0.7 ? 'med' : 'low';
-    const confPct = (conf * 100).toFixed(1) + '%';
-    const sector = SECTORS[Math.floor(Math.random()*SECTORS.length)];
-    const desc = DV_DESCS[Math.floor(Math.random()*DV_DESCS.length)];
-
-    const row = document.createElement('div');
-    row.className = 'dv-entry';
-    row.innerHTML = `
-      <span class="dv-time">${hh}:${mm}:${ss}</span>
-      <span class="dv-sector">${sector}</span>
-      <span class="dv-desc">${desc}</span>
-      <span class="dv-conf ${confCls}">${confPct}</span>`;
-    panel.appendChild(row);
+// ============================================================
+// TERMINAL
+// ============================================================
+const termCmds = {
+  help: () => ['Available commands:','  ls           — list construct files','  cat <file>   — read file','  scan         — scan for agents','  status       — system status','  inject       — inject modal payload','  fragment     — run agent fragment protocol','  whoami       — current operative','  clear        — clear terminal','  disconnect   — close session'],
+  ls: () => ['construct/ agent_protocol.c modal_engine.c residuals.bin','zion/ relay.key operative.cfg','kernel/ construct.h perception.h'],
+  scan: () => { injectBreach(); return ['Scanning construct for agent signatures...','Pattern database: 5 known agents','Scanning layer 1/6... OK','Scanning layer 2/6... OK','Scanning layer 3/6... ANOMALY DETECTED','ALERT: AGENT SIGNATURE MATCH 99.7% — SMITH_PRIMARY','Initiating countermeasures...']; },
+  status: () => [`CPU: ${cpu.toFixed(1)}%  MEM: ${mem.toFixed(1)}%`,`Construct coherence: ${breachActive?'31.0':'94.7'}%`,`Uplink: ACTIVE  Relay: CONNECTED`],
+  whoami: () => [document.getElementById('sbUser').textContent + ' — AUTHORIZED OPERATIVE','Clearance: ZETA','Last login: ' + new Date().toUTCString()],
+  inject: () => { setTimeout(()=>addTermLine('t-sys','[INJECT] Modal payload injected into layer 3'),500); return ['Forging inject packet...','Targeting layer 3 residual map...']; },
+  fragment: () => ['Fragmenting SMITH_PRIMARY pattern...','Injecting 256 forged packets...','Agent coherence: 0.0% — EXPELLED'],
+  clear: () => { document.getElementById('termOutput').innerHTML=''; return []; },
+  disconnect: () => { setTimeout(logout, 500); return ['Terminating uplink...','SESSION CLOSED']; },
+};
+function addTermLine(cls, text) {
+  const out = document.getElementById('termOutput');
+  if (!out) return;
+  const d = document.createElement('div');
+  d.className = 'term-line ' + cls;
+  d.textContent = text;
+  out.appendChild(d);
+  out.scrollTop = out.scrollHeight;
+}
+function initTerminal() {
+  addTermLine('t-sys', 'CONSTRUCT SHELL v6.1 — READY');
+  addTermLine('t-sys', 'Type "help" for available commands');
+  addTermLine('t-out', '');
+}
+function handleTermKey(e) {
+  if (e.key !== 'Enter') return;
+  const input = document.getElementById('termInput');
+  const cmd = input.value.trim();
+  input.value = '';
+  if (!cmd) return;
+  addTermLine('t-prompt', 'root@construct:~$ ' + cmd);
+  const parts = cmd.split(' ');
+  const fn = termCmds[parts[0]];
+  if (fn) {
+    const res = fn(parts.slice(1));
+    if (res) res.forEach(l => addTermLine('t-out', l));
+  } else {
+    addTermLine('t-err', 'bash: ' + parts[0] + ': command not found');
   }
 }
 
-// ── TOOLBAR ACTIONS ──────────────────────────────────
-function compileCode() {
-  document.getElementById('sb-state').textContent = 'COMPILING...';
-  document.getElementById('sb-state').style.color = 'var(--amber)';
-  toast('Compiling ' + tabFiles[currentTab].name + '...');
+// ============================================================
+// BINARY COMPILER
+// ============================================================
+let compileMode = 'bin2txt';
+const modes = ['bin2txt','txt2bin','hex2txt','encrypt'];
+const modeLabels = ['BIN→TXT','TXT→BIN','HEX→TXT','ENCRYPT'];
+let modeIdx = 0;
+function cycleMode() {
+  modeIdx = (modeIdx + 1) % modes.length;
+  compileMode = modes[modeIdx];
+  document.getElementById('modeBtn').textContent = modeLabels[modeIdx];
+}
+function runCompile() {
+  const input = document.getElementById('compInput').value.trim();
+  const out = document.getElementById('compOutput');
+  if (!input) { out.innerHTML = '<span style="color:var(--red)">ERROR: No input provided</span>'; return; }
+  out.innerHTML = '<span style="color:var(--dim)">Compiling...</span>';
   setTimeout(() => {
-    document.getElementById('sb-state').textContent = 'IDLE';
-    document.getElementById('sb-state').style.color = 'var(--green2)';
-    document.getElementById('sb-integrity').textContent = 'VALID';
-    document.getElementById('sb-integrity').style.color = 'var(--green)';
-    toast('Compiled successfully — 0 errors');
-  }, 1400);
+    let result = '';
+    try {
+      if (compileMode === 'bin2txt') {
+        const bins = input.replace(/\s+/g,' ').trim().split(' ');
+        result = bins.map(b => String.fromCharCode(parseInt(b,2))).join('');
+        out.innerHTML = `<span style="color:var(--cyan)">// OUTPUT [BIN→ASCII]</span>\n<span style="color:var(--glow)">${escHtml(result)}</span>`;
+      } else if (compileMode === 'txt2bin') {
+        result = Array.from(input).map(c=>c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+        out.innerHTML = `<span style="color:var(--cyan)">// OUTPUT [ASCII→BIN]</span>\n<span style="color:var(--glow)">${result}</span>`;
+      } else if (compileMode === 'hex2txt') {
+        result = input.replace(/[^0-9a-fA-F]/g,'').match(/.{2}/g)?.map(h=>String.fromCharCode(parseInt(h,16))).join('') || '';
+        out.innerHTML = `<span style="color:var(--cyan)">// OUTPUT [HEX→ASCII]</span>\n<span style="color:var(--glow)">${escHtml(result)}</span>`;
+      } else {
+        result = Array.from(input).map(c=>String.fromCharCode(c.charCodeAt(0)^0x42)).join('');
+        out.innerHTML = `<span style="color:var(--cyan)">// OUTPUT [XOR-0x42 ENCRYPT]</span>\n<span style="color:var(--amber)">${escHtml(result)}</span>`;
+      }
+      addTermLine('t-sys', `[COMPILER] ${modeLabels[modeIdx]}: ${input.substring(0,20)}... → compiled`);
+    } catch(e) {
+      out.innerHTML = `<span style="color:var(--red)">COMPILE ERROR: ${e.message}</span>`;
+    }
+  }, 300);
 }
-
 function injectCode() {
-  document.getElementById('sb-state').textContent = 'INJECTING...';
-  document.getElementById('sb-state').style.color = 'var(--red)';
-  toast('Injecting into Matrix simulation...');
-  setTimeout(() => {
-    document.getElementById('sb-state').textContent = 'IDLE';
-    document.getElementById('sb-state').style.color = 'var(--green2)';
-    toast('Code injected — propagating...');
-  }, 2000);
+  const input = document.getElementById('compInput').value.trim();
+  if (!input) return;
+  addTermLine('t-sys', '[INJECT] Payload injected into construct layer 3');
+  addTermLine('t-out', '  bytes: ' + input.length + '  checksum: 0x' + Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase());
 }
-
-function syncConstruct() {
-  toast('Synchronizing construct node...');
-  setTimeout(() => toast('Sync complete — Cycle 7 / Frame 4,892,001'), 1500);
+function clearComp() {
+  document.getElementById('compInput').value = '';
+  document.getElementById('compOutput').innerHTML = '';
 }
-
-function openHardline() {
-  toast('Hardline opened — ' + (840 + Math.floor(Math.random()*20)) + ' MHz');
+function initCompiler() {
+  document.getElementById('compOutput').innerHTML = '<span style="color:var(--faint)">// Ready. Enter binary, hex, or text above.\n// Mode: BIN→TXT cycles with left button.\n// Try: 01001000 01100101 01101100 01101100 01101111</span>';
 }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function loadConstruct() {
-  toast('Construct loaded — white room initialized');
-}
-
-function traceSignal() {
-  toast('Signal traced — hardline stable, latency ' + (Math.floor(Math.random()*15)+8) + 'ms');
-}
-
-function ejectSequence() {
-  const al = document.getElementById('breach-alert');
-  al.style.display = 'none';
-  toast('EMERGENCY EJECT INITIATED — disconnect in 3s...', true);
-}
-
-// ── TOAST ──────────────────────────────────────────────
-function toast(msg, isWarn = false) {
-  const area = document.getElementById('toast-area');
-  const t = document.createElement('div');
-  t.className = 'toast' + (isWarn ? ' warn-toast' : '');
-  t.textContent = msg;
-  area.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
-}
-
-// ── PERIODIC RANDOM EVENTS ────────────────────────────
-function randomEvents() {
-  const events = [
-    () => toast('DÉJÀ VU: Sector ' + SECTORS[Math.floor(Math.random()*SECTORS.length)] + ' — glitch detected'),
-    () => { toast('AGENT PROXIMITY ALERT — SMITH approaching sector 7F', true); },
-    () => toast('Hardline signal spike: +' + (Math.random()*40+10).toFixed(0) + 'dB'),
-    () => toast('RSI coherence fluctuation detected — stabilizing'),
-    () => { if(Math.random()>0.6) showBreachAlert(); }
-  ];
-  const fn = events[Math.floor(Math.random()*events.length)];
-  fn();
-}
-
-// ── SECTOR DISPLAY ROTATION ────────────────────────────
-const SECTOR_NAMES = [
-  'DOWNTOWN / GRID-7F','CHINATOWN / NODE-4B','INDUSTRIAL / RING-2K',
-  'SUBURBS / CELL-9A','FINANCIAL / BLOCK-3E','DOCKS / ZONE-8C'
-];
-let sectorIdx = 0;
-function rotateSector() {
-  sectorIdx = (sectorIdx+1) % SECTOR_NAMES.length;
-  const el = document.getElementById('sector-display');
-  if(el) el.textContent = SECTOR_NAMES[sectorIdx];
-}
-
-// ── INIT TERMINAL BOOT MESSAGES ──────────────────────
-function bootTerminal() {
-  const msgs = [
-    {cls:'t-info', txt:'MODAL SYSTEM v6.1.4-r — loading...'},
-    {cls:'t-out', txt:'[INIT] Neuro-interface calibrating...'},
-    {cls:'t-out', txt:'[INIT] RSI engine online — coherence: 98.3%'},
-    {cls:'t-out', txt:'[INIT] Agent monitoring: 4 sentinels tracked'},
-    {cls:'t-out', txt:'[INIT] Déjà vu detector armed — threshold: 88%'},
-    {cls:'t-out', txt:'[INIT] Hardline established: 847.3 MHz'},
-    {cls:'t-success', txt:'[READY] System operational — type "help" for commands'},
-  ];
-  msgs.forEach((m, i) => setTimeout(() => addTerminalLine(m.cls, m.txt), 200 + i * 200));
-}
-
-// ── MAIN LOOP ─────────────────────────────────────────
-function mainLoop() {
-  drawRain();
-  drawSignal();
-  updateClocks();
-  requestAnimationFrame(mainLoop);
-}
-
-// ── STARTUP ───────────────────────────────────────────
-window.addEventListener('load', () => {
-  initRain();
-  initRSIBar();
-  loadTab(0);
-  bootTerminal();
-  populateDejaVu();
-  updateRSI();
-
-  // Periodic updates
-  setInterval(updateStats, 800);
-  setInterval(updateRSI, 1200);
-  setInterval(updateGraphs, 120);
-  setInterval(randomEvents, 18000 + Math.random()*12000);
-  setInterval(rotateSector, 7000);
-
-  // Initial breach alert after 8s
-  setTimeout(showBreachAlert, 8000);
-
-  mainLoop();
-});
-
-window.addEventListener('resize', () => {
-  initRain();
-});
-
-// Focus terminal on click
-document.getElementById('bottom-content').addEventListener('click', () => {
-  termInput.focus();
-});
+// ============================================================
+// BOOT
+// ============================================================
+window.onload = runBoot;
 </script>
 </body>
 </html>
