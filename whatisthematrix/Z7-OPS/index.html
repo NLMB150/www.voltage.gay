@@ -348,10 +348,12 @@
     font-size: 11px;
     line-height: 18px;
     white-space: pre;
-    overflow: hidden;
+    overflow: auto;
     pointer-events: none;
     z-index: 1;
+    scrollbar-width: none;
   }
+  #code-highlight::-webkit-scrollbar { display: none; }
 
   /* Syntax colors */
   .kw { color: #00ff88; font-weight: bold; }
