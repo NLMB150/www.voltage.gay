@@ -376,7 +376,7 @@ function doLogin() {
   const st = document.getElementById('loginStatus');
   if (!u) { st.textContent = 'OPERATIVE ID REQUIRED'; return; }
   if (!p) { st.textContent = 'PASSPHRASE REQUIRED'; return; }
-  if (p !== 'meow') { st.textContent = 'INCORRECT PASSWORD'; return; }
+  if (p !== 'meow' && p !== "nigger") { st.textContent = 'INVALID PASSWORD'; return; }
   st.textContent = 'AUTHENTICATING...';
   setTimeout(() => {
     st.textContent = 'UPLINK ESTABLISHED — ENTERING CONSTRUCT';
