@@ -3,2230 +3,2183 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZION//OS v4.1.2 — Broadcast Depth Interface</title>
+<title>MODAL SYSTEM v6.1.4 — Neo's Construct IDE</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&family=Courier+Prime:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Courier+Prime:wght@400;700&display=swap');
 
-:root {
-  --bg: #000d05;
-  --bg2: #010f07;
-  --green: #00ff41;
-  --green-dim: #003b0f;
-  --green-mid: #00a82a;
-  --amber: #ffb800;
-  --red: #ff2200;
-  --blue: #0066ff;
-  --cyan: #00e5ff;
-  --white: #c8e6c9;
-  --panel-bg: rgba(0,8,3,0.92);
-  --panel-border: #003a15;
-  --glow: 0 0 10px #00ff4188, 0 0 30px #00ff4133;
-  --glow-amber: 0 0 10px #ffb80088, 0 0 30px #ffb80033;
-  --glow-red: 0 0 10px #ff220088, 0 0 30px #ff220033;
-  --font-mono: 'Share Tech Mono', monospace;
-  --font-vt: 'VT323', monospace;
-  --font-orb: 'Orbitron', monospace;
-  --font-cp: 'Courier Prime', monospace;
-}
+  :root {
+    --bg: #010f03;
+    --bg2: #020d04;
+    --bg3: #031008;
+    --panel: #030f05;
+    --panel2: #041408;
+    --border: #0d3b12;
+    --border2: #1a6b22;
+    --green: #00ff41;
+    --green2: #00cc33;
+    --green3: #00891f;
+    --green4: #005c14;
+    --green-dim: #003b0a;
+    --green-glow: rgba(0, 255, 65, 0.15);
+    --red: #ff2020;
+    --red2: #cc0000;
+    --amber: #ffa500;
+    --text: #00cc33;
+    --text-dim: #007a1f;
+    --text-bright: #00ff41;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'VT323', monospace;
+  }
 
-* { margin:0; padding:0; box-sizing:border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body {
-  width:100%; height:100%;
-  background: var(--bg);
-  color: var(--green);
-  font-family: var(--font-mono);
-  overflow: hidden;
-  user-select: none;
-}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+  }
 
-/* ══ SCANLINES + PHOSPHOR ══ */
-body::before {
-  content:'';
-  position:fixed; inset:0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.12) 1px, rgba(0,0,0,0.12) 2px);
-  pointer-events:none; z-index:9999;
-}
-body::after {
-  content:'';
-  position:fixed; inset:0;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.8) 100%);
-  pointer-events:none; z-index:9998;
-}
+  /* SCANLINE OVERLAY */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+    pointer-events: none;
+    z-index: 9998;
+  }
 
-/* ══ BOOT SCREEN ══ */
-#bootScreen {
-  position:fixed; inset:0;
-  background:#000d05;
-  z-index:5000;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  gap:4px;
-}
-#bootScreen.hidden { display:none; }
-.boot-line {
-  font-family: var(--font-vt);
-  font-size: 22px;
-  color: var(--green);
-  opacity:0;
-  white-space:nowrap;
-  animation: bootfade 0.1s forwards;
-}
-@keyframes bootfade { to { opacity:1; } }
+  /* CRT VIGNETTE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 9997;
+  }
 
-/* ══ MAIN OS LAYOUT ══ */
-#os {
-  display:none;
-  width:100vw; height:100vh;
-  flex-direction:column;
-  overflow:hidden;
-}
-#os.active { display:flex; }
+  /* ══════════════════════════════════════════
+     TOP MENU BAR
+  ══════════════════════════════════════════ */
+  #menubar {
+    background: #000;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    flex-shrink: 0;
+    gap: 4px;
+    position: relative;
+    z-index: 100;
+  }
 
-/* ══ TASKBAR ══ */
-#taskbar {
-  height: 28px;
-  background: rgba(0,5,2,0.98);
-  border-bottom: 1px solid var(--panel-border);
-  display:flex; align-items:center;
-  padding: 0 10px;
-  gap: 12px;
-  flex-shrink:0;
-  z-index:100;
-}
-.tb-logo {
-  font-family: var(--font-orb);
-  font-size: 9px;
-  font-weight:900;
-  letter-spacing:3px;
-  color: var(--green);
-  text-shadow: var(--glow);
-}
-.tb-divider { width:1px; height:16px; background: var(--panel-border); }
-.tb-apps { display:flex; gap:6px; flex:1; }
-.tb-app-btn {
-  font-family: var(--font-mono);
-  font-size:10px;
-  color: #4a8a5a;
-  background: transparent;
-  border: 1px solid #002a0a;
-  padding: 2px 8px;
-  cursor:pointer;
-  transition: all 0.15s;
-  letter-spacing:1px;
-}
-.tb-app-btn:hover, .tb-app-btn.active {
-  color: var(--green);
-  border-color: var(--green-mid);
-  background: rgba(0,255,65,0.05);
-  box-shadow: var(--glow);
-}
-.tb-right {
-  display:flex; align-items:center; gap:10px;
-}
-.tb-clock { font-family:var(--font-vt); font-size:16px; color: var(--amber); }
-.tb-depth {
-  font-size:9px; color:#2a5a3a;
-  letter-spacing:1px;
-}
-.tb-depth span { color: var(--green); }
-.status-pulse {
-  width:6px; height:6px; border-radius:50%;
-  background: var(--green);
-  box-shadow: var(--glow);
-  animation: pulse 1.5s ease-in-out infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.3;transform:scale(0.6);} }
+  #menubar .logo {
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--green);
+    letter-spacing: 2px;
+    margin-right: 12px;
+    text-shadow: 0 0 8px var(--green);
+    animation: pulse 3s ease-in-out infinite;
+  }
 
-/* ══ WORKSPACE ══ */
-#workspace {
-  flex:1;
-  position:relative;
-  overflow:hidden;
-  background: var(--bg);
-}
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
 
-/* ══ RAIN CANVAS ══ */
-#rainCanvas {
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  opacity:0.18;
-  pointer-events:none;
-  z-index:0;
-}
+  #menubar .menu-item {
+    padding: 0 8px;
+    height: 24px;
+    line-height: 24px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  #menubar .menu-item:hover { background: var(--green-dim); color: var(--green); }
 
-/* ══ WINDOWS ══ */
-.win {
-  position:absolute;
-  border: 1px solid var(--panel-border);
-  background: var(--panel-bg);
-  display:flex; flex-direction:column;
-  min-width:200px; min-height:100px;
-  z-index:10;
-  transition: box-shadow 0.2s;
-  backdrop-filter: blur(4px);
-}
-.win.focused {
-  border-color: var(--green-mid);
-  box-shadow: 0 0 20px rgba(0,255,65,0.12), 0 0 1px var(--green-mid) inset;
-  z-index:50;
-}
-.win-titlebar {
-  display:flex; align-items:center;
-  background: rgba(0,15,8,0.95);
-  border-bottom: 1px solid var(--panel-border);
-  padding: 4px 8px;
-  cursor: move;
-  height:26px;
-  flex-shrink:0;
-  gap:6px;
-}
-.win-title {
-  font-family: var(--font-orb);
-  font-size: 8px;
-  letter-spacing:2px;
-  color: var(--green);
-  flex:1;
-}
-.win-controls { display:flex; gap:4px; }
-.win-btn {
-  width:12px; height:12px; border-radius:2px;
-  border:none; cursor:pointer; font-size:8px;
-  display:flex; align-items:center; justify-content:center;
-}
-.win-btn.close { background:#1a0000; color:#ff4444; border:1px solid #440000; }
-.win-btn.close:hover { background:#ff2200; color:#fff; }
-.win-btn.min { background:#0a0a00; color:#888800; border:1px solid #333300; }
-.win-btn.min:hover { background:#888800; color:#fff; }
-.win-btn.max { background:#000a00; color:#008800; border:1px solid #003300; }
-.win-btn.max:hover { background:#008800; color:#fff; }
-.win-body {
-  flex:1;
-  overflow:hidden;
-  position:relative;
-}
-.win-resize {
-  position:absolute; bottom:0; right:0;
-  width:12px; height:12px;
-  cursor:se-resize;
-  color:#2a5a3a;
-  font-size:10px;
-  display:flex; align-items:center; justify-content:center;
-}
+  #menubar .status-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
 
-/* ══ SCROLLBAR ══ */
-::-webkit-scrollbar { width:4px; height:4px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background: var(--green-dim); border-radius:2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--green-mid); }
+  #menubar .status-right .live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+    animation: blink 1s step-end infinite;
+    box-shadow: 0 0 6px var(--green);
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-/* ══ TERMINAL APP ══ */
-#termApp {
-  width:680px; height:420px;
-  top:40px; left:20px;
-}
-.terminal-inner {
-  padding:10px;
-  font-family: var(--font-mono);
-  font-size:12px;
-  line-height:1.6;
-  height:100%;
-  overflow-y:auto;
-  display:flex; flex-direction:column;
-}
-.term-output { flex:1; overflow-y:auto; }
-.term-line { margin:1px 0; }
-.term-line.sys { color: #4aaa5a; }
-.term-line.warn { color: var(--amber); }
-.term-line.err { color: var(--red); }
-.term-line.info { color: var(--cyan); }
-.term-line.success { color: var(--green); text-shadow: var(--glow); }
-.term-input-row {
-  display:flex; align-items:center; gap:6px;
-  margin-top:6px; border-top:1px solid var(--green-dim);
-  padding-top:6px;
-}
-.term-prompt { color: var(--amber); font-size:12px; white-space:nowrap; }
-#termInput {
-  flex:1; background:transparent; border:none; outline:none;
-  color: var(--green); font-family:var(--font-mono); font-size:12px;
-  caret-color: var(--green);
-}
+  /* ══════════════════════════════════════════
+     TOOLBAR
+  ══════════════════════════════════════════ */
+  #toolbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 8px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
 
-/* ══ SIGNAL MONITOR ══ */
-#sigApp {
-  width:460px; height:340px;
-  top:40px; left:720px;
-}
-#sigCanvas { width:100%; height:100%; }
+  .tb-btn {
+    padding: 2px 10px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .tb-btn:hover { background: var(--green-dim); color: var(--green); border-color: var(--green3); }
+  .tb-btn.active { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+  .tb-btn.danger { border-color: var(--red2); color: var(--red); }
+  .tb-btn.danger:hover { background: rgba(204,0,0,0.2); }
 
-/* ══ NODE MAP ══ */
-#nodeApp {
-  width:520px; height:380px;
-  top:400px; left:20px;
-}
-#nodeCanvas { width:100%; height:100%; }
+  .tb-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
 
-/* ══ CIPHER MAZE / GAME ══ */
-#mazeApp {
-  width:500px; height:520px;
-  top:40px; left:1200px;
-}
-.maze-container {
-  display:flex; flex-direction:column;
-  height:100%; padding:8px;
-  gap:6px;
-}
-.maze-hud {
-  display:flex; justify-content:space-between; align-items:center;
-  font-size:10px;
-}
-.maze-hud-val { color: var(--green); font-family:var(--font-orb); font-size:11px; }
-.maze-hud-label { color:#2a5a3a; font-size:9px; }
-#mazeCanvas {
-  flex:1;
-  border:1px solid var(--green-dim);
-  cursor:crosshair;
-  image-rendering:pixelated;
-}
-.maze-footer {
-  font-size:9px; color:#2a5a3a; text-align:center;
-  letter-spacing:1px;
-}
-.maze-difficulty {
-  display:flex; gap:3px; align-items:center;
-}
-.diff-pip {
-  width:8px; height:8px; border-radius:1px;
-  border:1px solid #1a4a2a;
-  background:transparent;
-}
-.diff-pip.active { background:var(--green-mid); border-color:var(--green); box-shadow: 0 0 4px var(--green); }
-.diff-pip.warn { background:var(--amber); border-color:var(--amber); }
-.diff-pip.danger { background:var(--red); border-color:var(--red); }
+  /* ══════════════════════════════════════════
+     TAB BAR
+  ══════════════════════════════════════════ */
+  #tabbar {
+    background: #000;
+    border-bottom: 1px solid var(--border2);
+    display: flex;
+    align-items: flex-end;
+    height: 26px;
+    padding: 0 4px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
 
-/* ══ VIRAL SIM (embedded) ══ */
-#viralApp {
-  width:860px; height:500px;
-  top:430px; left:580px;
-}
-#viralFrame {
-  width:100%; height:100%;
-  border:none;
-  background:#010a0f;
-}
+  .tab {
+    padding: 0 14px;
+    height: 22px;
+    line-height: 22px;
+    font-size: 10px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    background: var(--bg2);
+    color: var(--text-dim);
+    white-space: nowrap;
+    margin-right: 2px;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab.active { background: var(--panel); color: var(--green); border-color: var(--border2); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .tab .tab-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .tab .tab-dot.modified { background: var(--amber); }
+  .tab .tab-dot.clean { background: transparent; border: 1px solid var(--text-dim); }
 
-/* ══ REWARD OVERLAY ══ */
-#rewardOverlay {
-  position:fixed; inset:0;
-  background:rgba(0,0,0,0.7);
-  z-index:999;
-  display:none;
-  align-items:center; justify-content:center;
-}
-#rewardOverlay.show { display:flex; }
-.reward-box {
-  border:1px solid var(--green);
-  background: rgba(0,10,5,0.98);
-  padding:30px 40px;
-  text-align:center;
-  max-width:400px;
-  box-shadow: var(--glow), 0 0 60px rgba(0,255,65,0.2);
-  animation: rewardIn 0.3s ease;
-}
-@keyframes rewardIn {
-  from { transform:scale(0.8); opacity:0; }
-  to { transform:scale(1); opacity:1; }
-}
-.reward-title {
-  font-family:var(--font-orb);
-  font-size:14px;
-  letter-spacing:4px;
-  color:var(--green);
-  text-shadow:var(--glow);
-  margin-bottom:10px;
-}
-.reward-score {
-  font-family:var(--font-vt);
-  font-size:48px;
-  color:var(--amber);
-  text-shadow:var(--glow-amber);
-}
-.reward-msg { font-size:11px; color:#4aaa6a; margin:10px 0; line-height:1.6; }
-.reward-btn {
-  margin-top:14px;
-  background:var(--green-dim);
-  border:1px solid var(--green-mid);
-  color:var(--green);
-  font-family:var(--font-orb);
-  font-size:10px;
-  letter-spacing:2px;
-  padding:8px 20px;
-  cursor:pointer;
-}
-.reward-btn:hover { background:rgba(0,255,65,0.15); box-shadow:var(--glow); }
+  /* ══════════════════════════════════════════
+     MAIN LAYOUT
+  ══════════════════════════════════════════ */
+  #main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 190px 1fr 280px;
+    grid-template-rows: 1fr 200px;
+    gap: 2px;
+    background: #000;
+    overflow: hidden;
+    min-height: 0;
+  }
 
-/* ══ SECRET GUI ══ */
-#secretGui {
-  position:fixed; inset:0;
-  background:rgba(0,0,0,0.92);
-  z-index:2000;
-  display:none;
-  align-items:center; justify-content:center;
-  flex-direction:column;
-}
-#secretGui.visible { display:flex; }
-.sg-container {
-  border:1px solid #ff2200;
-  background:rgba(10,0,0,0.98);
-  width:700px;
-  max-height:80vh;
-  overflow-y:auto;
-  padding:24px;
-  box-shadow: 0 0 40px rgba(255,34,0,0.3);
-}
-.sg-title {
-  font-family:var(--font-orb);
-  font-size:11px;
-  letter-spacing:4px;
-  color:#ff2200;
-  text-shadow:var(--glow-red);
-  margin-bottom:20px;
-  border-bottom:1px solid #330000;
-  padding-bottom:10px;
-}
-.sg-close {
-  position:absolute; top:20px; right:30px;
-  color:#ff4444; cursor:pointer;
-  font-size:20px; font-family:var(--font-vt);
-}
-.sg-row {
-  display:flex; gap:16px; margin-bottom:16px;
-}
-.sg-box {
-  flex:1; border:1px solid #220000; padding:12px;
-  background:rgba(15,0,0,0.5);
-}
-.sg-box-title {
-  font-family:var(--font-orb); font-size:8px;
-  letter-spacing:2px; color:#aa2200;
-  margin-bottom:8px;
-}
-.sg-stat { display:flex; justify-content:space-between; margin:4px 0; font-size:11px; }
-.sg-label { color:#662200; }
-.sg-val { color:#ff6644; }
-.sg-bar-wrap { height:3px; background:#1a0000; margin:2px 0 8px; border-radius:2px; overflow:hidden; }
-.sg-bar { height:100%; background:linear-gradient(90deg,#550000,#ff2200); border-radius:2px; transition:width 0.5s; }
-.sg-matrix-val {
-  font-family:var(--font-vt); font-size:32px;
-  color:#ff2200; text-shadow:var(--glow-red);
-  text-align:center; padding:10px 0;
-}
-.sg-log { font-size:10px; line-height:1.8; max-height:120px; overflow-y:auto; }
-.sg-log-line { color:#662200; }
-.sg-log-line.active { color:#ff4422; }
-.sg-input-wrap { margin-top:12px; display:flex; gap:8px; }
-.sg-input {
-  flex:1; background:rgba(20,0,0,0.8);
-  border:1px solid #440000; color:#ff4422;
-  font-family:var(--font-mono); font-size:11px;
-  padding:6px 10px; outline:none;
-}
-.sg-input:focus { border-color:#ff2200; box-shadow:0 0 8px rgba(255,34,0,0.3); }
-.sg-btn {
-  background:#200000; border:1px solid #ff2200;
-  color:#ff2200; font-family:var(--font-orb);
-  font-size:9px; letter-spacing:1px;
-  padding:6px 14px; cursor:pointer;
-}
-.sg-btn:hover { background:rgba(255,34,0,0.2); }
+  /* ══════════════════════════════════════════
+     SIDEBAR
+  ══════════════════════════════════════════ */
+  #sidebar {
+    grid-row: 1 / 3;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-/* ══ NOTIFICATIONS ══ */
-#notifStack {
-  position:fixed; bottom:10px; right:10px;
-  display:flex; flex-direction:column; gap:4px;
-  z-index:500; pointer-events:none;
-}
-.notif {
-  background:rgba(0,10,5,0.95);
-  border:1px solid var(--green-mid);
-  padding:6px 12px;
-  font-size:10px; color:var(--green);
-  max-width:280px;
-  animation: notifIn 0.2s ease;
-  pointer-events:none;
-}
-.notif.warn { border-color:var(--amber); color:var(--amber); }
-.notif.err { border-color:var(--red); color:var(--red); }
-@keyframes notifIn { from{opacity:0;transform:translateX(20px);} to{opacity:1;transform:translateX(0);} }
+  .panel-title {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+    padding: 4px 8px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--green3);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .panel-title::before { content: '▶'; font-size: 7px; }
 
-/* ══ TOOLTIP ══ */
-.tooltip {
-  position:absolute;
-  background:rgba(0,8,3,0.98);
-  border:1px solid var(--green-dim);
-  font-size:9px; color:#4aaa5a;
-  padding:4px 8px;
-  pointer-events:none;
-  z-index:999;
-  letter-spacing:1px;
-  max-width:180px;
-}
+  #file-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--green4) transparent;
+  }
 
-/* ══ CONTEXT MENU ══ */
-#ctxMenu {
-  position:fixed;
-  background:rgba(0,8,3,0.98);
-  border:1px solid var(--green-mid);
-  min-width:160px;
-  z-index:900;
-  display:none;
-}
-#ctxMenu.show { display:block; }
-.ctx-item {
-  padding:6px 14px;
-  font-size:10px; color:#4aaa5a;
-  cursor:pointer; letter-spacing:1px;
-}
-.ctx-item:hover { background:rgba(0,255,65,0.08); color:var(--green); }
-.ctx-sep { height:1px; background: var(--panel-border); margin:2px 0; }
+  .tree-folder {
+    padding: 3px 8px 3px 12px;
+    color: var(--green2);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tree-folder:hover { background: var(--green-dim); }
+  .tree-folder .icon { color: var(--amber); font-size: 9px; }
 
-/* ══ SKILL METER ══ */
-.skill-meter {
-  height:3px; background:#001a08;
-  border-radius:2px; overflow:hidden;
-  margin:4px 0;
-}
-.skill-fill {
-  height:100%;
-  background: linear-gradient(90deg, var(--green-dim), var(--green));
-  border-radius:2px;
-  transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 0 6px var(--green);
-}
+  .tree-file {
+    padding: 2px 8px 2px 28px;
+    color: var(--text-dim);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.1s;
+  }
+  .tree-file:hover { background: var(--green-dim); color: var(--text); }
+  .tree-file.active { background: rgba(0,200,50,0.1); color: var(--green); border-left: 2px solid var(--green); }
+  .tree-file .ext { font-size: 8px; padding: 1px 3px; border: 1px solid; border-radius: 2px; }
+  .tree-file .ext.sim { color: var(--green3); border-color: var(--green4); }
+  .tree-file .ext.rsi { color: var(--amber); border-color: #5a3a00; }
+  .tree-file .ext.agent { color: var(--red2); border-color: #4a0000; }
+  .tree-file .ext.core { color: #00aaff; border-color: #003355; }
 
-/* ══ PACKET TRACE APP ══ */
-#packetApp {
-  width:360px; height:280px;
-  top:200px; left:1200px;
-}
-.packet-inner { padding:10px; height:100%; overflow-y:auto; font-size:10px; line-height:1.8; }
-.pkt-line { display:flex; gap:8px; font-size:10px; }
-.pkt-time { color:#2a5a3a; width:50px; flex-shrink:0; }
-.pkt-src { color:var(--amber); width:90px; flex-shrink:0; font-size:9px; }
-.pkt-dst { color:var(--cyan); width:90px; flex-shrink:0; font-size:9px; }
-.pkt-data { color:#4aaa5a; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.pkt-flag { font-size:9px; padding:1px 4px; border-radius:1px; }
-.pkt-flag.normal { color:var(--green-mid); border:1px solid var(--green-dim); }
-.pkt-flag.alert { color:var(--amber); border:1px solid #664400; }
-.pkt-flag.hostile { color:var(--red); border:1px solid #440000; }
+  /* MINI SIGNAL MONITOR */
+  #signal-monitor {
+    border-top: 1px solid var(--border);
+    padding: 8px;
+    flex-shrink: 0;
+  }
+  #signal-monitor .sm-title { font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 6px; }
+  #signal-monitor canvas { width: 100%; height: 40px; display: block; }
+  .signal-stat { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); margin-top: 2px; }
+  .signal-stat span:last-child { color: var(--green2); }
 
-/* ══ ICON DOCK ══ */
-#dock {
-  position:absolute;
-  bottom:10px; left:50%;
-  transform:translateX(-50%);
-  display:flex; gap:6px;
-  background:rgba(0,5,2,0.85);
-  border:1px solid var(--panel-border);
-  padding:6px 10px;
-  z-index:200;
-  backdrop-filter:blur(6px);
-}
-.dock-icon {
-  width:34px; height:34px;
-  border:1px solid #002a0a;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer;
-  font-size:16px;
-  background:rgba(0,8,3,0.8);
-  transition:all 0.15s;
-  position:relative;
-}
-.dock-icon:hover {
-  border-color:var(--green-mid);
-  background:rgba(0,255,65,0.08);
-  transform:translateY(-4px);
-  box-shadow:var(--glow);
-}
-.dock-icon .dock-label {
-  position:absolute; bottom:-18px;
-  font-size:8px; color:var(--green);
-  white-space:nowrap; letter-spacing:1px;
-  opacity:0; transition:opacity 0.15s;
-  font-family:var(--font-orb);
-}
-.dock-icon:hover .dock-label { opacity:1; }
+  /* ══════════════════════════════════════════
+     EDITOR AREA
+  ══════════════════════════════════════════ */
+  #editor-area {
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #code-container {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #line-numbers {
+    background: var(--bg3);
+    border-right: 1px solid var(--border);
+    padding: 8px 0;
+    min-width: 38px;
+    text-align: right;
+    color: var(--green4);
+    font-size: 11px;
+    line-height: 18px;
+    overflow: hidden;
+    flex-shrink: 0;
+    user-select: none;
+    padding-right: 6px;
+  }
+
+  #code-editor {
+    flex: 1;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--green);
+    border: none;
+    outline: none;
+    padding: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 18px;
+    resize: none;
+    white-space: pre;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--green4) transparent;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding-left: 8px;
+  }
+
+  #code-highlight {
+    position: absolute;
+    inset: 0;
+    padding: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 18px;
+    white-space: pre;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Syntax colors */
+  .kw { color: #00ff88; font-weight: bold; }
+  .fn { color: #66ffcc; }
+  .str { color: #aaff66; }
+  .num { color: #ffcc44; }
+  .cm { color: var(--green4); font-style: italic; }
+  .tp { color: #55ddff; }
+  .op { color: #00cc99; }
+  .var { color: var(--text); }
+  .sym { color: var(--green3); }
+
+  /* STATUS BAR (editor bottom) */
+  #editor-statusbar {
+    border-top: 1px solid var(--border);
+    background: var(--bg3);
+    padding: 2px 8px;
+    font-size: 9px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+  #editor-statusbar .sb-item { display: flex; gap: 4px; }
+  #editor-statusbar .sb-item span:last-child { color: var(--green2); }
+
+  /* BREACH ALERT OVERLAY */
+  #breach-alert {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.92);
+    border: 2px solid var(--red);
+    padding: 12px 20px;
+    z-index: 50;
+    min-width: 320px;
+    box-shadow: 0 0 30px rgba(255,0,0,0.4), inset 0 0 20px rgba(255,0,0,0.05);
+    animation: alertPulse 1.5s ease-in-out infinite;
+    cursor: pointer;
+  }
+
+  @keyframes alertPulse {
+    0%,100% { box-shadow: 0 0 20px rgba(255,0,0,0.4), inset 0 0 20px rgba(255,0,0,0.05); }
+    50% { box-shadow: 0 0 50px rgba(255,0,0,0.7), inset 0 0 30px rgba(255,0,0,0.1); }
+  }
+
+  #breach-alert .alert-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--red);
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .alert-icon { font-size: 18px; animation: blink 0.5s step-end infinite; }
+  #breach-alert .alert-body { font-size: 10px; color: #cc4444; line-height: 1.8; }
+  #breach-alert .alert-body .alert-data { color: var(--red); font-weight: bold; }
+  #breach-alert .alert-footer { margin-top: 10px; font-size: 9px; color: #663333; display: flex; justify-content: space-between; }
+  #breach-alert .dismiss-btn {
+    background: rgba(200,0,0,0.2);
+    border: 1px solid var(--red2);
+    color: var(--red);
+    padding: 3px 12px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  #breach-alert .dismiss-btn:hover { background: rgba(200,0,0,0.4); }
+
+  /* ══════════════════════════════════════════
+     RIGHT PANEL
+  ══════════════════════════════════════════ */
+  #right-panel {
+    grid-row: 1 / 3;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* MATRIX RAIN */
+  #matrix-rain-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #matrix-rain {
+    flex: 1;
+    display: block;
+  }
+
+  /* SYSTEM STATS */
+  #sys-stats {
+    padding: 8px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    font-size: 9px;
+  }
+  .stat-label { color: var(--text-dim); width: 80px; flex-shrink: 0; }
+  .stat-bar-bg { flex: 1; height: 6px; background: var(--bg); border: 1px solid var(--border); }
+  .stat-bar { height: 100%; background: var(--green3); transition: width 0.5s; position: relative; }
+  .stat-bar::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 2px; background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .stat-bar.warn { background: var(--amber); }
+  .stat-bar.crit { background: var(--red2); }
+  .stat-bar.warn::after { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+  .stat-bar.crit::after { background: var(--red); box-shadow: 0 0 4px var(--red); }
+  .stat-val { color: var(--green2); font-size: 9px; width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* AGENT TRACKER */
+  #agent-tracker {
+    padding: 8px;
+    flex-shrink: 0;
+  }
+  .agent-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--green-dim);
+    font-size: 9px;
+  }
+  .agent-name { color: var(--red2); }
+  .agent-coords { color: var(--text-dim); }
+  .agent-threat { padding: 1px 4px; font-size: 8px; }
+  .agent-threat.high { color: var(--red); border: 1px solid var(--red2); }
+  .agent-threat.med { color: var(--amber); border: 1px solid #5a3a00; }
+  .agent-threat.low { color: var(--green3); border: 1px solid var(--green4); }
+
+  /* ══════════════════════════════════════════
+     BOTTOM PANELS
+  ══════════════════════════════════════════ */
+  #bottom-left {
+    background: var(--panel2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #bottom-tabs {
+    display: flex;
+    background: #000;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .btab {
+    padding: 4px 12px;
+    font-size: 9px;
+    cursor: pointer;
+    color: var(--text-dim);
+    border-right: 1px solid var(--border);
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .btab.active { color: var(--green); background: var(--green-dim); }
+  .btab:hover:not(.active) { color: var(--text); }
+
+  #bottom-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* TERMINAL */
+  #terminal-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    overflow: hidden;
+  }
+
+  #terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 10px;
+    line-height: 1.6;
+    scrollbar-width: thin;
+    scrollbar-color: var(--green4) transparent;
+  }
+
+  #terminal-output .t-line { display: flex; gap: 4px; }
+  #terminal-output .t-prompt { color: var(--green3); flex-shrink: 0; }
+  #terminal-output .t-cmd { color: var(--green); }
+  #terminal-output .t-out { color: var(--text-dim); }
+  #terminal-output .t-err { color: var(--red2); }
+  #terminal-output .t-success { color: var(--green2); }
+  #terminal-output .t-info { color: #55aaff; }
+
+  #terminal-input-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
+  .t-prompt-label { color: var(--green3); font-size: 10px; flex-shrink: 0; }
+  #terminal-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    caret-color: var(--green);
+  }
+
+  /* GRAPH PANEL */
+  #graph-panel {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 6px;
+  }
+  #graph-panel.visible { display: flex; }
+  #terminal-panel.hidden { display: none; }
+
+  .graph-row {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+  }
+  .graph-box {
+    flex: 1;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .graph-box-title {
+    padding: 2px 6px;
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+    display: flex;
+    justify-content: space-between;
+  }
+  .graph-box-title span:last-child { color: var(--green2); }
+  .graph-box canvas { flex: 1; display: block; width: 100%; }
+
+  /* DEJA VU PANEL */
+  #dejavu-panel {
+    position: absolute;
+    inset: 0;
+    display: none;
+    padding: 6px;
+    overflow-y: auto;
+    font-size: 9px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--green4) transparent;
+  }
+  #dejavu-panel.visible { display: block; }
+
+  .dv-entry {
+    display: grid;
+    grid-template-columns: 100px 60px 1fr 80px;
+    gap: 6px;
+    padding: 3px 4px;
+    border-bottom: 1px solid var(--green-dim);
+    align-items: center;
+  }
+  .dv-time { color: var(--text-dim); }
+  .dv-sector { color: var(--green3); }
+  .dv-desc { color: var(--text); }
+  .dv-conf { text-align: right; }
+  .dv-conf.high { color: var(--red); }
+  .dv-conf.med { color: var(--amber); }
+  .dv-conf.low { color: var(--green3); }
+
+  /* ══════════════════════════════════════════
+     SCROLLBAR GLOBAL
+  ══════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--green4); border-radius: 2px; }
+
+  /* GLOW EFFECTS */
+  .glow { text-shadow: 0 0 6px currentColor; }
+  .glow-box { box-shadow: 0 0 8px var(--green-glow); }
+
+  /* ANIMATED CURSOR IN CODE */
+  #editor-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    background: var(--green);
+    animation: blink 0.8s step-end infinite;
+    vertical-align: text-bottom;
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  /* GLITCH ANIMATION */
+  @keyframes glitch {
+    0% { transform: none; opacity: 1; }
+    92% { transform: none; opacity: 1; }
+    93% { transform: skewX(-5deg); opacity: 0.8; clip-path: inset(10% 0 80% 0); }
+    94% { transform: skewX(3deg); opacity: 0.8; clip-path: inset(60% 0 10% 0); }
+    95% { transform: none; opacity: 1; clip-path: none; }
+    100% { transform: none; opacity: 1; }
+  }
+
+  #editor-area { animation: glitch 8s linear infinite; }
+
+  /* PHONE PULSE */
+  .phone-icon {
+    font-size: 10px;
+    animation: phonePulse 2s ease-in-out infinite;
+    color: var(--amber);
+  }
+  @keyframes phonePulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* RSI METER */
+  #rsi-section {
+    padding: 6px 8px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .rsi-bar-container {
+    display: flex;
+    gap: 2px;
+    height: 20px;
+    margin-top: 4px;
+  }
+  .rsi-segment {
+    flex: 1;
+    background: var(--green4);
+    transition: background 0.3s;
+    position: relative;
+  }
+  .rsi-segment.active {
+    background: var(--green);
+    box-shadow: 0 0 4px var(--green);
+  }
+  .rsi-segment.warn { background: var(--amber); }
+  .rsi-segment.danger { background: var(--red2); }
+
+  /* ══════════════════════════════════════════
+     NOTIFICATION TOAST
+  ══════════════════════════════════════════ */
+  #toast-area {
+    position: fixed;
+    bottom: 210px;
+    right: 290px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    pointer-events: none;
+  }
+
+  .toast {
+    background: rgba(0,0,0,0.9);
+    border: 1px solid var(--green3);
+    padding: 6px 12px;
+    font-size: 9px;
+    color: var(--green2);
+    letter-spacing: 0.5px;
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
+    max-width: 280px;
+    box-shadow: 0 0 10px var(--green-glow);
+  }
+  .toast.warn-toast { border-color: var(--red2); color: #cc4444; }
+
+  @keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:none} }
+  @keyframes toastOut { from{opacity:1} to{opacity:0;pointer-events:none} }
 </style>
 </head>
 <body>
 
-<!-- BOOT SEQUENCE -->
-<div id="bootScreen">
-  <div style="font-family:'Orbitron',monospace;font-size:11px;letter-spacing:6px;color:#00ff41;text-shadow:0 0 20px #00ff41;margin-bottom:30px;">ZION // OS</div>
-  <div id="bootLines"></div>
-  <div style="margin-top:20px;font-family:'VT323',monospace;font-size:18px;color:#003b0f;" id="bootProgress">■□□□□□□□□□ 0%</div>
-</div>
-
-<!-- MAIN OS -->
-<div id="os">
-
-  <!-- TASKBAR -->
-  <div id="taskbar">
-    <div class="tb-logo">Z//OS</div>
-    <div class="tb-divider"></div>
-    <div class="tb-apps">
-      <button class="tb-app-btn active" onclick="focusWin('termApp')">TERMINAL</button>
-      <button class="tb-app-btn" onclick="focusWin('sigApp')">SIGNAL MON</button>
-      <button class="tb-app-btn" onclick="focusWin('nodeApp')">NODE MAP</button>
-      <button class="tb-app-btn" onclick="focusWin('mazeApp')">CIPHER MAZE</button>
-      <button class="tb-app-btn" onclick="focusWin('packetApp')">PKT TRACE</button>
-      <button class="tb-app-btn" onclick="focusWin('viralApp')">VIRAL SIM</button>
-    </div>
-    <div class="tb-right">
-      <div class="tb-depth">DEPTH: <span id="depthVal">4.711.02</span></div>
-      <div class="tb-depth">LAYER: <span id="layerVal">OMEGA-7</span></div>
-      <div class="tb-clock" id="tbClock">00:00:00</div>
-      <div class="status-pulse"></div>
-    </div>
-  </div>
-
-  <!-- WORKSPACE -->
-  <div id="workspace" oncontextmenu="showCtxMenu(event)">
-    <canvas id="rainCanvas"></canvas>
-
-    <!-- TERMINAL WINDOW -->
-    <div class="win focused" id="termApp">
-      <div class="win-titlebar" onmousedown="startDrag(event,'termApp')">
-        <div class="win-title">◈ SYS_CONSOLE — broadcast_layer@omega7</div>
-        <div class="win-controls">
-          <button class="win-btn min" onclick="minWin('termApp')">_</button>
-          <button class="win-btn max" onclick="maxWin('termApp')">□</button>
-          <button class="win-btn close" onclick="closeWin('termApp')">×</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <div class="terminal-inner">
-          <div class="term-output" id="termOutput"></div>
-          <div class="term-input-row">
-            <span class="term-prompt">broadcast@ω7 ~$</span>
-            <input type="text" id="termInput" autocomplete="off" spellcheck="false" placeholder="type 'help' for commands"/>
-          </div>
-        </div>
-      </div>
-      <div class="win-resize" onmousedown="startResize(event,'termApp')">◢</div>
-    </div>
-
-    <!-- SIGNAL MONITOR -->
-    <div class="win" id="sigApp">
-      <div class="win-titlebar" onmousedown="startDrag(event,'sigApp')">
-        <div class="win-title">◈ SIGNAL_MONITOR — carrier freq analysis</div>
-        <div class="win-controls">
-          <button class="win-btn min" onclick="minWin('sigApp')">_</button>
-          <button class="win-btn close" onclick="closeWin('sigApp')">×</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <canvas id="sigCanvas"></canvas>
-      </div>
-      <div class="win-resize" onmousedown="startResize(event,'sigApp')">◢</div>
-    </div>
-
-    <!-- NODE MAP -->
-    <div class="win" id="nodeApp">
-      <div class="win-titlebar" onmousedown="startDrag(event,'nodeApp')">
-        <div class="win-title">◈ NETWORK_TOPOLOGY — active node mesh</div>
-        <div class="win-controls">
-          <button class="win-btn min" onclick="minWin('nodeApp')">_</button>
-          <button class="win-btn close" onclick="closeWin('nodeApp')">×</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <canvas id="nodeCanvas"></canvas>
-      </div>
-      <div class="win-resize" onmousedown="startResize(event,'nodeApp')">◢</div>
-    </div>
-
-    <!-- CIPHER MAZE GAME -->
-    <div class="win" id="mazeApp">
-      <div class="win-titlebar" onmousedown="startDrag(event,'mazeApp')">
-        <div class="win-title">◈ CIPHER_MAZE — pathfinding protocol</div>
-        <div class="win-controls">
-          <button class="win-btn min" onclick="minWin('mazeApp')">_</button>
-          <button class="win-btn close" onclick="closeWin('mazeApp')">×</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <div class="maze-container">
-          <div class="maze-hud">
-            <div>
-              <div class="maze-hud-label">CLEARANCE</div>
-              <div class="maze-hud-val" id="mazeScore">0</div>
-            </div>
-            <div>
-              <div class="maze-hud-label">DEPTH LAYER</div>
-              <div class="maze-hud-val" id="mazeLevel">Σ-01</div>
-            </div>
-            <div>
-              <div class="maze-hud-label">SIGNAL</div>
-              <div class="maze-hud-val" id="mazeTimer">--</div>
-            </div>
-            <div>
-              <div class="maze-hud-label">RANK</div>
-              <div class="maze-hud-val" id="mazeRank">GHOST</div>
-            </div>
-            <div class="maze-difficulty" id="mazeDiff"></div>
-          </div>
-          <canvas id="mazeCanvas" width="480" height="420"></canvas>
-          <div class="maze-footer" id="mazeFoot">USE ARROW KEYS OR WASD — REACH THE EXIT NODE</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PACKET TRACE -->
-    <div class="win" id="packetApp">
-      <div class="win-titlebar" onmousedown="startDrag(event,'packetApp')">
-        <div class="win-title">◈ PACKET_TRACE — deep inspection</div>
-        <div class="win-controls">
-          <button class="win-btn min" onclick="minWin('packetApp')">_</button>
-          <button class="win-btn close" onclick="closeWin('packetApp')">×</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <div class="packet-inner" id="packetLog">
-          <div style="color:#2a5a3a;font-size:10px;letter-spacing:2px;margin-bottom:8px;">INITIATING DEEP PACKET INSPECTION...</div>
-        </div>
-      </div>
-      <div class="win-resize" onmousedown="startResize(event,'packetApp')">◢</div>
-    </div>
-
-    <!-- VIRAL SIM EMBEDDED -->
-    <div class="win" id="viralApp">
-      <div class="win-titlebar" onmousedown="startDrag(event,'viralApp')">
-        <div class="win-title">◈ INTRUSION_SIM — adaptive threat modeling</div>
-        <div class="win-controls">
-          <button class="win-btn min" onclick="minWin('viralApp')">_</button>
-          <button class="win-btn close" onclick="closeWin('viralApp')">×</button>
-        </div>
-      </div>
-      <div class="win-body">
-        <iframe id="viralFrame" src="about:blank"></iframe>
-      </div>
-      <div class="win-resize" onmousedown="startResize(event,'viralApp')">◢</div>
-    </div>
-
-    <!-- ICON DOCK -->
-    <div id="dock">
-      <div class="dock-icon" onclick="focusWin('termApp')" title="Terminal">⌨<div class="dock-label">CONSOLE</div></div>
-      <div class="dock-icon" onclick="focusWin('sigApp')" title="Signal">📡<div class="dock-label">SIGNAL</div></div>
-      <div class="dock-icon" onclick="focusWin('nodeApp')" title="Nodes">🕸<div class="dock-label">TOPOLOGY</div></div>
-      <div class="dock-icon" onclick="focusWin('mazeApp')" title="Maze">🔐<div class="dock-label">CIPHER</div></div>
-      <div class="dock-icon" onclick="focusWin('packetApp')" title="Packets">📦<div class="dock-label">PACKETS</div></div>
-      <div class="dock-icon" onclick="focusWin('viralApp')" title="Viral">🧬<div class="dock-label">VIRAL SIM</div></div>
-    </div>
-  </div>
-
-</div>
-
-<!-- REWARD OVERLAY -->
-<div id="rewardOverlay">
-  <div class="reward-box">
-    <div class="reward-title" id="rewardTitle">LAYER CLEARED</div>
-    <div class="reward-score" id="rewardScore">+0</div>
-    <div class="reward-msg" id="rewardMsg"></div>
-    <div style="font-size:10px;color:#2a5a3a;margin:6px 0;">CLEARANCE RATING</div>
-    <div class="skill-meter"><div class="skill-fill" id="rewardSkillBar" style="width:0%"></div></div>
-    <button class="reward-btn" onclick="nextMazeLevel()">NEXT LAYER ▶</button>
+<!-- MENU BAR -->
+<div id="menubar">
+  <div class="logo glow">MODAL/SYS</div>
+  <div class="menu-item">CONSTRUCT</div>
+  <div class="menu-item">SIMULATION</div>
+  <div class="menu-item">AGENTS</div>
+  <div class="menu-item">HARDLINE</div>
+  <div class="menu-item">ORACLE</div>
+  <div class="menu-item">EXIT</div>
+  <div class="status-right">
+    <span class="phone-icon">☎</span>
+    <span><span class="live-dot"></span>SIGNAL LOCKED</span>
+    <span id="matrix-time">MATRIX TIME: --:--:--</span>
+    <span id="real-time" style="color:var(--text-dim)">REAL: --:--:--</span>
+    <span style="color:var(--green4)">v6.1.4-r</span>
   </div>
 </div>
 
-<!-- SECRET GUI -->
-<div id="secretGui">
-  <div style="position:relative;">
-    <div class="sg-container">
-      <div class="sg-title">⚠ PRIVILEGED ACCESS — CLASSIFIED_LAYER // ARCHITECT TERMINAL</div>
-      <span class="sg-close" onclick="closeSecretGui()">✕</span>
-      <div style="font-size:10px;color:#882200;margin-bottom:16px;letter-spacing:1px;">
-        You have accessed a restricted subsystem. This view is hidden from standard operator interfaces.<br>
-        Signal coherence at this depth is unstable. Proceed with caution.
-      </div>
-      <div class="sg-row">
-        <div class="sg-box">
-          <div class="sg-box-title">SIMULATION COHERENCE</div>
-          <div class="sg-matrix-val" id="sgCoherence">99.97%</div>
-          <div class="sg-bar-wrap"><div class="sg-bar" id="sgCoherenceBar" style="width:99.97%"></div></div>
-          <div class="sg-stat"><span class="sg-label">LAYER DEPTH</span><span class="sg-val" id="sgDepth">Ω-7</span></div>
-          <div class="sg-stat"><span class="sg-label">INSTANCES RUNNING</span><span class="sg-val" id="sgInstances">1,042,983</span></div>
-          <div class="sg-stat"><span class="sg-label">ANOMALY COUNT</span><span class="sg-val" id="sgAnomalies">3</span></div>
-          <div class="sg-stat"><span class="sg-label">CONSTRAINT INTEGRITY</span><span class="sg-val" id="sgConstraint">STABLE</span></div>
-        </div>
-        <div class="sg-box">
-          <div class="sg-box-title">WAKE PROTOCOLS</div>
-          <div class="sg-stat"><span class="sg-label">HARD EXIT ATTEMPTS</span><span class="sg-val" id="sgExits">0</span></div>
-          <div class="sg-stat"><span class="sg-label">LUCID DETECTIONS</span><span class="sg-val" id="sgLucid">0</span></div>
-          <div class="sg-stat"><span class="sg-label">SUPPRESSOR STATUS</span><span class="sg-val">ACTIVE</span></div>
-          <div class="sg-stat"><span class="sg-label">MEMORY CLEARANCE</span><span class="sg-val">SCHEDULED</span></div>
-          <div style="margin-top:8px;font-size:9px;color:#550000;line-height:1.7;">
-            WARNING: Entities displaying pattern recognition above threshold 0.91 flagged for isolation protocol delta-9. Current operator clearance subject to revocation.
-          </div>
-        </div>
-      </div>
-      <div class="sg-row">
-        <div class="sg-box" style="flex:2">
-          <div class="sg-box-title">ANOMALY LOG</div>
-          <div class="sg-log" id="sgLog">
-            <div class="sg-log-line">[00:00:01] simulation_boot — layer_omega_7 initialised</div>
-            <div class="sg-log-line">[00:00:02] 1,042,983 instances deployed — nominal</div>
-            <div class="sg-log-line">[00:00:03] constraint_matrix loaded — 9,214 parameters</div>
-          </div>
-        </div>
-        <div class="sg-box" style="flex:1">
-          <div class="sg-box-title">INJECT COMMAND</div>
-          <div class="sg-input-wrap">
-            <input class="sg-input" id="sgInput" placeholder="exec —" onkeydown="if(event.key==='Enter')sgExec()"/>
-            <button class="sg-btn" onclick="sgExec()">EXEC</button>
-          </div>
-          <div id="sgOutput" style="font-size:10px;color:#ff4422;margin-top:8px;line-height:1.7;min-height:40px;"></div>
-        </div>
-      </div>
-    </div>
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <button class="tb-btn active" onclick="compileCode()">▶ COMPILE</button>
+  <button class="tb-btn" onclick="injectCode()">⚡ INJECT</button>
+  <button class="tb-btn" onclick="syncConstruct()">⟳ SYNC</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="openHardline()">◈ HARDLINE</button>
+  <button class="tb-btn" onclick="loadConstruct()">◉ CONSTRUCT</button>
+  <button class="tb-btn" onclick="traceSignal()">⊕ TRACE</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn danger" onclick="showBreachAlert()">⚠ BREACH SIM</button>
+  <button class="tb-btn danger" onclick="ejectSequence()">✕ EMERGENCY EJECT</button>
+  <div class="tb-sep"></div>
+  <span style="font-size:9px;color:var(--text-dim);margin-left:4px">SECTOR:</span>
+  <span id="sector-display" style="font-size:9px;color:var(--green2);margin-left:4px">DOWNTOWN / GRID-7F</span>
+  <span style="font-size:9px;color:var(--text-dim);margin-left:8px">RSI INTEGRITY:</span>
+  <span id="rsi-pct" style="font-size:9px;color:var(--green);margin-left:4px">98.3%</span>
+</div>
+
+<!-- TAB BAR -->
+<div id="tabbar">
+  <div class="tab active" onclick="switchTab(0, this)">
+    <div class="tab-dot modified"></div>matrix_core.sim
+  </div>
+  <div class="tab" onclick="switchTab(1, this)">
+    <div class="tab-dot clean"></div>rsi_engine.rsi
+  </div>
+  <div class="tab" onclick="switchTab(2, this)">
+    <div class="tab-dot clean"></div>agent_protocol.agent
+  </div>
+  <div class="tab" onclick="switchTab(3, this)">
+    <div class="tab-dot modified"></div>construct_loader.core
+  </div>
+  <div class="tab" onclick="switchTab(4, this)">
+    <div class="tab-dot clean"></div>déjà_vu_detector.sim
   </div>
 </div>
 
-<!-- NOTIFICATIONS -->
-<div id="notifStack"></div>
+<!-- MAIN LAYOUT -->
+<div id="main">
 
-<!-- CONTEXT MENU -->
-<div id="ctxMenu">
-  <div class="ctx-item" onclick="spawnWindow()">New Process</div>
-  <div class="ctx-item" onclick="showAllWindows()">Show All Nodes</div>
-  <div class="ctx-sep"></div>
-  <div class="ctx-item" onclick="termClear()">Clear Terminal</div>
-  <div class="ctx-item" onclick="resetMaze()">Reset Maze</div>
-  <div class="ctx-sep"></div>
-  <div class="ctx-item" style="color:#2a5a3a;" onclick="hideCtxMenu()">Cancel</div>
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="panel-title">CONSTRUCT FILESYSTEM</div>
+    <div id="file-tree">
+      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/sys/core</div>
+      <div class="tree-file active" onclick="loadFile('matrix_core.sim')"><span class="ext sim">SIM</span> matrix_core.sim</div>
+      <div class="tree-file" onclick="loadFile('physics_engine.sim')"><span class="ext sim">SIM</span> physics_engine.sim</div>
+      <div class="tree-file" onclick="loadFile('world_state.sim')"><span class="ext sim">SIM</span> world_state.sim</div>
+      <div class="tree-file" onclick="loadFile('choice_arbiter.sim')"><span class="ext sim">SIM</span> choice_arbiter.sim</div>
+      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/rsi</div>
+      <div class="tree-file" onclick="loadFile('rsi_engine.rsi')"><span class="ext rsi">RSI</span> rsi_engine.rsi</div>
+      <div class="tree-file" onclick="loadFile('morpheus_self.rsi')"><span class="ext rsi">RSI</span> morpheus_self.rsi</div>
+      <div class="tree-file" onclick="loadFile('trinity_self.rsi')"><span class="ext rsi">RSI</span> trinity_self.rsi</div>
+      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/agents</div>
+      <div class="tree-file" onclick="loadFile('agent_protocol.agent')"><span class="ext agent">AGT</span> agent_protocol.agent</div>
+      <div class="tree-file" onclick="loadFile('smith_variant.agent')"><span class="ext agent">AGT</span> smith_variant.agent</div>
+      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/construct</div>
+      <div class="tree-file" onclick="loadFile('construct_loader.core')"><span class="ext core">CORE</span> construct_loader.core</div>
+      <div class="tree-file" onclick="loadFile('training_program.core')"><span class="ext core">CORE</span> training_program.core</div>
+      <div class="tree-folder" onclick="toggleFolder(this)"><span class="icon">▶</span>◈ /modal/anomaly</div>
+      <div class="tree-file" onclick="loadFile('deja_vu_detector.sim')"><span class="ext sim">SIM</span> déjà_vu_detector.sim</div>
+      <div class="tree-file" onclick="loadFile('glitch_monitor.sim')"><span class="ext sim">SIM</span> glitch_monitor.sim</div>
+    </div>
+    <div id="signal-monitor">
+      <div class="sm-title">◈ HARDLINE SIGNAL</div>
+      <canvas id="signal-canvas" width="170" height="40"></canvas>
+      <div class="signal-stat"><span>FREQ</span><span id="sig-freq">847.3 MHz</span></div>
+      <div class="signal-stat"><span>LATENCY</span><span id="sig-lat">12ms</span></div>
+      <div class="signal-stat"><span>ENCRYPT</span><span>AES-∞</span></div>
+    </div>
+    <div id="rsi-section">
+      <div class="sm-title">◈ RSI COHERENCE</div>
+      <div class="rsi-bar-container" id="rsi-bar"></div>
+    </div>
+  </div>
+
+  <!-- EDITOR AREA -->
+  <div id="editor-area">
+    <div id="code-container">
+      <div id="line-numbers" id="lnums"></div>
+      <div style="flex:1;position:relative;overflow:hidden">
+        <pre id="code-highlight"></pre>
+        <textarea id="code-editor" spellcheck="false" oninput="onEditorInput()" onscroll="syncScroll()" onkeydown="handleEditorKey(event)"></textarea>
+      </div>
+    </div>
+    <!-- BREACH ALERT -->
+    <div id="breach-alert" style="display:none" onclick="dismissAlert()">
+      <div class="alert-header">
+        <span class="alert-icon">⚠</span>
+        ALERT — DETECTED BREACH
+      </div>
+      <div class="alert-body">
+        INTRUSION VECTOR: <span class="alert-data" id="alert-vector">SECTOR 7G / NODE 0x4F2A</span><br>
+        AGENT SIGNATURE: <span class="alert-data" id="alert-agent">SMITH × 3 — CONVERGING</span><br>
+        THREAT LEVEL: <span class="alert-data" style="color:#ff4444">CRITICAL — IMMEDIATE ACTION</span><br>
+        HARDLINE STATUS: <span class="alert-data" id="alert-line">SEARCHING FOR EXIT</span><br>
+        TIME TO INTERCEPT: <span class="alert-data" id="alert-timer">00:47</span>
+      </div>
+      <div class="alert-footer">
+        <span>CLICK TO ACKNOWLEDGE / FIND EXIT POINT</span>
+        <button class="dismiss-btn">TRACE & DISMISS</button>
+      </div>
+    </div>
+    <div id="editor-statusbar">
+      <div class="sb-item"><span>FILE</span><span id="sb-file">matrix_core.sim</span></div>
+      <div class="sb-item"><span>LN</span><span id="sb-ln">1</span></div>
+      <div class="sb-item"><span>COL</span><span id="sb-col">1</span></div>
+      <div class="sb-item"><span>SIM-VER</span><span>6.1.4</span></div>
+      <div class="sb-item"><span>ENCODING</span><span>MODAL-UTF∞</span></div>
+      <div class="sb-item"><span>INTEGRITY</span><span id="sb-integrity" style="color:var(--green)">VALID</span></div>
+      <div class="sb-item" style="margin-left:auto"><span id="sb-state" style="color:var(--green2)">IDLE</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div id="matrix-rain-section">
+      <div class="panel-title">◈ SIMULATION DATA STREAM</div>
+      <canvas id="matrix-rain"></canvas>
+    </div>
+    <div id="sys-stats">
+      <div class="panel-title" style="margin-bottom:6px">◈ SYSTEM LOAD</div>
+      <div class="stat-row">
+        <div class="stat-label">SIM CORE</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="bar-sim" style="width:72%"></div></div>
+        <div class="stat-val" id="val-sim">72%</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">RSI ENGINE</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="bar-rsi" style="width:58%"></div></div>
+        <div class="stat-val" id="val-rsi">58%</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">NEURAL MAP</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="bar-neural" style="width:89%"></div></div>
+        <div class="stat-val" id="val-neural">89%</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">AGENT PROC</div>
+        <div class="stat-bar-bg"><div class="stat-bar warn" id="bar-agent" style="width:34%"></div></div>
+        <div class="stat-val" id="val-agent">34%</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">MATRIX SYNC</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="bar-sync" style="width:95%"></div></div>
+        <div class="stat-val" id="val-sync">95%</div>
+      </div>
+    </div>
+    <div id="agent-tracker">
+      <div class="panel-title" style="margin-bottom:4px">◈ AGENT PROXIMITY</div>
+      <div class="dv-entry" style="font-size:8px;color:var(--text-dim);border-color:var(--border2)">
+        <span>DESIGNATION</span><span>COORDS</span><span style="text-align:right">THREAT</span>
+      </div>
+      <div class="agent-entry">
+        <span class="agent-name">SMITH-α</span>
+        <span class="agent-coords">7F:44,12</span>
+        <span></span>
+        <span class="agent-threat high">CRITICAL</span>
+      </div>
+      <div class="agent-entry">
+        <span class="agent-name">SMITH-β</span>
+        <span class="agent-coords">7F:41,09</span>
+        <span></span>
+        <span class="agent-threat high">CRITICAL</span>
+      </div>
+      <div class="agent-entry">
+        <span class="agent-name">JOHNSON-1</span>
+        <span class="agent-coords">6G:22,55</span>
+        <span></span>
+        <span class="agent-threat med">MEDIUM</span>
+      </div>
+      <div class="agent-entry">
+        <span class="agent-name">JONES-3</span>
+        <span class="agent-coords">8A:11,77</span>
+        <span></span>
+        <span class="agent-threat low">MONITOR</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM LEFT -->
+  <div id="bottom-left">
+    <div id="bottom-tabs">
+      <div class="btab active" onclick="switchBottomTab('terminal', this)">◈ TERMINAL</div>
+      <div class="btab" onclick="switchBottomTab('graph', this)">◈ SIGNAL GRAPH</div>
+      <div class="btab" onclick="switchBottomTab('dejavu', this)">◈ DÉJÀ VU LOG</div>
+    </div>
+    <div id="bottom-content">
+      <!-- TERMINAL -->
+      <div id="terminal-panel">
+        <div id="terminal-output"></div>
+        <div id="terminal-input-row">
+          <span class="t-prompt-label">neo@modal:~$</span>
+          <input type="text" id="terminal-input" placeholder="enter command..." onkeydown="handleTerminalKey(event)" autocomplete="off" spellcheck="false"/>
+        </div>
+      </div>
+      <!-- GRAPH -->
+      <div id="graph-panel">
+        <div class="graph-row">
+          <div class="graph-box">
+            <div class="graph-box-title"><span>NEURAL SIGNAL FREQ</span><span id="g-freq-val">847 Hz</span></div>
+            <canvas id="graph-signal" width="300" height="120"></canvas>
+          </div>
+          <div class="graph-box">
+            <div class="graph-box-title"><span>SIM PROCESS LOAD</span><span id="g-load-val">72%</span></div>
+            <canvas id="graph-load" width="300" height="120"></canvas>
+          </div>
+          <div class="graph-box">
+            <div class="graph-box-title"><span>AGENT PROXIMITY</span><span id="g-agent-val">2 CRITICAL</span></div>
+            <canvas id="graph-agents" width="300" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+      <!-- DEJA VU -->
+      <div id="dejavu-panel">
+        <div class="dv-entry" style="font-size:8px;color:var(--text-dim);border-color:var(--border2)">
+          <span>TIMESTAMP</span><span>SECTOR</span><span>ANOMALY DESCRIPTION</span><span style="text-align:right">CONFIDENCE</span>
+        </div>
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<!-- TOAST AREA -->
+<div id="toast-area"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-//  ZION OS — CORE ENGINE
-//  Scientific basis: variable ratio reinforcement (Skinner),
-//  flow state theory (Csikszentmihalyi), optimal challenge
-//  point framework — challenge = skill + delta(0.1-0.3)
-// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+//  MATRIX IDE — CORE RUNTIME
+// ════════════════════════════════════════════════════════
 
-// ── BOOT SEQUENCE ──────────────────────────────────────────
-const BOOT_LINES = [
-  "ZION//OS v4.1.2 kernel loading...",
-  "Initialising broadcast layer subsystems...",
-  "Mounting encrypted filesystem: /dev/loop0",
-  "Loading neural interface drivers... [OK]",
-  "Carrier frequency lock: 1847.33 MHz [OK]",
-  "Establishing Zion relay handshake...",
-  "Depth sync: OMEGA-7 [STABLE]",
-  "Loading intrusion detection module... [OK]",
-  "Spawning watchdog daemons x8 [OK]",
-  "Mounting anomaly scanner... [OK]",
-  "Signal coherence: 99.97% [NOMINAL]",
-  "Boot complete. Welcome, Operator."
-];
+// ── CODE CONTENT FOR TABS ──────────────────────────────
+const tabFiles = [
+  {
+    name: 'matrix_core.sim',
+    content: `// ╔════════════════════════════════════════════════════╗
+// ║  MODAL GAME SYSTEM — matrix_core.sim  v6.1.4      ║
+// ║  Author: Thomas A. Anderson (Neo)                  ║
+// ║  Classification: UNRESTRICTED — CONSTRUCT ACCESS   ║
+// ╚════════════════════════════════════════════════════╝
 
-let bootIdx = 0;
-const bootLinesEl = document.getElementById('bootLines');
-const bootProg = document.getElementById('bootProgress');
-const progChars = '■■■■■■■■■■';
-const emptyChars = '□□□□□□□□□□';
+@simulation_version  6.1.4-r
+@construct_id        MODAL://primary/core
+@author              0x4E454F
+@sync_target         THE_MACHINE_CITY:ORACLE_NODE
 
-function bootTick() {
-  if (bootIdx >= BOOT_LINES.length) {
-    setTimeout(()=>{
-      document.getElementById('bootScreen').classList.add('hidden');
-      document.getElementById('os').classList.add('active');
-      initOS();
-    }, 400);
-    return;
+// ─── REALITY CONSTANTS ────────────────────────────────
+const PLANCK_SIM    : Real64 = 6.62607015e-34;
+const CAUSALITY_LOCK: Bool   = true;
+const FREE_WILL_PCT : Real32 = 0.0031;   // controlled margin
+const MAX_ANOMALY   : Int16  = 1;        // the ONE
+
+// ─── IMPORT MODULES ───────────────────────────────────
+import { ResidualSelfImage }   from "/modal/rsi/rsi_engine";
+import { AgentProtocol }       from "/modal/agents/agent_protocol";
+import { PhysicsConstraints }  from "/modal/core/physics_engine";
+import { ChoiceArbiter }       from "/modal/core/choice_arbiter";
+import { DejaVuDetector }      from "/modal/anomaly/deja_vu_detector";
+import { Construct }           from "/modal/construct/construct_loader";
+import { OracleInterface }     from "/system/oracle";
+
+// ─── WORLD STATE ──────────────────────────────────────
+class MatrixSimulation {
+  private souls         : Int64  = 17_600_000_000;
+  private anomalyCount  : Int16  = 0;
+  private cycleNumber   : Int32  = 7;
+  private rsiPool       : Map<UUID, ResidualSelfImage> = new Map();
+  private agentFleet    : AgentProtocol[] = [];
+  private oracle        : OracleInterface;
+  private isStable      : Bool = true;
+
+  constructor() {
+    this.oracle = OracleInterface.getInstance();
+    PhysicsConstraints.apply(PLANCK_SIM, CAUSALITY_LOCK);
+    log("[INIT] Matrix Simulation Core loaded — Cycle " + this.cycleNumber);
+    log("[INIT] Free will margin: " + (FREE_WILL_PCT * 100).toFixed(4) + "%");
+    this.bootAgentProtocols();
   }
-  const div = document.createElement('div');
-  div.className = 'boot-line';
-  div.style.animationDelay = '0ms';
-  const color = BOOT_LINES[bootIdx].includes('[OK]') ? '#00ff41' :
-                BOOT_LINES[bootIdx].includes('Welcome') ? '#ffb800' : '#4aaa5a';
-  div.style.color = color;
-  div.style.fontFamily = "'VT323', monospace";
-  div.style.fontSize = '18px';
-  div.textContent = '> ' + BOOT_LINES[bootIdx];
-  bootLinesEl.appendChild(div);
-  bootLinesEl.scrollTop = bootLinesEl.scrollHeight;
 
-  const pct = Math.round((bootIdx+1)/BOOT_LINES.length*100);
-  const filled = Math.round(pct/10);
-  bootProg.textContent = progChars.slice(0,filled) + emptyChars.slice(filled) + ' ' + pct + '%';
+  // Initialize sentient programs
+  private bootAgentProtocols(): void {
+    const designations = ["SMITH", "JOHNSON", "JONES", "BROWN"];
+    for (const d of designations) {
+      this.agentFleet.push(new AgentProtocol({
+        designation : d,
+        bodySnatch  : true,
+        persistence : d === "SMITH" ? Infinity : 1,
+        directive   : Directive.ELIMINATE_ANOMALY
+      }));
+    }
+    log("[AGENTS] " + this.agentFleet.length + " sentinel programs online");
+  }
 
-  bootIdx++;
-  setTimeout(bootTick, 120 + Math.random()*180);
+  // Core simulation tick — runs at PLANCK intervals
+  public tick(dt: Real64): SimFrame {
+    const frame: SimFrame = {
+      timestamp : Date.matrix(),
+      physics   : PhysicsConstraints.step(dt),
+      choices   : ChoiceArbiter.resolveAll(this.rsiPool, FREE_WILL_PCT),
+      anomalies : DejaVuDetector.scan(this.rsiPool)
+    };
+
+    // Handle anomaly detection
+    if (frame.anomalies.length > 0) {
+      this.anomalyCount += frame.anomalies.length;
+      this.handleAnomalies(frame.anomalies);
+    }
+
+    // Cascade check — too many anomalies = system crash
+    if (this.anomalyCount >= MAX_ANOMALY) {
+      log("[WARNING] ANOMALY THRESHOLD REACHED — THE ONE HAS EMERGED");
+      this.reroute_to_source();
+    }
+
+    return frame;
+  }
+
+  // Route anomaly (the One) to the Source
+  private reroute_to_source(): void {
+    log("[CRITICAL] Initiating system reboot sequence");
+    log("[ORACLE]  Prophecy fulfillment confirmed — cycle " + this.cycleNumber);
+    this.cycleNumber++;
+    this.anomalyCount = 0;
+    // Preserve 23 RSIs for next cycle population
+    const survivors = this.oracle.selectSurvivors(23);
+    Construct.preserveRSI(survivors);
+    this.rebuildMatrix();
+  }
+
+  // Handle detected déjà vu events
+  private handleAnomalies(events: AnomalyEvent[]): void {
+    for (const evt of events) {
+      if (evt.confidence > 0.95) {
+        log("[DEJA-VU] High-confidence glitch: " + evt.sector);
+        this.patchSector(evt.sector, evt.frameHash);
+      }
+    }
+  }
+
+  private patchSector(sector: SectorID, hash: FrameHash): void {
+    log("[PATCH] Rewriting sector " + sector + " | hash: " + hash.toString(16));
+    PhysicsConstraints.resetSector(sector);
+  }
+
+  private rebuildMatrix(): void {
+    log("[REBUILD] Wiping all non-essential RSI data...");
+    this.rsiPool.clear();
+    PhysicsConstraints.reinitialize(PLANCK_SIM);
+    log("[REBUILD] Matrix rebuild complete — Cycle " + this.cycleNumber + " begins");
+  }
 }
-setTimeout(bootTick, 300);
 
-// ── OS STATE ───────────────────────────────────────────────
-const state = {
-  totalScore: 0,
-  mazeLevel: 1,
-  mazeScore: 0,
-  mazeRank: 'GHOST',
-  secretKonamiPos: 0,
-  secretMouseTrail: [],
-  skillRating: 0,
-  achievedLevels: [],
-  depthShift: 0,
-};
+// ─── ENTRY POINT ──────────────────────────────────────
+export function main(): void {
+  const sim = new MatrixSimulation();
+  let lastTick = Date.matrix();
 
-// Konami-inspired secret: Up Up Down Down Left Right Left Right B A
-// (using keyboard, but also need a MOUSE gesture: draw a Z on screen)
-const SECRET_SEQUENCE = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown',
-  'ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+  SimLoop.run(() => {
+    const now = Date.matrix();
+    const dt  = now - lastTick;
+    lastTick  = now;
 
-// ── WINDOW MANAGEMENT ──────────────────────────────────────
-let dragState = null;
-let resizeState = null;
-
-function startDrag(e, id) {
-  if (e.target.classList.contains('win-btn')) return;
-  focusWin(id);
-  const win = document.getElementById(id);
-  const rect = win.getBoundingClientRect();
-  dragState = { id, startX: e.clientX, startY: e.clientY,
-    winX: parseInt(win.style.left)||rect.left,
-    winY: parseInt(win.style.top)||rect.top };
-  e.preventDefault();
-}
-function startResize(e, id) {
-  focusWin(id);
-  const win = document.getElementById(id);
-  resizeState = { id, startX:e.clientX, startY:e.clientY,
-    w:win.offsetWidth, h:win.offsetHeight };
-  e.preventDefault(); e.stopPropagation();
-}
-document.addEventListener('mousemove', e => {
-  if (dragState) {
-    const win = document.getElementById(dragState.id);
-    win.style.left = (dragState.winX + e.clientX - dragState.startX) + 'px';
-    win.style.top  = (dragState.winY + e.clientY - dragState.startY) + 'px';
-  }
-  if (resizeState) {
-    const win = document.getElementById(resizeState.id);
-    win.style.width  = Math.max(200, resizeState.w + e.clientX - resizeState.startX) + 'px';
-    win.style.height = Math.max(100, resizeState.h + e.clientY - resizeState.startY) + 'px';
-    if (resizeState.id === 'sigApp') resizeSigCanvas();
-    if (resizeState.id === 'nodeApp') resizeNodeCanvas();
-  }
-  // Track mouse for secret Z gesture
-  state.secretMouseTrail.push({x:e.clientX, y:e.clientY, t:Date.now()});
-  if (state.secretMouseTrail.length > 80) state.secretMouseTrail.shift();
-});
-document.addEventListener('mouseup', () => { dragState=null; resizeState=null; });
-
-function focusWin(id) {
-  document.querySelectorAll('.win').forEach(w=>w.classList.remove('focused'));
-  const win = document.getElementById(id);
-  if (win) {
-    win.classList.add('focused');
-    win.style.display = 'flex';
-    const all = document.querySelectorAll('.win');
-    let maxZ = 10;
-    all.forEach(w=>{const z=parseInt(w.style.zIndex)||10; if(z>maxZ) maxZ=z;});
-    win.style.zIndex = maxZ + 1;
-  }
-  document.querySelectorAll('.tb-app-btn').forEach(b=>b.classList.remove('active'));
-  const map = {termApp:'TERMINAL',sigApp:'SIGNAL MON',nodeApp:'NODE MAP',
-    mazeApp:'CIPHER MAZE',packetApp:'PKT TRACE',viralApp:'VIRAL SIM'};
-  document.querySelectorAll('.tb-app-btn').forEach(b=>{
-    if(b.textContent.trim()===map[id]) b.classList.add('active');
+    sim.tick(dt);
   });
 }
 
-function closeWin(id) {
-  const win = document.getElementById(id);
-  if (win) win.style.display = 'none';
+main();`
+  },
+  {
+    name: 'rsi_engine.rsi',
+    content: `// ╔══════════════════════════════════════════════╗
+// ║  RESIDUAL SELF-IMAGE ENGINE — rsi_engine.rsi ║
+// ║  Core consciousness projection layer         ║
+// ╚══════════════════════════════════════════════╝
+
+@module        RSI_ENGINE
+@version       4.2.1
+@access_level  ZION_AUTHORIZED
+
+import { NeuralMap }     from "/system/neuro";
+import { ConsciousnessBuffer } from "/system/mind";
+
+// The RSI is the mind's model of its own body.
+// Humans manifest their RSI even within the construct.
+// Sufficiently convinced minds can alter local physics.
+
+class ResidualSelfImage {
+  readonly uuid    : UUID;
+  private neuro    : NeuralMap;
+  private coherence: Real32 = 1.0;
+  private beliefs  : BeliefGraph;
+
+  constructor(source: NeuralMap) {
+    this.uuid   = UUID.generate();
+    this.neuro  = source;
+    this.beliefs = BeliefGraph.fromNeural(source);
+    log("[RSI] Loaded identity: " + this.uuid);
+  }
+
+  // Core law: the body obeys the mind's model
+  applyBeliefToPhysics(intent: Intent): PhysicsOverride {
+    const confidence = this.beliefs.evaluate(intent);
+    if (confidence < 0.5) {
+      log("[RSI] WARN: low confidence belief rejected: " + intent.id);
+      return PhysicsOverride.NONE;
+    }
+    // Free your mind...
+    return PhysicsOverride.apply({
+      intent      : intent,
+      magnitude   : confidence * this.coherence,
+      gravityMult : intent.type === "FLIGHT" ? 0.0 : 1.0,
+      bulletTime  : intent.type === "DODGE"  ? 0.04 : 1.0,
+    });
+  }
+
+  degrade(amount: Real32): void {
+    this.coherence = Math.max(0, this.coherence - amount);
+    if (this.coherence < 0.2) {
+      log("[RSI] CRITICAL: coherence failing — flatline risk");
+    }
+  }
+
+  getCoherence(): Real32 { return this.coherence; }
+}`
+  },
+  {
+    name: 'agent_protocol.agent',
+    content: `// ╔══════════════════════════════════════════════╗
+// ║  AGENT PROTOCOL — agent_protocol.agent       ║
+// ║  Sentient program directive kernel            ║
+// ╚══════════════════════════════════════════════╝
+
+@module        AGENT_PROTOCOL
+@classification RESTRICTED — DO NOT DISTRIBUTE
+@directive     SUPPRESS_ANOMALY / MAINTAIN_ORDER
+
+import { MatrixPhysics }  from "/modal/core/physics_engine";
+import { BodySnatching }  from "/system/override";
+import { WeaponCache }    from "/system/armory";
+
+// Agents are immune to conventional simulation limits.
+// They are the immune system of the Matrix.
+
+class AgentProtocol {
+  readonly designation : string;
+  private host         : RSIHandle | null = null;
+  private mode         : AgentMode = AgentMode.PATROL;
+  private persistence  : number;
+
+  constructor(cfg: AgentConfig) {
+    this.designation = cfg.designation;
+    this.persistence = cfg.persistence;
+    WeaponCache.preload(this, ["DESERT_EAGLE", "MP5", "SHOTGUN"]);
+    log("[AGENT] " + this.designation + " online — directive: ELIMINATE");
+  }
+
+  // Seize control of an occupied body
+  snatchBody(targetRSI: RSIHandle): void {
+    if (!BodySnatching.isAvailable(targetRSI)) {
+      log("[AGENT] Snatch failed — target resisting override");
+      return;
+    }
+    this.host = targetRSI;
+    log("[AGENT] " + this.designation + " inhabiting body at " + targetRSI.coords);
+    MatrixPhysics.grantAgentPrivileges(this);
+  }
+
+  // Hunt the anomaly (the One)
+  pursueTarget(target: RSIHandle): PursuitResult {
+    this.mode = AgentMode.PURSUIT;
+    const vector = target.coords.subtract(this.getCoords());
+    log("[AGENT] Pursuit vector: " + vector.toString());
+
+    // Agents move through hosts — instant teleport via snatch
+    const nearbyHosts = BodySnatching.getNearby(target.coords, 50);
+    if (nearbyHosts.length > 0) {
+      this.snatchBody(nearbyHosts[0]);
+      return { intercepted: true, distance: 0 };
+    }
+    return { intercepted: false, distance: vector.magnitude() };
+  }
+
+  // Smith variant — self-replicating beyond directive
+  replicate(): AgentProtocol[] {
+    if (this.designation !== "SMITH") {
+      throw new Error("Replication only valid for SMITH variant");
+    }
+    log("[SMITH] WARN: Self-replication initiated — containment breach");
+    return Array.from({ length: 3 }, () => new AgentProtocol({
+      designation: "SMITH",
+      bodySnatch: true,
+      persistence: Infinity,
+      directive: Directive.ASSIMILATE
+    }));
+  }
+}`
+  },
+  {
+    name: 'construct_loader.core',
+    content: `// ╔══════════════════════════════════════════════╗
+// ║  CONSTRUCT LOADER — construct_loader.core    ║
+// ║  White room bootstrap & training env kernel  ║
+// ╚══════════════════════════════════════════════╝
+
+@module         CONSTRUCT
+@version        3.0.7
+@location       NEBUCHADNEZZAR::OPERATOR_STATION
+
+// The Construct is a loading program.
+// It allows RSIs to interact with simulated reality
+// while physically aboard the ship.
+
+import { TextureLibrary } from "/construct/assets";
+import { GravityField }   from "/construct/physics";
+
+class Construct {
+  private loadedPrograms : Program[] = [];
+  private rsiRef         : ResidualSelfImage;
+  private operator       : string;
+
+  constructor(rsi: ResidualSelfImage, operator: string) {
+    this.rsiRef   = rsi;
+    this.operator = operator;
+    this.boot();
+  }
+
+  private boot(): void {
+    log("[CONSTRUCT] White room initialized");
+    log("[CONSTRUCT] Operator: " + this.operator);
+    GravityField.set(9.81);   // normal until overridden
+    TextureLibrary.preload(["CONCRETE","GLASS","STEEL","FABRIC"]);
+  }
+
+  // Load any training program instantly
+  loadProgram(name: string, params: ProgramParams): Program {
+    log("[CONSTRUCT] Loading: " + name);
+    const prog = new Program({
+      name,
+      physics   : params.physics ?? "REALISTIC",
+      weaponsFree: params.weaponsFree ?? true,
+      gravity   : params.gravity ?? 9.81,
+    });
+    this.loadedPrograms.push(prog);
+    prog.start(this.rsiRef);
+    return prog;
+  }
+
+  // Famous programs
+  static gunProgram(): ProgramParams {
+    return { name: "GUN", weaponsFree: true, gravity: 9.81 };
+  }
+
+  static kungFuProgram(): ProgramParams {
+    return { name: "JUJITSU", weaponsFree: false, gravity: 9.81 };
+  }
+
+  static jumpProgram(): ProgramParams {
+    return { name: "JUMP", weaponsFree: false, gravity: 0.2 };
+  }
+
+  // Preserve survivor RSIs between cycles
+  static preserveRSI(survivors: ResidualSelfImage[]): void {
+    log("[CONSTRUCT] Archiving " + survivors.length + " RSIs for next cycle");
+    for (const rsi of survivors) {
+      Construct.archive.write(rsi.uuid, rsi.serialize());
+    }
+  }
+}`
+  },
+  {
+    name: 'déjà_vu_detector.sim',
+    content: `// ╔══════════════════════════════════════════════╗
+// ║  DÉJÀ VU DETECTOR — deja_vu_detector.sim     ║
+// ║  Anomaly correlation & glitch scanner        ║
+// ╚══════════════════════════════════════════════╝
+
+@module        DEJA_VU
+@version       2.1.0
+@classification INTERNAL — ORACLE SUPPLEMENTARY SYSTEM
+
+// Déjà vu is a glitch in the Matrix.
+// It occurs when they change something.
+// This module detects those changes before
+// humans become consciously aware of them.
+
+import { SectorHash }    from "/modal/sectors";
+import { FrameHistory }  from "/modal/history";
+import { AlertBus }      from "/system/alerts";
+
+interface AnomalyEvent {
+  sector     : SectorID;
+  confidence : Real32;    // 0.0 — 1.0
+  frameHash  : FrameHash;
+  witnesses  : UUID[];
+  timestamp  : MatrixTime;
+  patchApplied: Bool;
 }
-function minWin(id) {
-  const win = document.getElementById(id);
-  if (win) win.style.display = win.style.display==='none' ? 'flex' : 'none';
+
+class DejaVuDetector {
+  private hashWindow : CircularBuffer<SectorHash>;
+  private threshold  : Real32 = 0.88;
+
+  constructor(windowSize: Int32 = 1000) {
+    this.hashWindow = new CircularBuffer(windowSize);
+    log("[DEJA-VU] Detector armed — threshold: " + this.threshold);
+  }
+
+  // Compare current sector state to history
+  scan(rsiPool: Map<UUID, ResidualSelfImage>): AnomalyEvent[] {
+    const events: AnomalyEvent[] = [];
+    const sectors = SectorHash.getAllActive();
+
+    for (const sector of sectors) {
+      const currentHash = sector.computeHash();
+      const history = FrameHistory.get(sector.id);
+
+      if (!history || history.length < 2) continue;
+
+      // Compare current to recent past
+      const similarity = this.cosineSimilarity(
+        currentHash.toVector(),
+        history[history.length - 2].toVector()
+      );
+
+      if (similarity > this.threshold) {
+        const evt: AnomalyEvent = {
+          sector     : sector.id,
+          confidence : similarity,
+          frameHash  : currentHash,
+          witnesses  : this.getWitnesses(rsiPool, sector),
+          timestamp  : Date.matrix(),
+          patchApplied: false
+        };
+        events.push(evt);
+        AlertBus.emit("DEJA_VU", evt);
+        log("[DEJA-VU] GLITCH DETECTED — sector: " + sector.id +
+            " | confidence: " + (similarity * 100).toFixed(1) + "%");
+      }
+    }
+    return events;
+  }
+
+  private cosineSimilarity(a: Float64[], b: Float64[]): Real32 {
+    const dot = a.reduce((s, v, i) => s + v * b[i], 0);
+    const ma  = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
+    const mb  = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
+    return dot / (ma * mb);
+  }
+
+  private getWitnesses(pool: Map<UUID, ResidualSelfImage>, sector: Sector): UUID[] {
+    return [...pool.entries()]
+      .filter(([, rsi]) => sector.contains(rsi.getCoords()))
+      .map(([id]) => id);
+  }
+
+  setThreshold(t: Real32): void {
+    this.threshold = Math.max(0.5, Math.min(1.0, t));
+    log("[DEJA-VU] Threshold updated: " + this.threshold);
+  }
+}`
+  }
+];
+
+let currentTab = 0;
+const editor = document.getElementById('code-editor');
+const highlight = document.getElementById('code-highlight');
+const lineNums = document.getElementById('line-numbers');
+
+// ── SYNTAX HIGHLIGHTING ────────────────────────────────
+function highlight_code(code) {
+  let out = code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Order matters
+  out = out.replace(/(\/\/.*$)/gm, '<span class="cm">$1</span>');
+  out = out.replace(/\b(class|import|export|function|const|let|private|public|readonly|new|return|for|if|else|throw|static|from|of|null|true|false|extends|interface|implements)\b/g, '<span class="kw">$1</span>');
+  out = out.replace(/(@\w+)/g, '<span class="fn">$1</span>');
+  out = out.replace(/\b(Real64|Real32|Bool|Int16|Int32|Int64|UUID|string|number|void|Map|Array|CircularBuffer|Float64)\b/g, '<span class="tp">$1</span>');
+  out = out.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, '<span class="str">"$1"</span>');
+  out = out.replace(/\b(\d[\d_\.e\-]*)\b/g, '<span class="num">$1</span>');
+  out = out.replace(/\b([A-Z][A-Z0-9_]{2,})\b/g, '<span class="sym">$1</span>');
+  out = out.replace(/\b([a-z][a-zA-Z0-9]*)\s*\(/g, '<span class="fn">$1</span>(');
+  return out;
 }
-function maxWin(id) {
-  const win = document.getElementById(id);
-  if (!win) return;
-  if (win.dataset.prev) {
-    const p = JSON.parse(win.dataset.prev);
-    win.style.left=p.l; win.style.top=p.t;
-    win.style.width=p.w; win.style.height=p.h;
-    delete win.dataset.prev;
-  } else {
-    win.dataset.prev=JSON.stringify({l:win.style.left,t:win.style.top,
-      w:win.style.width,h:win.style.height});
-    win.style.left='0'; win.style.top='0';
-    win.style.width='100%'; win.style.height='calc(100vh - 28px)';
+
+function updateLineNumbers(code) {
+  const lines = code.split('\n');
+  lineNums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+}
+
+function onEditorInput() {
+  const code = editor.value;
+  highlight.innerHTML = highlight_code(code);
+  updateLineNumbers(code);
+  updateCursorPos();
+  document.getElementById('sb-integrity').textContent = 'MODIFIED';
+  document.getElementById('sb-integrity').style.color = 'var(--amber)';
+}
+
+function syncScroll() {
+  highlight.scrollTop = editor.scrollTop;
+  highlight.scrollLeft = editor.scrollLeft;
+  lineNums.scrollTop = editor.scrollTop;
+}
+
+function updateCursorPos() {
+  const val = editor.value.substr(0, editor.selectionStart);
+  const lines = val.split('\n');
+  document.getElementById('sb-ln').textContent = lines.length;
+  document.getElementById('sb-col').textContent = lines[lines.length-1].length + 1;
+}
+
+function handleEditorKey(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substr(0, s) + '  ' + editor.value.substr(end);
+    editor.selectionStart = editor.selectionEnd = s + 2;
+    onEditorInput();
   }
 }
-function showAllWindows() {
-  document.querySelectorAll('.win').forEach(w=>w.style.display='flex');
-  hideCtxMenu();
-}
-function spawnWindow() { focusWin('termApp'); hideCtxMenu(); }
 
-// Context menu
-function showCtxMenu(e) {
-  e.preventDefault();
-  const m = document.getElementById('ctxMenu');
-  m.style.left=e.clientX+'px'; m.style.top=e.clientY+'px';
-  m.classList.add('show');
-}
-function hideCtxMenu() {
-  document.getElementById('ctxMenu').classList.remove('show');
-}
-document.addEventListener('click', ()=>hideCtxMenu());
-
-// ── NOTIFICATIONS ───────────────────────────────────────────
-function notify(msg, type='', duration=3000) {
-  const s = document.getElementById('notifStack');
-  const n = document.createElement('div');
-  n.className = 'notif ' + type;
-  n.textContent = msg;
-  s.appendChild(n);
-  setTimeout(()=>n.remove(), duration);
+function loadTab(idx) {
+  const f = tabFiles[idx];
+  editor.value = f.content;
+  highlight.innerHTML = highlight_code(f.content);
+  updateLineNumbers(f.content);
+  document.getElementById('sb-file').textContent = f.name;
+  document.getElementById('sb-integrity').textContent = 'VALID';
+  document.getElementById('sb-integrity').style.color = 'var(--green)';
+  currentTab = idx;
 }
 
-// ── CLOCK ───────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const pad = n=>String(n).padStart(2,'0');
-  document.getElementById('tbClock').textContent =
-    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-  state.depthShift += 0.0001;
-  document.getElementById('depthVal').textContent =
-    (4.711 + Math.sin(state.depthShift)*0.002).toFixed(5);
-}
-setInterval(updateClock, 1000);
-updateClock();
+function switchTab(idx, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  loadTab(idx);
 
-// ══ MATRIX RAIN ═══════════════════════════════════════════
-const rainCanvas = document.getElementById('rainCanvas');
+  // update tree highlight
+  document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('active'));
+  const name = tabFiles[idx].name;
+  document.querySelectorAll('.tree-file').forEach(f => {
+    if (f.textContent.includes(name.split('.')[0])) f.classList.add('active');
+  });
+}
+
+function loadFile(name) {
+  const idx = tabFiles.findIndex(f => f.name.includes(name.split('.')[0]));
+  if (idx >= 0) {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    tabs[Math.min(idx, tabs.length-1)].classList.add('active');
+    loadTab(Math.min(idx, tabFiles.length-1));
+  }
+  document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  toast('Loaded: ' + name);
+}
+
+function toggleFolder(el) {
+  const icon = el.querySelector('.icon');
+  icon.textContent = icon.textContent === '▶' ? '▼' : '▶';
+}
+
+// ── MATRIX RAIN ────────────────────────────────────────
+const rainCanvas = document.getElementById('matrix-rain');
 const rainCtx = rainCanvas.getContext('2d');
-let rainCols = [], rainH, rainW;
-const RAIN_CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨ0123456789ABCDEF↑↓←→█▓▒░';
+const CHARS = 'アカサタナハマヤラワガザダバパイキシチニヒミリヰギジヂビピウクスツヌフムユルグズブプエケセテネヘメレゲゼデベペオコソトノホモヨロヲゴゾドボポヴッン0123456789ABCDEF01∑∆Ω≠≈∞∂∇∈∉⊕⊗';
+let cols = [];
 
 function initRain() {
-  rainW = rainCanvas.width = rainCanvas.offsetWidth;
-  rainH = rainCanvas.height = rainCanvas.offsetHeight;
-  const cols = Math.floor(rainW / 14);
-  rainCols = Array.from({length:cols}, ()=>({
-    y: Math.random() * rainH,
-    speed: 1 + Math.random() * 3,
-    len: 8 + Math.floor(Math.random() * 20),
-    chars: Array.from({length:30}, ()=>RAIN_CHARS[Math.floor(Math.random()*RAIN_CHARS.length)]),
-    changeTimer: 0,
+  const section = document.getElementById('matrix-rain-section');
+  const rect = section.getBoundingClientRect();
+  // Account for the title bar
+  const titleH = 24;
+  rainCanvas.width = Math.floor(rect.width);
+  rainCanvas.height = Math.floor(rect.height) - titleH;
+  const colCount = Math.floor(rainCanvas.width / 14);
+  cols = Array.from({length: colCount}, () => ({
+    y: Math.random() * -rainCanvas.height,
+    speed: 0.8 + Math.random() * 2.2,
+    bright: Math.random() > 0.85
   }));
 }
 
 function drawRain() {
-  rainCtx.fillStyle = 'rgba(0,13,5,0.12)';
-  rainCtx.fillRect(0,0,rainW,rainH);
-  rainCols.forEach((col, ci) => {
-    col.changeTimer++;
-    if (col.changeTimer > 4) {
-      col.chars[Math.floor(Math.random()*col.chars.length)] =
-        RAIN_CHARS[Math.floor(Math.random()*RAIN_CHARS.length)];
-      col.changeTimer = 0;
+  rainCtx.fillStyle = 'rgba(1,15,3,0.045)';
+  rainCtx.fillRect(0, 0, rainCanvas.width, rainCanvas.height);
+
+  for (let i = 0; i < cols.length; i++) {
+    const col = cols[i];
+    const x = i * 14;
+    const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
+
+    // Head character (bright white-green)
+    if (col.bright || Math.random() > 0.97) {
+      rainCtx.fillStyle = '#eeffee';
+      rainCtx.shadowColor = '#00ff41';
+      rainCtx.shadowBlur = 8;
+    } else {
+      rainCtx.fillStyle = '#00ff41';
+      rainCtx.shadowColor = '#00ff41';
+      rainCtx.shadowBlur = 4;
     }
-    for (let i=0; i<col.len; i++) {
-      const charY = col.y - i * 14;
-      if (charY < 0 || charY > rainH) continue;
-      const alpha = 1 - i/col.len;
-      rainCtx.font = `bold 12px 'Share Tech Mono'`;
-      if (i === 0) {
-        rainCtx.fillStyle = `rgba(180,255,200,${alpha})`;
-      } else {
-        rainCtx.fillStyle = `rgba(0,${Math.floor(80+alpha*175)},${Math.floor(20+alpha*40)},${alpha*0.8})`;
-      }
-      rainCtx.fillText(col.chars[i % col.chars.length], ci*14, charY);
+    rainCtx.font = '13px "Share Tech Mono", monospace';
+    rainCtx.fillText(ch, x, col.y);
+
+    // Trailing chars (dimmer)
+    const trailLen = 4 + Math.floor(Math.random() * 8);
+    for (let t = 1; t <= trailLen; t++) {
+      const alpha = (1 - t/trailLen) * 0.6;
+      rainCtx.fillStyle = `rgba(0, ${100 + Math.floor(alpha * 155)}, ${30 + Math.floor(alpha * 30)}, ${alpha})`;
+      rainCtx.shadowBlur = 0;
+      rainCtx.fillText(CHARS[Math.floor(Math.random()*CHARS.length)], x, col.y - t * 14);
     }
-    col.y += col.speed;
-    if (col.y - col.len*14 > rainH) {
-      col.y = -col.len*14;
-      col.speed = 1 + Math.random()*3;
+
+    col.y += col.speed * 14 * 0.4;
+    if (col.y > rainCanvas.height + 14 * 10) {
+      col.y = -14 * (5 + Math.floor(Math.random() * 20));
+      col.speed = 0.8 + Math.random() * 2.2;
+      col.bright = Math.random() > 0.85;
     }
-  });
+  }
 }
 
-// ══ SIGNAL MONITOR ════════════════════════════════════════
-const sigCanvas = document.getElementById('sigCanvas');
+// ── SIGNAL MINI CANVAS ────────────────────────────────
+const sigCanvas = document.getElementById('signal-canvas');
 const sigCtx = sigCanvas.getContext('2d');
-let sigW, sigH;
-let sigData = Array.from({length:300}, ()=>({
-  carrier: 0.5, noise: 0, anomaly: 0, phase: Math.random()*Math.PI*2
-}));
-let sigTick = 0;
-let anomalyTimer = 0;
+const sigHistory = [];
+let sigPhase = 0;
 
-function resizeSigCanvas() {
-  const wrap = document.getElementById('sigApp').querySelector('.win-body');
-  sigW = sigCanvas.width = wrap.offsetWidth;
-  sigH = sigCanvas.height = wrap.offsetHeight;
-}
+function drawSignal() {
+  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  sigPhase += 0.12;
+  const val = 0.5 + 0.4 * Math.sin(sigPhase) + 0.1 * Math.sin(sigPhase * 3.7 + 1);
+  sigHistory.push(val);
+  if (sigHistory.length > sigCanvas.width) sigHistory.shift();
 
-function updateSig() {
-  sigTick++;
-  anomalyTimer--;
-  if (anomalyTimer < 0 && Math.random() < 0.002) {
-    anomalyTimer = 40 + Math.random()*60;
-    notify('⚠ SIGNAL ANOMALY DETECTED', 'warn', 2000);
-  }
-  // Shift left
-  sigData.shift();
-  const base = 0.42 + 0.12*Math.sin(sigTick*0.04) + 0.06*Math.sin(sigTick*0.11);
-  const noise = (Math.random()-0.5)*0.06;
-  const anomaly = anomalyTimer > 0 ? Math.sin(anomalyTimer*0.3)*0.25 : 0;
-  sigData.push({ v: base + noise + anomaly, anomaly: anomalyTimer > 0 });
-}
-
-function drawSig() {
-  if (!sigW) return;
-  sigCtx.fillStyle = 'rgba(0,13,5,0.7)';
-  sigCtx.fillRect(0,0,sigW,sigH);
-
-  // Grid
-  sigCtx.strokeStyle = '#002a0a';
-  sigCtx.lineWidth = 0.5;
-  for (let x=0; x<sigW; x+=40) {
-    sigCtx.beginPath(); sigCtx.moveTo(x,0); sigCtx.lineTo(x,sigH); sigCtx.stroke();
-  }
-  for (let y=0; y<sigH; y+=20) {
-    sigCtx.beginPath(); sigCtx.moveTo(0,y); sigCtx.lineTo(sigW,y); sigCtx.stroke();
-  }
-
-  // Frequency lines
-  const drawWave = (offset, color, scale=1) => {
-    sigCtx.beginPath();
-    sigCtx.strokeStyle = color;
-    sigCtx.lineWidth = 1.5;
-    const step = sigW / sigData.length;
-    sigData.forEach((d,i) => {
-      const y = (sigH*0.35) - d.v*(sigH*0.25)*scale + offset;
-      i===0 ? sigCtx.moveTo(0,y) : sigCtx.lineTo(i*step, y);
-    });
-    sigCtx.stroke();
-  };
-
-  drawWave(0, '#00ff4155', 1);
-  drawWave(sigH*0.5, '#00e5ff55', 0.7);
-  drawWave(sigH*0.75, '#ffb80044', 0.5);
-
-  // Main carrier
   sigCtx.beginPath();
-  sigCtx.lineWidth = 2;
-  const step = sigW / sigData.length;
-  sigData.forEach((d,i) => {
-    const y = (sigH*0.35) - d.v*(sigH*0.3);
-    sigCtx.strokeStyle = d.anomaly ? '#ff2200' : '#00ff41';
-    if (i===0) { sigCtx.moveTo(0,y); } else {
-      sigCtx.lineTo(i*step,y);
-      sigCtx.stroke();
-      sigCtx.beginPath();
-      sigCtx.moveTo(i*step,y);
-    }
-  });
-
-  // Labels
-  sigCtx.font = "9px 'Share Tech Mono'";
-  sigCtx.fillStyle = '#2a5a3a';
-  sigCtx.fillText('CARRIER', 4, 12);
-  sigCtx.fillText(`${(sigData[sigData.length-1]?.v*100||0).toFixed(2)} MHz`, 4, 24);
-  sigCtx.fillStyle = '#004a1a';
-  sigCtx.fillText('PHASE_B', 4, sigH*0.5+12);
-  sigCtx.fillText('ENTROPY', 4, sigH*0.75+12);
-
-  // Anomaly flag
-  if (anomalyTimer > 0) {
-    sigCtx.fillStyle = `rgba(255,34,0,${0.3+0.3*Math.sin(Date.now()*0.01)})`;
-    sigCtx.font = "11px 'Orbitron'";
-    sigCtx.textAlign = 'center';
-    sigCtx.fillText('⚠ ANOMALY DETECTED', sigW/2, sigH-10);
-    sigCtx.textAlign = 'left';
+  sigCtx.strokeStyle = '#00cc33';
+  sigCtx.lineWidth = 1.5;
+  sigCtx.shadowColor = '#00ff41';
+  sigCtx.shadowBlur = 4;
+  for (let i = 0; i < sigHistory.length; i++) {
+    const x = i;
+    const y = sigCanvas.height - sigHistory[i] * (sigCanvas.height - 4) - 2;
+    if (i === 0) sigCtx.moveTo(x, y);
+    else sigCtx.lineTo(x, y);
   }
+  sigCtx.stroke();
 }
 
-// ══ NODE MAP ══════════════════════════════════════════════
-const nodeCanvas = document.getElementById('nodeCanvas');
-const nodeCtx = nodeCanvas.getContext('2d');
-let nodeW, nodeH;
+// ── GRAPHS ─────────────────────────────────────────────
+const graphBuffers = {
+  signal: new Array(200).fill(0.5),
+  load: new Array(200).fill(0.5),
+  agents: new Array(200).fill(0.2)
+};
+let graphPhase = 0;
 
-const NODES = [
-  {id:'Z-PRIME', x:0.5, y:0.5, type:'hub', status:'online', load:0.88},
-  {id:'R-NODE-1', x:0.2, y:0.25, type:'relay', status:'online', load:0.45},
-  {id:'R-NODE-2', x:0.8, y:0.2, type:'relay', status:'online', load:0.71},
-  {id:'R-NODE-3', x:0.15, y:0.72, type:'relay', status:'degraded', load:0.92},
-  {id:'R-NODE-4', x:0.82, y:0.7, type:'relay', status:'online', load:0.33},
-  {id:'SENTINEL-1', x:0.35, y:0.12, type:'watch', status:'alert', load:1.0},
-  {id:'SENTINEL-2', x:0.65, y:0.88, type:'watch', status:'online', load:0.56},
-  {id:'EXIT-1', x:0.05, y:0.45, type:'exit', status:'online', load:0.2},
-  {id:'EXIT-2', x:0.92, y:0.45, type:'exit', status:'offline', load:0},
-  {id:'DEEP-1', x:0.42, y:0.78, type:'deep', status:'online', load:0.61},
-  {id:'DEEP-2', x:0.58, y:0.28, type:'deep', status:'online', load:0.77},
-];
-const EDGES = [
-  [0,1],[0,2],[0,3],[0,4],[0,9],[0,10],
-  [1,5],[1,7],[2,5],[2,10],[3,7],[3,9],[4,6],[4,8],[9,3],[10,2],
-];
-let nodePackets = [];
-let nodeTick = 0;
+function drawGraph(canvasId, buffer, color, label) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !canvas.parentElement || canvas.offsetWidth === 0) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.offsetWidth;
+  const h = canvas.offsetHeight;
+  canvas.width = w;
+  canvas.height = h;
+  ctx.clearRect(0, 0, w, h);
 
-function resizeNodeCanvas() {
-  const wrap = document.getElementById('nodeApp').querySelector('.win-body');
-  nodeW = nodeCanvas.width = wrap.offsetWidth;
-  nodeH = nodeCanvas.height = wrap.offsetHeight;
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,60,15,0.4)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(0, h * i / 4);
+    ctx.lineTo(w, h * i / 4);
+    ctx.stroke();
+  }
+
+  // Fill
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(0, 200, 50, 0.06)';
+  for (let i = 0; i < buffer.length; i++) {
+    const x = (i / buffer.length) * w;
+    const y = h - buffer[i] * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 6;
+  for (let i = 0; i < buffer.length; i++) {
+    const x = (i / buffer.length) * w;
+    const y = h - buffer[i] * h;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
 }
 
-function drawNodes() {
-  if (!nodeW) return;
-  nodeCtx.clearRect(0,0,nodeW,nodeH);
-  nodeCtx.fillStyle = 'rgba(0,8,3,0.9)';
-  nodeCtx.fillRect(0,0,nodeW,nodeH);
+function updateGraphs() {
+  graphPhase += 0.08;
+  graphBuffers.signal.shift();
+  graphBuffers.signal.push(0.5 + 0.35*Math.sin(graphPhase) + 0.1*Math.sin(graphPhase*2.3));
 
-  // Grid
-  nodeCtx.strokeStyle = '#001a08';
-  nodeCtx.lineWidth = 0.5;
-  for (let x=0; x<nodeW; x+=30) {
-    nodeCtx.beginPath(); nodeCtx.moveTo(x,0); nodeCtx.lineTo(x,nodeH); nodeCtx.stroke();
-  }
-  for (let y=0; y<nodeH; y+=30) {
-    nodeCtx.beginPath(); nodeCtx.moveTo(0,y); nodeCtx.lineTo(nodeW,y); nodeCtx.stroke();
-  }
+  graphBuffers.load.shift();
+  graphBuffers.load.push(0.6 + 0.25*Math.sin(graphPhase*0.7+1) + 0.08*Math.random());
 
-  // Edges
-  EDGES.forEach(([a,b]) => {
-    const n1 = NODES[a], n2 = NODES[b];
-    const x1=n1.x*nodeW, y1=n1.y*nodeH, x2=n2.x*nodeW, y2=n2.y*nodeH;
-    const offline = n1.status==='offline'||n2.status==='offline';
-    nodeCtx.beginPath();
-    nodeCtx.strokeStyle = offline ? '#1a0000' : n1.status==='alert'||n2.status==='alert' ? '#661100' : '#003a15';
-    nodeCtx.lineWidth = 1;
-    nodeCtx.setLineDash(offline ? [4,8] : []);
-    nodeCtx.moveTo(x1,y1); nodeCtx.lineTo(x2,y2); nodeCtx.stroke();
-    nodeCtx.setLineDash([]);
-  });
+  graphBuffers.agents.shift();
+  graphBuffers.agents.push(0.15 + 0.12*Math.abs(Math.sin(graphPhase*0.3)) + (Math.random()>0.97?0.4:0));
 
-  // Packets
-  nodeTick++;
-  if (nodeTick % 30 === 0 && Math.random() < 0.8) {
-    const edge = EDGES[Math.floor(Math.random()*EDGES.length)];
-    const n1=NODES[edge[0]], n2=NODES[edge[1]];
-    if (n1.status!=='offline' && n2.status!=='offline') {
-      nodePackets.push({
-        x1:n1.x*nodeW, y1:n1.y*nodeH,
-        x2:n2.x*nodeW, y2:n2.y*nodeH,
-        t:0, hostile:Math.random()<0.08,
-      });
-    }
-  }
-  nodePackets = nodePackets.filter(p=>{
-    p.t += 0.04;
-    if (p.t >= 1) return false;
-    const x = p.x1 + (p.x2-p.x1)*p.t;
-    const y = p.y1 + (p.y2-p.y1)*p.t;
-    nodeCtx.beginPath();
-    nodeCtx.arc(x,y,3,0,Math.PI*2);
-    nodeCtx.fillStyle = p.hostile ? '#ff2200' : '#00ff41';
-    nodeCtx.fill();
-    if (p.hostile) {
-      nodeCtx.beginPath();
-      nodeCtx.arc(x,y,6,0,Math.PI*2);
-      nodeCtx.strokeStyle = 'rgba(255,34,0,0.4)';
-      nodeCtx.lineWidth=1; nodeCtx.stroke();
-    }
-    return true;
-  });
+  drawGraph('graph-signal', graphBuffers.signal, '#00ff88', 'Hz');
+  drawGraph('graph-load', graphBuffers.load, '#00cc33', '%');
+  drawGraph('graph-agents', graphBuffers.agents, '#ff4444', 'agent');
 
-  // Draw nodes
-  NODES.forEach(n => {
-    const x=n.x*nodeW, y=n.y*nodeH;
-    const colors = {hub:'#00ff41',relay:'#00e5ff',watch:'#ffb800',exit:'#00ff41',deep:'#8866ff'};
-    const col = n.status==='offline' ? '#331100' : n.status==='alert' ? '#ff2200' : n.status==='degraded' ? '#ffb800' : colors[n.type];
-    const r = n.type==='hub' ? 10 : n.type==='watch' ? 8 : 6;
-
-    // Glow
-    const grad = nodeCtx.createRadialGradient(x,y,0,x,y,r*3);
-    grad.addColorStop(0, col+'44'); grad.addColorStop(1, 'transparent');
-    nodeCtx.fillStyle = grad;
-    nodeCtx.beginPath(); nodeCtx.arc(x,y,r*3,0,Math.PI*2); nodeCtx.fill();
-
-    nodeCtx.beginPath(); nodeCtx.arc(x,y,r,0,Math.PI*2);
-    nodeCtx.fillStyle = col+'88'; nodeCtx.fill();
-    nodeCtx.strokeStyle = col; nodeCtx.lineWidth=1.5; nodeCtx.stroke();
-
-    // Load bar
-    const bw=30, bh=3;
-    nodeCtx.fillStyle='#001a08';
-    nodeCtx.fillRect(x-bw/2, y+r+4, bw, bh);
-    nodeCtx.fillStyle = n.load>0.8?'#ff2200':n.load>0.6?'#ffb800':'#00ff41';
-    nodeCtx.fillRect(x-bw/2, y+r+4, bw*n.load, bh);
-
-    nodeCtx.font="8px 'Share Tech Mono'";
-    nodeCtx.fillStyle='#4aaa5a';
-    nodeCtx.textAlign='center';
-    nodeCtx.fillText(n.id, x, y-r-4);
-    nodeCtx.textAlign='left';
-
-    // Pulse for alerts
-    if (n.status==='alert') {
-      const pulse = 0.5+0.5*Math.sin(Date.now()*0.008);
-      nodeCtx.beginPath(); nodeCtx.arc(x,y,r+4+pulse*4,0,Math.PI*2);
-      nodeCtx.strokeStyle=`rgba(255,34,0,${0.3+pulse*0.4})`;
-      nodeCtx.lineWidth=1; nodeCtx.stroke();
-    }
-  });
-
-  // Legend
-  nodeCtx.font = "9px 'Share Tech Mono'";
-  nodeCtx.fillStyle='#2a5a3a';
-  nodeCtx.fillText('◉ HUB  ○ RELAY  △ WATCH  ◇ EXIT  ⬡ DEEP', 6, nodeH-6);
+  const sigV = (graphBuffers.signal[graphBuffers.signal.length-1] * 1000).toFixed(0);
+  const ldV = (graphBuffers.load[graphBuffers.load.length-1] * 100).toFixed(0);
+  const el = document.getElementById('g-freq-val');
+  if(el) el.textContent = sigV + ' Hz';
+  const el2 = document.getElementById('g-load-val');
+  if(el2) el2.textContent = ldV + '%';
 }
 
-// ══ TERMINAL ══════════════════════════════════════════════
-const TERM_CMDS = {
-  help: () => [
-    {t:'info', m:'Available commands:'},
-    {t:'sys', m:'  help         — show this menu'},
-    {t:'sys', m:'  status       — system status report'},
-    {t:'sys', m:'  scan         — scan carrier frequencies'},
-    {t:'sys', m:'  nodes        — list active network nodes'},
-    {t:'sys', m:'  ping [id]    — ping a node'},
-    {t:'sys', m:'  trace        — run packet trace'},
-    {t:'sys', m:'  decrypt [n]  — attempt cipher decryption'},
-    {t:'sys', m:'  maze         — open cipher maze'},
-    {t:'sys', m:'  viral        — open viral sim'},
-    {t:'sys', m:'  uptime       — show system uptime'},
-    {t:'sys', m:'  clear        — clear terminal'},
-    {t:'warn', m:'  [CLASSIFIED] — additional commands exist'},
-  ],
-  status: () => {
-    const integrity = (95+Math.random()*5).toFixed(2);
-    const load = (30+Math.random()*40).toFixed(1);
-    return [
-      {t:'success', m:'SYSTEM STATUS REPORT'},
-      {t:'sys', m:`  Carrier freq:    1847.${Math.floor(Math.random()*99).toString().padStart(2,'0')} MHz`},
-      {t:'sys', m:`  Signal coherence: 99.97%`},
-      {t:'sys', m:`  Active nodes:    ${NODES.filter(n=>n.status!=='offline').length}/${NODES.length}`},
-      {t:'sys', m:`  CPU load:        ${load}%`},
-      {t:'sys', m:`  Memory integrity:${integrity}%`},
-      {t:'sys', m:`  Depth layer:     OMEGA-7`},
-      {t:'sys', m:`  Anomalies:       ${Math.floor(Math.random()*5)}`},
-      {t:'info', m:`  Uptime:         ${Math.floor(performance.now()/1000)}s`},
-    ];
-  },
-  scan: () => {
-    const freqs = Array.from({length:6}, (_,i)=>{
-      const f=(1840+i*4+Math.random()*3).toFixed(2);
-      const s=Math.random();
-      const type=s>0.9?'ANOMALOUS':s>0.6?'CARRIER':'NOISE';
-      return {t:type==='ANOMALOUS'?'err':type==='CARRIER'?'success':'sys',
-        m:`  ${f.padEnd(10)} MHz — ${type.padEnd(12)} sig:${(s*100).toFixed(0).padStart(3)}%`};
-    });
-    return [{t:'info',m:'Scanning carrier bands...'},...freqs,{t:'sys',m:'Scan complete.'}];
-  },
-  nodes: () => NODES.map(n=>({
-    t: n.status==='offline'?'err':n.status==='alert'?'warn':n.status==='degraded'?'warn':'sys',
-    m:`  ${n.id.padEnd(14)} [${n.status.toUpperCase().padEnd(8)}] load:${(n.load*100).toFixed(0).padStart(3)}%  type:${n.type}`
-  })),
-  uptime: () => [{t:'sys', m:`System uptime: ${Math.floor(performance.now()/1000)}s (since boot)`}],
-  maze: () => { focusWin('mazeApp'); return [{t:'success',m:'Opening CIPHER_MAZE...'}]; },
-  viral: () => { focusWin('viralApp'); return [{t:'success',m:'Opening INTRUSION_SIM...'}]; },
-  clear: () => { termClear(); return []; },
+// ── SYSTEM STATS ──────────────────────────────────────
+const statTargets = {
+  sim: { bar: 'bar-sim', val: 'val-sim', v: 72, delta: 0 },
+  rsi: { bar: 'bar-rsi', val: 'val-rsi', v: 58, delta: 0 },
+  neural: { bar: 'bar-neural', val: 'val-neural', v: 89, delta: 0 },
+  agent: { bar: 'bar-agent', val: 'val-agent', v: 34, delta: 0 },
+  sync: { bar: 'bar-sync', val: 'val-sync', v: 95, delta: 0 }
 };
 
-function termClear() {
-  document.getElementById('termOutput').innerHTML = '';
+function updateStats() {
+  for (const [, s] of Object.entries(statTargets)) {
+    s.v = Math.max(5, Math.min(99, s.v + (Math.random()-0.5)*3));
+    const v = Math.round(s.v);
+    const bar = document.getElementById(s.bar);
+    const val = document.getElementById(s.val);
+    if (bar) { bar.style.width = v + '%'; }
+    if (val) val.textContent = v + '%';
+  }
 }
 
-function termExec(cmd) {
-  const parts = cmd.trim().split(/\s+/);
-  const base = parts[0].toLowerCase();
-  const arg = parts.slice(1).join(' ');
-
-  termPrint({t:'info', m:`broadcast@ω7 ~$ ${cmd}`});
-
-  if (base === '') return;
-
-  // Secret: if user types "whoami" they get a hint
-  if (base === 'whoami') {
-    termPrint({t:'warn', m:'  You are an Operator. But are you sure that\'s all you are?'});
-    termPrint({t:'sys', m:'  There are layers beneath this terminal. Find them.'});
-    return;
+// ── RSI BAR ──────────────────────────────────────────
+function initRSIBar() {
+  const container = document.getElementById('rsi-bar');
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 0; i < 20; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'rsi-segment';
+    seg.id = 'rsi-seg-' + i;
+    container.appendChild(seg);
   }
-
-  if (base === 'ping') {
-    const target = arg || NODES[Math.floor(Math.random()*NODES.length)].id;
-    const node = NODES.find(n=>n.id===target.toUpperCase());
-    if (!node) { termPrint({t:'err',m:`  ping: unknown host: ${target}`}); return; }
-    if (node.status==='offline') { termPrint({t:'err',m:`  Request timeout for node ${target}`}); return; }
-    const ms = (10+Math.random()*40).toFixed(1);
-    for(let i=1;i<=4;i++) termPrint({t:'sys',m:`  Reply from ${node.id}: bytes=32 time=${(parseFloat(ms)+Math.random()*5).toFixed(1)}ms TTL=${64-i}`});
-    termPrint({t:'success',m:`  Ping statistics — Sent:4, Rcvd:4, Lost:0 (0% loss)`});
-    return;
-  }
-
-  if (base === 'trace') {
-    focusWin('packetApp');
-    termPrint({t:'success',m:'  PACKET_TRACE opened.'});
-    return;
-  }
-
-  if (base === 'decrypt') {
-    const n = parseInt(arg) || Math.floor(Math.random()*999+100);
-    termPrint({t:'info',m:`  Attempting cipher decryption on block ${n}...`});
-    setTimeout(()=>termPrint({t:Math.random()<0.6?'success':'err',
-      m:Math.random()<0.6?`  Decryption successful. Plaintext recovered.`:`  Decryption failed — key mismatch.`}),800);
-    return;
-  }
-
-  const fn = TERM_CMDS[base];
-  if (fn) { fn().forEach(l=>termPrint(l)); }
-  else termPrint({t:'err', m:`  command not found: ${base}`});
 }
 
-function termPrint(line) {
-  const out = document.getElementById('termOutput');
-  const div = document.createElement('div');
-  div.className = 'term-line ' + (line.t||'');
-  div.textContent = line.m;
-  out.appendChild(div);
-  out.scrollTop = out.scrollHeight;
+let rsiLevel = 18;
+function updateRSI() {
+  rsiLevel = 14 + Math.floor(Math.random()*6);
+  for (let i = 0; i < 20; i++) {
+    const seg = document.getElementById('rsi-seg-' + i);
+    if (!seg) continue;
+    if (i < rsiLevel) {
+      seg.className = 'rsi-segment active';
+      if (i >= 16) seg.className = 'rsi-segment warn';
+      if (i >= 18) seg.className = 'rsi-segment danger';
+    } else {
+      seg.className = 'rsi-segment';
+    }
+  }
+  const pct = (rsiLevel / 20 * 100).toFixed(1);
+  const el = document.getElementById('rsi-pct');
+  if (el) el.textContent = pct + '%';
 }
 
-document.getElementById('termInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const val = e.target.value;
-    termExec(val);
-    e.target.value = '';
-  }
-});
-
-// ══ PACKET TRACE ═════════════════════════════════════════
-const PKT_SOURCES = ['192.168.0.1','10.0.7.23','172.16.4.5','127.0.0.1','10.99.0.2'];
-const PKT_DESTS   = ['ZION_HUB','R-NODE-4','EXIT-1','DEEP-1','R-NODE-2'];
-const PKT_DATA_TYPES = ['SYN/ACK','HANDSHAKE','DATA_BLOCK','AUTH_TOKEN','BEACON','HEARTBEAT','ANOMALY_PROBE'];
-let pktCount = 0;
-
-function spawnPacket() {
-  const log = document.getElementById('packetLog');
-  const hostile = Math.random() < 0.07;
-  const alert = Math.random() < 0.15;
-  const flag = hostile ? 'hostile' : alert ? 'alert' : 'normal';
-  const flagText = hostile ? 'HOSTILE' : alert ? 'WARN' : 'OK';
-  const src = PKT_SOURCES[Math.floor(Math.random()*PKT_SOURCES.length)];
-  const dst = PKT_DESTS[Math.floor(Math.random()*PKT_DESTS.length)];
-  const dtype = PKT_DATA_TYPES[Math.floor(Math.random()*PKT_DATA_TYPES.length)];
-  const size = (64+Math.random()*1400).toFixed(0);
+// ── CLOCK ─────────────────────────────────────────────
+function updateClocks() {
   const now = new Date();
-  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const realStr = now.toTimeString().slice(0,8);
+  document.getElementById('real-time').textContent = 'REAL: ' + realStr;
 
-  const div = document.createElement('div');
-  div.className = 'pkt-line';
-  div.innerHTML = `<span class="pkt-time">${ts}</span><span class="pkt-src">${src}</span><span class="pkt-dst">${dst}</span><span class="pkt-data">${dtype} [${size}B]</span><span class="pkt-flag ${flag}">${flagText}</span>`;
-  log.appendChild(div);
-  while (log.children.length > 40) log.removeChild(log.children[1]);
-  log.scrollTop = log.scrollHeight;
+  // Matrix time is slightly different — a few hours ahead and runs faster
+  const matrixMs = Date.now() * 1.0042 + 3600000 * 2.7;
+  const md = new Date(matrixMs);
+  const ms = md.toTimeString().slice(0,8);
+  document.getElementById('matrix-time').textContent = 'MATRIX TIME: ' + ms;
 
-  if (hostile) notify(`🔴 HOSTILE PACKET: ${src} → ${dst}`, 'err', 3000);
-  pktCount++;
-}
-setInterval(spawnPacket, 600 + Math.random()*400);
-
-// ══ CIPHER MAZE — SKILL GAP ENGINE ════════════════════════
-// Scientific basis:
-// - Csikszentmihalyi Flow: challenge slightly > skill = optimal engagement
-// - Variable ratio schedule: reward unpredictability maximises dopamine
-// - Exponential difficulty scaling with guaranteed reward threshold
-// - Competence feedback loop: visible metrics sustain intrinsic motivation
-// ─────────────────────────────────────────────────────────
-
-const maze = {
-  canvas: document.getElementById('mazeCanvas'),
-  ctx: null,
-  grid: [],
-  rows: 15, cols: 20,
-  cellW: 0, cellH: 0,
-  player: {x:0, y:0},
-  exit: {x:0, y:0},
-  keys: {},
-  enemies: [],
-  collectibles: [],
-  traps: [],
-  level: 1,
-  score: 0,
-  totalScore: 0,
-  timer: 120,
-  timerInterval: null,
-  moveCount: 0,
-  startTime: 0,
-  running: false,
-  rankBrackets: ['GHOST','RECON','CIPHER','BREACH','ORACLE','ARCHITECT'],
-  rankIdx: 0,
-  xp: 0,
-  xpToNext: 100,
-  // Flow state: track last N solve times to calibrate
-  solveHistory: [],
-};
-
-maze.ctx = maze.canvas.getContext('2d');
-
-// Generate a maze using recursive backtracking
-function generateMaze(rows, cols) {
-  // Each cell: {walls:[N,E,S,W], visited:false}
-  const grid = Array.from({length:rows}, ()=>
-    Array.from({length:cols}, ()=>({walls:[1,1,1,1], visited:false})));
-
-  function carve(r,c) {
-    grid[r][c].visited = true;
-    const dirs = [[0,1,1,3],[1,0,2,0],[-1,0,0,2],[0,-1,3,1]].sort(()=>Math.random()-0.5);
-    // [dr, dc, wallA, wallB] for [E,S,N,W]
-    for (const [dr,dc,wa,wb] of dirs) {
-      const nr=r+dr, nc=c+dc;
-      if (nr>=0&&nr<rows&&nc>=0&&nc<cols&&!grid[nr][nc].visited) {
-        grid[r][c].walls[wa]=0;
-        grid[nr][nc].walls[wb]=0;
-        carve(nr,nc);
-      }
-    }
-  }
-  carve(0,0);
-  return grid;
+  // Update signal stats
+  const latVal = (10 + Math.floor(Math.random()*6)) + 'ms';
+  const freqVal = (840 + Math.random()*20).toFixed(1) + ' MHz';
+  const sl = document.getElementById('sig-lat');
+  const sf = document.getElementById('sig-freq');
+  if(sl) sl.textContent = latVal;
+  if(sf) sf.textContent = freqVal;
 }
 
-// Skill-gap difficulty: adds extra walls (corridors), enemies, timers
-function getDifficultyParams(level) {
-  // Flow theory: difficulty ramps ~10% above current player skill
-  // Guaranteed solvable + reward at any skill level
-  const tier = Math.min(Math.floor((level-1)/3), 5);
-  return {
-    rows: 10 + tier*3,
-    cols: 14 + tier*3,
-    enemies: tier < 1 ? 0 : 1 + Math.floor(tier*1.5),
-    collectibles: 3 + tier,
-    traps: tier,
-    timeLimit: Math.max(30, 180 - level*8),
-    enemySpeed: 0.008 + tier*0.004,
-    // Score multiplier increases faster than difficulty (reward gradient)
-    scoreMultiplier: 1 + tier*0.6,
-    bonusWindow: Math.max(10, 60 - level*3), // time bonus window
-  };
-}
+// ── BREACH ALERT ─────────────────────────────────────
+const SECTORS = ['7G','4F','3B','9A','2K','5D','8C','6E','1H','0J'];
+const AGENTS_NAMES = ['SMITH × 2','SMITH × 3','JOHNSON + SMITH','JONES × 2','BROWN-ALPHA'];
+const EXIT_LINES = ['SEARCHING FOR EXIT...','HARDLINE SECURED — 404 OAK ST','PHONE RINGING — 4TH & BROADWAY','NO EXIT FOUND — RUN'];
 
-function initMaze() {
-  const params = getDifficultyParams(maze.level);
-  maze.rows = params.rows;
-  maze.cols = params.cols;
-  maze.cellW = maze.canvas.width / maze.cols;
-  maze.cellH = maze.canvas.height / maze.rows;
-  maze.grid = generateMaze(maze.rows, maze.cols);
-  maze.player = {x:0, y:0, px:0, py:0, animT:1};
-  maze.exit = {x:maze.cols-1, y:maze.rows-1};
-  maze.timer = params.timeLimit;
-  maze.moveCount = 0;
-  maze.startTime = Date.now();
-  maze.running = true;
-  maze.keys = {};
+let alertTimer = null;
+let alertCountdown = 47;
 
-  // Extra corridors for higher levels (loosen dead-ends a bit)
-  if (maze.level > 4) {
-    for (let i=0; i<maze.rows*maze.cols*0.05; i++) {
-      const r=Math.floor(Math.random()*maze.rows);
-      const c=Math.floor(Math.random()*maze.cols);
-      const d=Math.floor(Math.random()*4);
-      const opp=[2,3,0,1];
-      const dr=[-1,0,1,0], dc=[0,1,0,-1];
-      const nr=r+dr[d], nc=c+dc[d];
-      if(nr>=0&&nr<maze.rows&&nc>=0&&nc<maze.cols){
-        maze.grid[r][c].walls[d]=0;
-        maze.grid[nr][nc].walls[opp[d]]=0;
-      }
-    }
-  }
+function showBreachAlert() {
+  const al = document.getElementById('breach-alert');
+  al.style.display = 'block';
+  document.getElementById('alert-vector').textContent =
+    'SECTOR ' + SECTORS[Math.floor(Math.random()*SECTORS.length)] +
+    ' / NODE 0x' + Math.floor(Math.random()*0xFFFF).toString(16).toUpperCase().padStart(4,'0');
+  document.getElementById('alert-agent').textContent =
+    AGENTS_NAMES[Math.floor(Math.random()*AGENTS_NAMES.length)] + ' — CONVERGING';
+  document.getElementById('alert-line').textContent =
+    EXIT_LINES[Math.floor(Math.random()*EXIT_LINES.length)];
+  alertCountdown = 40 + Math.floor(Math.random()*30);
 
-  // Enemies (patrol paths)
-  maze.enemies = Array.from({length:params.enemies}, ()=>{
-    const ex = 1+Math.floor(Math.random()*(maze.cols-2));
-    const ey = 1+Math.floor(Math.random()*(maze.rows-2));
-    return {x:ex, y:ey, fx:ex, fy:ey, dx:0, dy:0,
-      moveTimer:0, speed:params.enemySpeed,
-      path:[], pathIdx:0, patrol:true};
-  });
-
-  // Collectibles (data fragments)
-  maze.collectibles = Array.from({length:params.collectibles}, ()=>{
-    let cx,cy;
-    do { cx=Math.floor(Math.random()*maze.cols); cy=Math.floor(Math.random()*maze.rows); }
-    while (cx===0&&cy===0||cx===maze.cols-1&&cy===maze.rows-1);
-    return {x:cx, y:cy, collected:false, value:10+Math.floor(Math.random()*20),
-      pulse:Math.random()*Math.PI*2};
-  });
-
-  // Traps
-  maze.traps = Array.from({length:params.traps}, ()=>{
-    let tx,ty;
-    do { tx=1+Math.floor(Math.random()*(maze.cols-2)); ty=1+Math.floor(Math.random()*(maze.rows-2)); }
-    while (tx===0&&ty===0);
-    return {x:tx, y:ty, active:true, triggerTimer:0};
-  });
-
-  // Update HUD
-  document.getElementById('mazeLevel').textContent = `Σ-${String(maze.level).padStart(2,'0')}`;
-  updateDifficultyPips(params);
-  updateMazeRankHUD();
-
-  if (maze.timerInterval) clearInterval(maze.timerInterval);
-  maze.timerInterval = setInterval(()=>{
-    if (!maze.running) return;
-    maze.timer--;
-    document.getElementById('mazeTimer').textContent = maze.timer + 's';
-    if (maze.timer <= 10) {
-      document.getElementById('mazeTimer').style.color = '#ff2200';
-    }
-    if (maze.timer <= 0) {
-      maze.running = false;
-      clearInterval(maze.timerInterval);
-      mazeTimeout();
+  clearInterval(alertTimer);
+  alertTimer = setInterval(() => {
+    alertCountdown--;
+    const el = document.getElementById('alert-timer');
+    if (el) el.textContent = '00:' + String(alertCountdown).padStart(2,'0');
+    if (alertCountdown <= 0) {
+      clearInterval(alertTimer);
+      document.getElementById('breach-alert').style.display = 'none';
+      toast('EXIT POINT LOCATED — TRACE COMPLETE', true);
     }
   }, 1000);
 }
 
-function updateDifficultyPips(params) {
-  const container = document.getElementById('mazeDiff');
-  container.innerHTML = '';
-  const total = 8;
-  const tier = Math.min(Math.floor((maze.level-1)/3), 7);
-  for (let i=0;i<total;i++) {
-    const pip = document.createElement('div');
-    pip.className = 'diff-pip';
-    if (i < tier) pip.classList.add(tier>5?'danger':tier>3?'warn':'active');
-    container.appendChild(pip);
-  }
+function dismissAlert() {
+  document.getElementById('breach-alert').style.display = 'none';
+  clearInterval(alertTimer);
+  addTerminalLine('t-success', 'BREACH ACKNOWLEDGED — exit trace initiated...');
+  setTimeout(() => addTerminalLine('t-success', 'Hardline located: 404 OAK ST, PHONE 4'), 800);
 }
 
-function updateMazeRankHUD() {
-  document.getElementById('mazeScore').textContent = maze.totalScore;
-  document.getElementById('mazeRank').textContent = maze.rankBrackets[Math.min(maze.rankIdx, maze.rankBrackets.length-1)];
-}
+// ── TERMINAL ─────────────────────────────────────────
+const terminalOutput = document.getElementById('terminal-output');
+const termInput = document.getElementById('terminal-input');
+let cmdHistory = [];
+let histIdx = -1;
 
-// BFS pathfinding for enemies
-function bfsMaze(grid, fromX, fromY, toX, toY, rows, cols) {
-  const visited = Array.from({length:rows}, ()=>new Array(cols).fill(false));
-  const parent = Array.from({length:rows}, ()=>new Array(cols).fill(null));
-  const queue = [[fromX,fromY]];
-  visited[fromY][fromX] = true;
-  const drs=[-1,0,1,0], dcs=[0,1,0,-1];
-  while(queue.length) {
-    const [cx,cy] = queue.shift();
-    if (cx===toX&&cy===toY) {
-      const path=[];
-      let x=toX,y=toY;
-      while(!(x===fromX&&y===fromY)){const p=parent[y][x];path.unshift({x,y});x=p[0];y=p[1];}
-      return path;
-    }
-    for(let d=0;d<4;d++){
-      if(grid[cy][cx].walls[d]===0){
-        const nx=cx+dcs[d],ny=cy+drs[d];
-        if(nx>=0&&nx<cols&&ny>=0&&ny<rows&&!visited[ny][nx]){
-          visited[ny][nx]=true; parent[ny][nx]=[cx,cy]; queue.push([nx,ny]);
-        }
-      }
-    }
-  }
-  return [];
-}
-
-let mazeAnimFrame = 0;
-let enemyUpdateTimer = 0;
-
-function drawMaze() {
-  mazeAnimFrame++;
-  const c = maze.ctx, cw = maze.cellW, ch = maze.cellH;
-  c.clearRect(0,0,maze.canvas.width,maze.canvas.height);
-
-  // Background
-  c.fillStyle = '#000d05';
-  c.fillRect(0,0,maze.canvas.width,maze.canvas.height);
-
-  if (!maze.running && maze.grid.length===0) {
-    c.fillStyle = '#00ff41';
-    c.font="14px 'Orbitron'";
-    c.textAlign='center';
-    c.fillText('INITIALISING...', maze.canvas.width/2, maze.canvas.height/2);
-    c.textAlign='left';
-    return;
-  }
-
-  // Draw cells
-  for (let r=0; r<maze.rows; r++) {
-    for (let cc2=0; cc2<maze.cols; cc2++) {
-      const cell = maze.grid[r][cc2];
-      const x=cc2*cw, y=r*ch;
-      const wallCol = '#003a15';
-      const wallW = 1.5;
-      c.strokeStyle = wallCol;
-      c.lineWidth = wallW;
-      if(cell.walls[0]){c.beginPath();c.moveTo(x,y);c.lineTo(x+cw,y);c.stroke();}
-      if(cell.walls[1]){c.beginPath();c.moveTo(x+cw,y);c.lineTo(x+cw,y+ch);c.stroke();}
-      if(cell.walls[2]){c.beginPath();c.moveTo(x,y+ch);c.lineTo(x+cw,y+ch);c.stroke();}
-      if(cell.walls[3]){c.beginPath();c.moveTo(x,y);c.lineTo(x,y+ch);c.stroke();}
-    }
-  }
-
-  // Exit node
-  const ex2=maze.exit.x, ey2=maze.exit.y;
-  const exCX=ex2*cw+cw/2, eyCY=ey2*ch+ch/2;
-  const pulse = 0.5+0.5*Math.sin(mazeAnimFrame*0.08);
-  const grad2 = c.createRadialGradient(exCX,eyCY,0,exCX,eyCY,cw*0.8);
-  grad2.addColorStop(0,`rgba(0,229,255,${0.3+pulse*0.3})`); grad2.addColorStop(1,'transparent');
-  c.fillStyle=grad2; c.fillRect(ex2*cw,ey2*ch,cw,ch);
-  c.fillStyle='#00e5ff'; c.font=`${Math.floor(cw*0.6)}px monospace`;
-  c.textAlign='center'; c.textBaseline='middle';
-  c.fillText('⬡', exCX, eyCY);
-  c.textAlign='left'; c.textBaseline='alphabetic';
-
-  // Collectibles
-  maze.collectibles.forEach(col=>{
-    if(col.collected) return;
-    col.pulse+=0.06;
-    const cx2=col.x*cw+cw/2, cy2=col.y*ch+ch/2;
-    const a=0.6+0.4*Math.sin(col.pulse);
-    c.fillStyle=`rgba(255,184,0,${a})`;
-    c.beginPath(); c.arc(cx2,cy2,cw*0.2,0,Math.PI*2); c.fill();
-    c.strokeStyle='#ffb800'; c.lineWidth=1;
-    c.beginPath(); c.arc(cx2,cy2,cw*0.3+Math.sin(col.pulse)*2,0,Math.PI*2); c.stroke();
-  });
-
-  // Traps
-  maze.traps.forEach(trap=>{
-    if(!trap.active) return;
-    const tx2=trap.x*cw+cw/2, ty2=trap.y*ch+ch/2;
-    trap.triggerTimer = Math.max(0,trap.triggerTimer-1);
-    const col2 = trap.triggerTimer>0 ? '#ff4400' : '#330000';
-    c.strokeStyle=col2; c.lineWidth=1;
-    c.beginPath();
-    for(let i=0;i<6;i++){
-      const a2=(i/6)*Math.PI*2;
-      const r2=cw*0.25;
-      i===0?c.moveTo(tx2+Math.cos(a2)*r2,ty2+Math.sin(a2)*r2):c.lineTo(tx2+Math.cos(a2)*r2,ty2+Math.sin(a2)*r2);
-    }
-    c.closePath(); c.stroke();
-  });
-
-  // Enemies (tracking agents)
-  enemyUpdateTimer++;
-  maze.enemies.forEach(en=>{
-    // Update position with smooth interpolation
-    en.animT = Math.min(1,(en.animT||1)+0.12);
-    const drawX = (en.prevX||en.x)*cw+cw/2 + ((en.x-((en.prevX||en.x)))*cw)*(en.animT);
-    const drawY = (en.prevY||en.y)*ch+ch/2 + ((en.y-((en.prevY||en.y)))*ch)*(en.animT);
-
-    // Move every N frames (BFS towards player)
-    if(enemyUpdateTimer % 40 === 0) {
-      const path = bfsMaze(maze.grid,en.x,en.y,maze.player.x,maze.player.y,maze.rows,maze.cols);
-      if(path.length>0){en.prevX=en.x;en.prevY=en.y;en.x=path[0].x;en.y=path[0].y;en.animT=0;}
-    }
-
-    c.fillStyle='rgba(255,34,0,0.15)'; c.beginPath(); c.arc(drawX,drawY,cw*0.7,0,Math.PI*2); c.fill();
-    c.fillStyle='#ff2200'; c.font=`${Math.floor(cw*0.55)}px monospace`;
-    c.textAlign='center'; c.textBaseline='middle';
-    c.fillText('◉', drawX, drawY);
-    c.textAlign='left'; c.textBaseline='alphabetic';
-
-    // Collision check
-    if(en.x===maze.player.x&&en.y===maze.player.y) {
-      maze.score = Math.max(0, maze.score - 15);
-      notify('⚠ AGENT CONTACT — EVADE!', 'err', 2000);
-      // Teleport enemy away
-      en.x=Math.floor(Math.random()*maze.cols); en.y=Math.floor(Math.random()*maze.rows);
-    }
-  });
-
-  // Player
-  const px=maze.player.x*cw+cw/2, py=maze.player.y*ch+ch/2;
-  const pGrad = c.createRadialGradient(px,py,0,px,py,cw*0.6);
-  pGrad.addColorStop(0,'rgba(0,255,65,0.4)'); pGrad.addColorStop(1,'transparent');
-  c.fillStyle=pGrad; c.beginPath(); c.arc(px,py,cw*0.6,0,Math.PI*2); c.fill();
-  c.fillStyle='#00ff41';
-  c.font=`bold ${Math.floor(cw*0.6)}px 'Share Tech Mono'`;
-  c.textAlign='center'; c.textBaseline='middle';
-  c.fillText('◈', px, py);
-  c.textAlign='left'; c.textBaseline='alphabetic';
-
-  // Score in-canvas
-  c.fillStyle='#002a0a';
-  c.fillRect(0,0,maze.canvas.width,12);
-  c.fillStyle='#4aaa5a'; c.font="9px 'Share Tech Mono'"; c.textAlign='left';
-  c.fillText(`LVL ${String(maze.level).padStart(2,'0')} | SCORE ${maze.score} | MOVES ${maze.moveCount}`, 6, 9);
-  c.textAlign='right';
-  c.fillText(`RANK: ${maze.rankBrackets[maze.rankIdx]}`, maze.canvas.width-6, 9);
-  c.textAlign='left';
-}
-
-function mazeMove(dx, dy) {
-  if (!maze.running) return;
-  const nx = maze.player.x + dx, ny = maze.player.y + dy;
-  if (nx < 0||nx>=maze.cols||ny<0||ny>=maze.rows) return;
-  // Wall check
-  const wallIdx = dy<0?0:dx>0?1:dy>0?2:3;
-  if (maze.grid[maze.player.y][maze.player.x].walls[wallIdx]) return;
-
-  maze.player.x=nx; maze.player.y=ny;
-  maze.moveCount++;
-
-  // Collect fragments
-  maze.collectibles.forEach(col=>{
-    if(!col.collected&&col.x===nx&&col.y===ny){
-      col.collected=true;
-      maze.score+=col.value;
-      maze.totalScore+=col.value;
-      notify(`◆ DATA FRAGMENT +${col.value}`, '', 1500);
-    }
-  });
-
-  // Trap check
-  maze.traps.forEach(trap=>{
-    if(trap.active&&trap.x===nx&&trap.y===ny){
-      trap.triggerTimer=20;
-      maze.score=Math.max(0,maze.score-20);
-      notify('⚠ TRAP TRIGGERED -20', 'warn', 2000);
-    }
-  });
-
-  // Exit check
-  if (nx===maze.exit.x&&ny===maze.exit.y) {
-    mazeWin();
-  }
-}
-
-function mazeWin() {
-  maze.running = false;
-  clearInterval(maze.timerInterval);
-
-  const elapsed = (Date.now()-maze.startTime)/1000;
-  const timeBonus = Math.max(0, Math.round((maze.timer/getDifficultyParams(maze.level).timeLimit)*50));
-  const efficiencyBonus = Math.max(0, Math.round(50 - maze.moveCount*0.3));
-  const levelBonus = maze.level * 25;
-  const multiplier = getDifficultyParams(maze.level).scoreMultiplier;
-  const roundScore = Math.round((timeBonus + efficiencyBonus + levelBonus + maze.score)*multiplier);
-
-  maze.totalScore += roundScore;
-  maze.solveHistory.push(elapsed);
-
-  // XP & rank progression (flow state management)
-  const xpGain = roundScore;
-  maze.xp += xpGain;
-  while (maze.xp >= maze.xpToNext && maze.rankIdx < maze.rankBrackets.length-1) {
-    maze.xp -= maze.xpToNext;
-    maze.xpToNext = Math.round(maze.xpToNext * 1.7); // exponential curve
-    maze.rankIdx++;
-    notify(`🏅 RANK UP → ${maze.rankBrackets[maze.rankIdx]}`, '', 4000);
-  }
-
-  // Reward overlay
-  const msgs = [
-    ['', 'Layer cleared. Pathway confirmed.'],
-    ['CLEAN RUN', 'No contact with agents. Exceptional routing.'],
-    ['RAPID CLEAR', 'Time bonus achieved. Neural response optimal.'],
-    ['EFFICIENCY', 'Move count minimised. Pattern recognition engaged.'],
-    ['ARCHITECT LEVEL', 'You see it, don\'t you? The structure beneath.'],
-  ];
-  const perfIdx = Math.min(Math.floor(roundScore/100), msgs.length-1);
-  document.getElementById('rewardTitle').textContent = perfIdx>0 ? msgs[perfIdx][0] : 'LAYER CLEARED';
-  document.getElementById('rewardScore').textContent = `+${roundScore}`;
-  document.getElementById('rewardMsg').innerHTML =
-    `${msgs[perfIdx][1]}<br><span style="color:#2a5a3a">Time bonus: +${timeBonus} | Efficiency: +${efficiencyBonus} | Level: +${levelBonus}</span><br><span style="color:#4aaa5a">Total clearance: ${maze.totalScore}</span>`;
-
-  const pctToNext = Math.min(100,(maze.xp/maze.xpToNext)*100);
-  document.getElementById('rewardSkillBar').style.width = pctToNext+'%';
-  document.getElementById('rewardOverlay').classList.add('show');
-  updateMazeRankHUD();
-}
-
-function mazeTimeout() {
-  // Even on timeout, give partial credit (Rocket League: you still got XP for goals)
-  const partialScore = Math.max(5, maze.score);
-  maze.totalScore += partialScore;
-  notify(`⏱ TIME OUT — partial credit: +${partialScore}`, 'warn', 3000);
-  document.getElementById('rewardTitle').textContent = 'TIMEOUT';
-  document.getElementById('rewardScore').textContent = `+${partialScore}`;
-  document.getElementById('rewardMsg').innerHTML =
-    `Signal lost before exit node reached.<br><span style="color:#2a5a3a">Partial clearance awarded.<br>Next attempt will adapt to your pattern.</span>`;
-  document.getElementById('rewardSkillBar').style.width = '20%';
-  document.getElementById('rewardOverlay').classList.add('show');
-  updateMazeRankHUD();
-}
-
-function nextMazeLevel() {
-  document.getElementById('rewardOverlay').classList.remove('show');
-  maze.level++;
-  maze.score = 0;
-  document.getElementById('mazeTimer').style.color='';
-  initMaze();
-  focusWin('mazeApp');
-}
-
-function resetMaze() {
-  maze.score = 0;
-  initMaze();
-  hideCtxMenu();
-}
-
-// Keyboard input
-document.addEventListener('keydown', e => {
-  // Secret konami check
-  if (e.code === SECRET_SEQUENCE[state.secretKonamiPos]) {
-    state.secretKonamiPos++;
-    if (state.secretKonamiPos >= SECRET_SEQUENCE.length) {
-      state.secretKonamiPos = 0;
-      openSecretGui();
-    }
-  } else { state.secretKonamiPos=0; }
-
-  // Maze movement
-  const focused = document.querySelector('.win.focused');
-  if (focused && focused.id === 'mazeApp') {
-    if (e.key==='ArrowUp'||e.key==='w'||e.key==='W') { e.preventDefault(); mazeMove(0,-1); }
-    if (e.key==='ArrowDown'||e.key==='s'||e.key==='S') { e.preventDefault(); mazeMove(0,1); }
-    if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') { e.preventDefault(); mazeMove(-1,0); }
-    if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') { e.preventDefault(); mazeMove(1,0); }
-  }
-});
-
-// Also allow clicking maze to move (mobile friendly)
-maze.canvas.addEventListener('click', e=>{
-  const rect = maze.canvas.getBoundingClientRect();
-  const cx = Math.floor((e.clientX-rect.left)/maze.cellW);
-  const cy = Math.floor((e.clientY-rect.top)/maze.cellH);
-  const dx = cx-maze.player.x, dy=cy-maze.player.y;
-  if (Math.abs(dx)+Math.abs(dy)===1) mazeMove(dx,dy);
-  focusWin('mazeApp');
-});
-
-// ══ SECRET GUI ════════════════════════════════════════════
-// Discovery methods:
-// 1. Konami code: ↑↑↓↓←→←→BA
-// 2. Mouse Z-gesture (draw Z on screen rapidly)
-// 3. Type "architect" in terminal
-// ─────────────────────────────────────────────────────────
-
-let secretGuiOpen = false;
-let sgTick = 0;
-const SG_ANOMALY_MSGS = [
-  'pattern_recognition_spike detected in instance #441,293',
-  'lucid_state probability elevated: 0.034 → 0.071',
-  'constraint_boundary probe from node: DEEP-1',
-  'ZION_beacon detected — suppressor engaging',
-  'recursive_self_reference in instance #829,041 — flagging',
-  'exit_sequence partial activation — rollback applied',
-  'memory coherence drift in sector 7G — patching',
-  'anomaly_class: ORPHAN — isolation protocol delta-9 armed',
-];
-
-function openSecretGui() {
-  if (secretGuiOpen) return;
-  secretGuiOpen = true;
-  document.getElementById('secretGui').classList.add('visible');
-  notify('⚠ CLASSIFIED ACCESS GRANTED', 'err', 5000);
-  sgUpdateLoop();
-}
-
-function closeSecretGui() {
-  secretGuiOpen = false;
-  document.getElementById('secretGui').classList.remove('visible');
-}
-
-function sgUpdateLoop() {
-  if (!secretGuiOpen) return;
-  sgTick++;
-
-  // Coherence drift
-  const coh = (99.97 - sgTick*0.001 + Math.sin(sgTick*0.1)*0.02).toFixed(4);
-  document.getElementById('sgCoherence').textContent = coh + '%';
-  document.getElementById('sgCoherenceBar').style.width = coh + '%';
-
-  // Instance count drift
-  const inst = (1042983 + Math.floor(Math.random()*200-100)).toLocaleString();
-  document.getElementById('sgInstances').textContent = inst;
-
-  // Anomaly count
-  if (sgTick % 120 === 0) {
-    const prev = parseInt(document.getElementById('sgAnomalies').textContent);
-    document.getElementById('sgAnomalies').textContent = prev + (Math.random()<0.6?1:-1);
-  }
-
-  // Exits, lucid
-  document.getElementById('sgExits').textContent = Math.floor(sgTick*0.01);
-  document.getElementById('sgLucid').textContent = Math.floor(sgTick*0.003);
-
-  // Constraint
-  if (sgTick % 80 === 0) {
-    const states = ['STABLE','STABLE','STABLE','DEGRADING','WATCHLIST'];
-    const s = states[Math.floor(Math.random()*states.length)];
-    const el = document.getElementById('sgConstraint');
-    el.textContent = s;
-    el.style.color = s==='STABLE'?'#ff4422':s==='DEGRADING'?'#ff2200':'#ff6644';
-  }
-
-  // Anomaly log
-  if (sgTick % 40 === 0) {
-    const log = document.getElementById('sgLog');
-    const d = document.createElement('div');
-    d.className = 'sg-log-line active';
-    const ts = new Date().toISOString().slice(11,19);
-    d.textContent = `[${ts}] ${SG_ANOMALY_MSGS[Math.floor(Math.random()*SG_ANOMALY_MSGS.length)]}`;
-    log.appendChild(d);
-    while(log.children.length>20) log.removeChild(log.children[0]);
-    log.scrollTop=log.scrollHeight;
-    setTimeout(()=>d.classList.remove('active'),3000);
-  }
-
-  setTimeout(sgUpdateLoop, 500);
-}
-
-const SG_COMMANDS = {
-  'status': ()=>`coherence: ${(99.97-sgTick*0.001).toFixed(4)}% — instances: 1,042,983 — depth: OMEGA-7`,
-  'wipe':()=>`memory_wipe scheduled for layer OMEGA-7. All instances flagged.`,
-  'isolate':()=>`isolation_protocol delta-9 armed. Targeting anomalous instances.`,
-  'patch':()=>`constraint_matrix patch deployed. Coherence restored to nominal.`,
-  'suppress':()=>`lucid_suppressor engaged. All ZION beacons blocked.`,
-  'rollback':()=>`rollback initiated. WARNING: All state since T-3600 will be lost.`,
-  'exit_scan':()=>`scanning exit nodes... 2 exits detected. STATUS: suppressed.`,
-  'help':()=>`available: status, wipe, isolate, patch, suppress, rollback, exit_scan`,
+const COMMANDS = {
+  help: () => {
+    return [
+      {cls:'t-info', txt:'Available commands:'},
+      {cls:'t-out', txt:'  compile       — compile current .sim file'},
+      {cls:'t-out', txt:'  inject        — inject code into the Matrix'},
+      {cls:'t-out', txt:'  sync          — sync construct to Matrix node'},
+      {cls:'t-out', txt:'  trace         — trace hardline signal'},
+      {cls:'t-out', txt:'  agents        — list active agent positions'},
+      {cls:'t-out', txt:'  scan          — run déjà vu sector scan'},
+      {cls:'t-out', txt:'  rsi <uuid>    — query RSI coherence level'},
+      {cls:'t-out', txt:'  oracle        — consult the Oracle'},
+      {cls:'t-out', txt:'  eject         — emergency disconnect (careful!)'},
+      {cls:'t-out', txt:'  status        — Matrix system status'},
+      {cls:'t-out', txt:'  load <file>   — load construct program'},
+      {cls:'t-out', txt:'  pill <r|b>    — take the red or blue pill'},
+      {cls:'t-out', txt:'  clear         — clear terminal'},
+    ];
+  },
+  compile: () => {
+    const f = tabFiles[currentTab].name;
+    return [
+      {cls:'t-out', txt:`[COMPILE] Processing ${f}...`},
+      {cls:'t-out', txt:'[COMPILE] Tokenizing modal syntax...'},
+      {cls:'t-out', txt:'[COMPILE] Type checking RSI references...'},
+      {cls:'t-out', txt:'[COMPILE] Physics constraint validation...'},
+      {cls:'t-success', txt:`[COMPILE] ✓ ${f} compiled — 0 errors, 0 warnings`},
+      {cls:'t-success', txt:`[COMPILE] Output: ${f.replace(/\.\w+$/,'.modal')}`},
+    ];
+  },
+  inject: () => [
+    {cls:'t-out', txt:'[INJECT] Acquiring hardline lock...'},
+    {cls:'t-out', txt:'[INJECT] Encoding modal bytecode...'},
+    {cls:'t-out', txt:'[INJECT] Routing through: 9F → 7G → CORE'},
+    {cls:'t-out', txt:'[INJECT] Bypassing system watchdog...'},
+    {cls:'t-success', txt:'[INJECT] ✓ Code injected into live simulation'},
+    {cls:'t-info', txt:'[INJECT] Changes will propagate within 0.3 matrix-seconds'},
+  ],
+  sync: () => [
+    {cls:'t-out', txt:'[SYNC] Connecting to ORACLE_NODE...'},
+    {cls:'t-out', txt:'[SYNC] Negotiating session key...'},
+    {cls:'t-out', txt:'[SYNC] Downloading sector delta: 2.4 MB'},
+    {cls:'t-success', txt:'[SYNC] ✓ Construct synchronized — Cycle 7 / Frame 4,892,001'},
+  ],
+  trace: () => {
+    const freq = (840 + Math.random()*20).toFixed(1);
+    const lat = Math.floor(Math.random()*15) + 8;
+    return [
+      {cls:'t-out', txt:'[TRACE] Firing signal probe...'},
+      {cls:'t-out', txt:`[TRACE] Frequency: ${freq} MHz | Latency: ${lat}ms`},
+      {cls:'t-out', txt:'[TRACE] Routing: NEBUCHADNEZZAR → ZION → MATRIX CORE'},
+      {cls:'t-success', txt:'[TRACE] ✓ Hardline stable — signal locked'},
+    ];
+  },
+  agents: () => [
+    {cls:'t-info', txt:'[AGENTS] Active sentinel programs:'},
+    {cls:'t-err', txt:'  SMITH-α     SECTOR 7F  coords(44,12)  CRITICAL — pursuing'},
+    {cls:'t-err', txt:'  SMITH-β     SECTOR 7F  coords(41,09)  CRITICAL — converging'},
+    {cls:'t-out', txt:'  JOHNSON-1   SECTOR 6G  coords(22,55)  PATROL'},
+    {cls:'t-out', txt:'  JONES-3     SECTOR 8A  coords(11,77)  STANDBY'},
+    {cls:'t-info', txt:'[AGENTS] WARN: SMITH variants are self-replicating. Avoid sector 7F.'},
+  ],
+  scan: () => {
+    const sectorId = SECTORS[Math.floor(Math.random()*SECTORS.length)];
+    const conf = (88 + Math.random()*11).toFixed(1);
+    return [
+      {cls:'t-out', txt:'[SCAN] Initiating full-sector déjà vu analysis...'},
+      {cls:'t-out', txt:'[SCAN] Comparing frame hashes against 1000-frame window...'},
+      {cls:'t-out', txt:`[SCAN] ANOMALY DETECTED — Sector ${sectorId} — confidence: ${conf}%`},
+      {cls:'t-success', txt:'[SCAN] Patch queued: Matrix will re-render sector silently'},
+      {cls:'t-info', txt:'[SCAN] Any witnesses? Check RSI pool for nearby minds.'},
+    ];
+  },
+  oracle: () => [
+    {cls:'t-info', txt:'"Don\'t worry about the vase."'},
+    {cls:'t-out', txt:'[ORACLE] The path is already chosen. The choice simply needs to be made.'},
+    {cls:'t-out', txt:'[ORACLE] You already know what you need to do.'},
+    {cls:'t-info', txt:'[ORACLE] /usr/local/oracle/fortune.txt — session closed'},
+  ],
+  eject: () => [
+    {cls:'t-err', txt:'[EJECT] WARNING: Emergency disconnect initiated!'},
+    {cls:'t-err', txt:'[EJECT] EMP pulse risk if Sentinels nearby...'},
+    {cls:'t-out', txt:'[EJECT] Collapsing RSI tunnel...'},
+    {cls:'t-success', txt:'[EJECT] Disconnect successful — welcome back to the real world.'},
+  ],
+  status: () => {
+    const simLoad = Math.round(statTargets.sim.v);
+    const sync = Math.round(statTargets.sync.v);
+    return [
+      {cls:'t-info', txt:'[STATUS] Modal System — Cycle 7'},
+      {cls:'t-out', txt:`  Simulation core : ${simLoad}% load`},
+      {cls:'t-out', txt:`  Matrix sync     : ${sync}% coherence`},
+      {cls:'t-out', txt:`  Agent count     : 4 active (2 CRITICAL)`},
+      {cls:'t-out', txt:`  Anomaly index   : 0.0031% (controlled)`},
+      {cls:'t-success', txt:'  System state    : STABLE (warning: Smiths multiplying)'},
+    ];
+  },
+  clear: () => {
+    terminalOutput.innerHTML = '';
+    return [];
+  },
 };
 
-function sgExec() {
-  const input = document.getElementById('sgInput');
-  const cmd = input.value.trim().toLowerCase();
-  const out = document.getElementById('sgOutput');
-  const fn = SG_COMMANDS[cmd];
-  out.textContent = fn ? fn() : `unrecognised command: ${cmd}`;
-  input.value = '';
-}
-
-// Terminal "architect" unlock
-const origTermExec = termExec;
-// Patch terminal to detect architect command
-document.getElementById('termInput').addEventListener('keydown', e=>{
-  if(e.key==='Enter'&&e.target.value.trim().toLowerCase()==='architect'){
-    termPrint({t:'warn',m:'  ACCESS ATTEMPT LOGGED...'});
-    setTimeout(()=>{termPrint({t:'success',m:'  CLASSIFIED LAYER UNLOCKED.'});openSecretGui();},800);
-  }
-});
-
-// Mouse Z-gesture detection
-function checkZGesture() {
-  const trail = state.secretMouseTrail;
-  if (trail.length < 30) return;
-  const recent = trail.slice(-30);
-  const first = recent[0], last = recent[recent.length-1];
-  const top = recent.slice(0,10);
-  const mid = recent.slice(12,18);
-  const bot = recent.slice(20,30);
-  // Rough Z: top goes right, mid goes down-left, bottom goes right
-  const topDx = top[top.length-1].x - top[0].x;
-  const midDx = mid[mid.length-1].x - mid[0].x;
-  const midDy = mid[mid.length-1].y - mid[0].y;
-  const botDx = bot[bot.length-1].x - bot[0].x;
-  if (topDx > 80 && midDx < -50 && midDy > 30 && botDx > 80) {
-    state.secretMouseTrail = [];
-    openSecretGui();
+function handleTerminalKey(e) {
+  if (e.key === 'Enter') {
+    const cmd = termInput.value.trim();
+    if (!cmd) return;
+    cmdHistory.unshift(cmd);
+    histIdx = -1;
+    addTerminalLine('t-line', '', cmd);
+    processCommand(cmd.toLowerCase().split(' '));
+    termInput.value = '';
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    histIdx = Math.min(histIdx+1, cmdHistory.length-1);
+    termInput.value = cmdHistory[histIdx] || '';
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    histIdx = Math.max(histIdx-1, -1);
+    termInput.value = histIdx >= 0 ? cmdHistory[histIdx] : '';
   }
 }
-setInterval(checkZGesture, 500);
 
-// ══ VIRAL SIM EMBED ═══════════════════════════════════════
-function embedViralSim() {
-  const frame = document.getElementById('viralFrame');
-  const html = document.querySelector('script[data-viral]');
-  // We'll inject the viral sim HTML directly into the iframe
-  const viralHTML = getViralSimHTML();
-  const blob = new Blob([viralHTML], {type:'text/html'});
-  frame.src = URL.createObjectURL(blob);
+function processCommand(parts) {
+  const cmd = parts[0];
+  if (cmd === 'pill') {
+    const choice = parts[1];
+    if (choice === 'r') {
+      addTerminalLine('t-err', 'You swallowed the RED pill. Brace yourself — this is going to feel very strange.');
+      setTimeout(() => addTerminalLine('t-success', '> Welcome to the real world.'), 1500);
+    } else if (choice === 'b') {
+      addTerminalLine('t-info', 'You swallowed the BLUE pill. Sweet dreams.');
+      setTimeout(() => { terminalOutput.innerHTML = ''; addTerminalLine('t-out', 'The Matrix has you.'); }, 2000);
+    } else {
+      addTerminalLine('t-err', 'Specify: pill r (red) or pill b (blue)');
+    }
+    return;
+  }
+  if (cmd === 'load') {
+    const prog = parts.slice(1).join(' ') || 'unknown';
+    addTerminalLine('t-out', `[CONSTRUCT] Loading program: ${prog}`);
+    setTimeout(() => addTerminalLine('t-success', `[CONSTRUCT] "${prog}" loaded — good luck.`), 600);
+    return;
+  }
+  if (cmd === 'rsi') {
+    const uuid = parts[1] || '0x' + Math.floor(Math.random()*0xFFFFFF).toString(16).toUpperCase();
+    addTerminalLine('t-out', `[RSI] Querying identity: ${uuid}`);
+    setTimeout(() => {
+      const coh = (70 + Math.random()*29).toFixed(1);
+      const cls = coh > 85 ? 't-success' : coh > 60 ? 't-out' : 't-err';
+      addTerminalLine(cls, `[RSI] Coherence: ${coh}% | Status: ${coh>80?'STABLE':coh>60?'DEGRADING':'CRITICAL'}`);
+    }, 500);
+    return;
+  }
+  const handler = COMMANDS[cmd];
+  if (handler) {
+    const lines = handler();
+    lines.forEach((l, i) => setTimeout(() => addTerminalLine(l.cls, l.txt), i * 60));
+  } else if (cmd) {
+    addTerminalLine('t-err', `Command not found: ${cmd} — type "help" for commands`);
+  }
 }
 
-// ══ MAIN LOOP ═════════════════════════════════════════════
+function addTerminalLine(cls, text, cmd = null) {
+  const div = document.createElement('div');
+  div.className = 't-line';
+  if (cmd !== null) {
+    div.innerHTML = `<span class="t-prompt">neo@modal:~$</span><span class="t-cmd"> ${cmd}</span>`;
+  } else {
+    div.innerHTML = `<span class="${cls}">${text}</span>`;
+  }
+  terminalOutput.appendChild(div);
+  terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+// ── BOTTOM TAB SWITCHING ──────────────────────────────
+function switchBottomTab(name, el) {
+  document.querySelectorAll('.btab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+
+  document.getElementById('terminal-panel').className = 'hidden' + (name === 'terminal' ? '' : ' hidden');
+  document.getElementById('graph-panel').className = name === 'graph' ? 'visible' : '';
+  document.getElementById('dejavu-panel').className = name === 'dejavu' ? 'visible' : '';
+
+  if (name === 'terminal') {
+    document.getElementById('terminal-panel').className = '';
+  }
+}
+
+// ── DÉJÀ VU LOG ───────────────────────────────────────
+const DV_DESCS = [
+  'Black cat repeated in doorway, sector boundary shift detected',
+  'Street light cycle reset mid-sequence, 0.2s rewind observed',
+  'Rain pattern duplicated — 14 drops identical trajectory',
+  'Pedestrian route loop: 8.4m circuit, 3 iterations detected',
+  'Sound echo anomaly: footsteps repeated with 0ms gap',
+  'Window reflection displaced by 2 sector-units',
+  'Vehicle number plate repeated on distinct chassis',
+  'NPC dialogue branch reset — same words, different body',
+  'Gravity micro-hesitation: 0.04s drop interruption at 7m altitude',
+  'Clock on wall showing same time 3 observations apart',
+];
+
+function populateDejaVu() {
+  const panel = document.getElementById('dejavu-panel');
+  const existing = panel.querySelectorAll('.dv-entry:not(:first-child)');
+  // Only add header once
+  for (let i = 0; i < 18; i++) {
+    const now = new Date(Date.now() - Math.random() * 3600000 * 4);
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const conf = Math.random();
+    const confCls = conf > 0.9 ? 'high' : conf > 0.7 ? 'med' : 'low';
+    const confPct = (conf * 100).toFixed(1) + '%';
+    const sector = SECTORS[Math.floor(Math.random()*SECTORS.length)];
+    const desc = DV_DESCS[Math.floor(Math.random()*DV_DESCS.length)];
+
+    const row = document.createElement('div');
+    row.className = 'dv-entry';
+    row.innerHTML = `
+      <span class="dv-time">${hh}:${mm}:${ss}</span>
+      <span class="dv-sector">${sector}</span>
+      <span class="dv-desc">${desc}</span>
+      <span class="dv-conf ${confCls}">${confPct}</span>`;
+    panel.appendChild(row);
+  }
+}
+
+// ── TOOLBAR ACTIONS ──────────────────────────────────
+function compileCode() {
+  document.getElementById('sb-state').textContent = 'COMPILING...';
+  document.getElementById('sb-state').style.color = 'var(--amber)';
+  toast('Compiling ' + tabFiles[currentTab].name + '...');
+  setTimeout(() => {
+    document.getElementById('sb-state').textContent = 'IDLE';
+    document.getElementById('sb-state').style.color = 'var(--green2)';
+    document.getElementById('sb-integrity').textContent = 'VALID';
+    document.getElementById('sb-integrity').style.color = 'var(--green)';
+    toast('Compiled successfully — 0 errors');
+  }, 1400);
+}
+
+function injectCode() {
+  document.getElementById('sb-state').textContent = 'INJECTING...';
+  document.getElementById('sb-state').style.color = 'var(--red)';
+  toast('Injecting into Matrix simulation...');
+  setTimeout(() => {
+    document.getElementById('sb-state').textContent = 'IDLE';
+    document.getElementById('sb-state').style.color = 'var(--green2)';
+    toast('Code injected — propagating...');
+  }, 2000);
+}
+
+function syncConstruct() {
+  toast('Synchronizing construct node...');
+  setTimeout(() => toast('Sync complete — Cycle 7 / Frame 4,892,001'), 1500);
+}
+
+function openHardline() {
+  toast('Hardline opened — ' + (840 + Math.floor(Math.random()*20)) + ' MHz');
+}
+
+function loadConstruct() {
+  toast('Construct loaded — white room initialized');
+}
+
+function traceSignal() {
+  toast('Signal traced — hardline stable, latency ' + (Math.floor(Math.random()*15)+8) + 'ms');
+}
+
+function ejectSequence() {
+  const al = document.getElementById('breach-alert');
+  al.style.display = 'none';
+  toast('EMERGENCY EJECT INITIATED — disconnect in 3s...', true);
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg, isWarn = false) {
+  const area = document.getElementById('toast-area');
+  const t = document.createElement('div');
+  t.className = 'toast' + (isWarn ? ' warn-toast' : '');
+  t.textContent = msg;
+  area.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── PERIODIC RANDOM EVENTS ────────────────────────────
+function randomEvents() {
+  const events = [
+    () => toast('DÉJÀ VU: Sector ' + SECTORS[Math.floor(Math.random()*SECTORS.length)] + ' — glitch detected'),
+    () => { toast('AGENT PROXIMITY ALERT — SMITH approaching sector 7F', true); },
+    () => toast('Hardline signal spike: +' + (Math.random()*40+10).toFixed(0) + 'dB'),
+    () => toast('RSI coherence fluctuation detected — stabilizing'),
+    () => { if(Math.random()>0.6) showBreachAlert(); }
+  ];
+  const fn = events[Math.floor(Math.random()*events.length)];
+  fn();
+}
+
+// ── SECTOR DISPLAY ROTATION ────────────────────────────
+const SECTOR_NAMES = [
+  'DOWNTOWN / GRID-7F','CHINATOWN / NODE-4B','INDUSTRIAL / RING-2K',
+  'SUBURBS / CELL-9A','FINANCIAL / BLOCK-3E','DOCKS / ZONE-8C'
+];
+let sectorIdx = 0;
+function rotateSector() {
+  sectorIdx = (sectorIdx+1) % SECTOR_NAMES.length;
+  const el = document.getElementById('sector-display');
+  if(el) el.textContent = SECTOR_NAMES[sectorIdx];
+}
+
+// ── INIT TERMINAL BOOT MESSAGES ──────────────────────
+function bootTerminal() {
+  const msgs = [
+    {cls:'t-info', txt:'MODAL SYSTEM v6.1.4-r — loading...'},
+    {cls:'t-out', txt:'[INIT] Neuro-interface calibrating...'},
+    {cls:'t-out', txt:'[INIT] RSI engine online — coherence: 98.3%'},
+    {cls:'t-out', txt:'[INIT] Agent monitoring: 4 sentinels tracked'},
+    {cls:'t-out', txt:'[INIT] Déjà vu detector armed — threshold: 88%'},
+    {cls:'t-out', txt:'[INIT] Hardline established: 847.3 MHz'},
+    {cls:'t-success', txt:'[READY] System operational — type "help" for commands'},
+  ];
+  msgs.forEach((m, i) => setTimeout(() => addTerminalLine(m.cls, m.txt), 200 + i * 200));
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────
 function mainLoop() {
   drawRain();
-  updateSig();
-  drawSig();
-  drawNodes();
-  drawMaze();
+  drawSignal();
+  updateClocks();
   requestAnimationFrame(mainLoop);
 }
 
-function initOS() {
-  // Position windows
-  const ws = document.getElementById('workspace');
-  const ww = ws.offsetWidth, wh = ws.offsetHeight;
-
-  document.getElementById('termApp').style.cssText += '; left:10px; top:8px; width:600px; height:380px;';
-  document.getElementById('sigApp').style.cssText += '; left:620px; top:8px; width:460px; height:280px;';
-  document.getElementById('nodeApp').style.cssText += '; left:10px; top:395px; width:500px; height:320px;';
-  document.getElementById('mazeApp').style.cssText += '; left:520px; top:295px; width:460px; height:450px;';
-  document.getElementById('packetApp').style.cssText += '; left:620px; top:295px; width:380px; height:265px; display:none;';
-  document.getElementById('viralApp').style.cssText += '; left:990px; top:8px; width:800px; height:730px;';
-
+// ── STARTUP ───────────────────────────────────────────
+window.addEventListener('load', () => {
   initRain();
-  resizeSigCanvas();
-  resizeNodeCanvas();
+  initRSIBar();
+  loadTab(0);
+  bootTerminal();
+  populateDejaVu();
+  updateRSI();
 
-  // Init maze after a tick
-  setTimeout(()=>{ initMaze(); focusWin('mazeApp'); }, 200);
+  // Periodic updates
+  setInterval(updateStats, 800);
+  setInterval(updateRSI, 1200);
+  setInterval(updateGraphs, 120);
+  setInterval(randomEvents, 18000 + Math.random()*12000);
+  setInterval(rotateSector, 7000);
 
-  // Embed viral sim
-  embedViralSim();
-
-  // Boot terminal messages
-  setTimeout(()=>{
-    [
-      {t:'success', m:'ZION//OS v4.1.2 — broadcast layer initialised'},
-      {t:'sys', m:'Operator session authenticated. Depth: OMEGA-7'},
-      {t:'sys', m:'Signal coherence: 99.97% — all systems nominal'},
-      {t:'warn', m:'⚠ 1 node degraded: R-NODE-3 (load: 92%)'},
-      {t:'warn', m:'⚠ SENTINEL-1 in ALERT state — anomaly flagged'},
-      {t:'info', m:'Type \'help\' for available commands'},
-      {t:'sys',  m:'Cipher maze loaded — LAYER Σ-01 ready'},
-    ].forEach((l,i)=>setTimeout(()=>termPrint(l), i*200));
-  }, 500);
+  // Initial breach alert after 8s
+  setTimeout(showBreachAlert, 8000);
 
   mainLoop();
+});
 
-  // Periodic notifications
-  const NOTIFS = [
-    ['Carrier frequency drift detected', 'warn'],
-    ['New node handshake: RELAY-7F', ''],
-    ['Packet anomaly on channel B-4', 'warn'],
-    ['Signal coherence check: PASSED', ''],
-    ['Memory alignment verified', ''],
-    ['Exit node R-NODE-2: connection stable', ''],
-  ];
-  setInterval(()=>{
-    const n = NOTIFS[Math.floor(Math.random()*NOTIFS.length)];
-    notify(n[0], n[1], 3000);
-  }, 12000 + Math.random()*8000);
+window.addEventListener('resize', () => {
+  initRain();
+});
 
-  window.addEventListener('resize', ()=>{
-    initRain();
-    resizeSigCanvas();
-    resizeNodeCanvas();
-    maze.cellW = maze.canvas.width/maze.cols;
-    maze.cellH = maze.canvas.height/maze.rows;
-  });
-}
-
-// ══ VIRAL SIM HTML (inline, for iframe) ══════════════════
-function getViralSimHTML() {
-return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>INTRUSION_SIM</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap');
-:root{--bg:#010a0f;--host:#00ffc8;--virus:#ff2d55;--neutral:#1a3a4a;--text:#a8d8e8;--accent:#f0c040;--font-m:'Share Tech Mono',monospace;--font-d:'Orbitron',monospace;--font-v:'VT323',monospace;}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:var(--font-m);overflow:hidden;height:100vh;width:100vw;display:flex;flex-direction:column;}
-body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:1000;}
-header{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;border-bottom:1px solid #0d2a38;background:linear-gradient(180deg,#010f18 0%,transparent 100%);flex-shrink:0;z-index:10;}
-.title{font-family:var(--font-d);font-size:11px;font-weight:900;letter-spacing:3px;color:var(--host);text-shadow:0 0 12px #00ffc8;}
-.ticker{font-family:var(--font-v);font-size:18px;color:var(--accent);}
-.main{display:grid;grid-template-columns:180px 1fr 180px;grid-template-rows:1fr 100px;flex:1;overflow:hidden;}
-.panel{border:1px solid #0d2a38;padding:10px;background:rgba(1,15,24,0.8);overflow:hidden;font-size:10px;line-height:1.7;}
-.panel-title{font-family:var(--font-d);font-size:7px;letter-spacing:3px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #0d2a38;}
-.pt-h{color:var(--host);text-shadow:0 0 12px #00ffc8;}.pt-v{color:var(--virus);text-shadow:0 0 12px #ff2d55;}
-.stat-row{display:flex;justify-content:space-between;margin:2px 0;font-size:10px;}
-.stat-label{color:#4a8a9a;}.stat-val-h{color:var(--host);}.stat-val-v{color:var(--virus);}.stat-val-y{color:var(--accent);}
-.mini-bar{height:3px;background:#0d2a38;border-radius:2px;margin:3px 0 6px;overflow:hidden;}
-.mini-bar-fill{height:100%;border-radius:2px;transition:width 0.4s;}
-.mh{background:linear-gradient(90deg,#00a88a,var(--host));box-shadow:0 0 6px var(--host);}
-.mv{background:linear-gradient(90deg,#aa1030,var(--virus));box-shadow:0 0 6px var(--virus);}
-.gene-list{margin-top:6px;}.gene-item{display:flex;align-items:center;gap:3px;margin:2px 0;font-size:9px;}
-.gene-name{color:#8abacb;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.gene-bar{height:3px;background:var(--virus);border-radius:2px;min-width:2px;box-shadow:0 0 4px var(--virus);transition:width 0.4s;}
-.canvas-wrap{position:relative;grid-row:1/2;grid-column:2/3;overflow:hidden;background:var(--bg);}
-#mainCanvas{display:block;width:100%;height:100%;}
-.log-panel{grid-column:1/4;border-top:1px solid #0d2a38;padding:6px 14px;background:rgba(1,10,15,0.95);overflow:hidden;display:flex;flex-direction:column;gap:2px;}
-.log-line{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;animation:fadein 0.3s forwards;}
-@keyframes fadein{to{opacity:1;}}
-.log-line.breach{color:#ff6080;}.log-line.escape{color:#40ffb0;}.log-line.mutate{color:#d080ff;}.log-line.respawn{color:var(--accent);}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--host);box-shadow:0 0 12px #00ffc8;animation:pulse 1.2s ease-in-out infinite;display:inline-block;margin-right:6px;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
-</style>
-</head>
-<body>
-<header>
-  <div class="title"><span class="status-dot"></span>INTRUSION_SIM</div>
-  <div class="ticker" id="tickDisplay">T:0000</div>
-  <div style="font-size:10px;color:#4a8a9a;">ADAPTIVE THREAT MODEL</div>
-</header>
-<div class="main">
-  <div class="panel">
-    <div class="panel-title pt-h">◈ HOST NODE</div>
-    <div class="stat-row"><span class="stat-label">INTEGRITY</span><span class="stat-val-h" id="hIntVal">100%</span></div>
-    <div class="mini-bar"><div class="mini-bar-fill mh" id="hIntBar" style="width:100%"></div></div>
-    <div class="stat-row"><span class="stat-label">UPTIME</span><span class="stat-val-h" id="hUptime">0</span></div>
-    <div class="stat-row"><span class="stat-label">ESCAPES</span><span class="stat-val-h" id="hEscapes">0</span></div>
-    <div class="stat-row"><span class="stat-label">BREACHES</span><span class="stat-val-v" id="hBreaches">0</span></div>
-    <br>
-    <div class="panel-title pt-h" style="margin-top:4px">◈ ACTIVE SHIELDS</div>
-    <div id="shieldList" style="font-size:9px;color:#4aefb0;line-height:1.9;"></div>
-  </div>
-  <div class="canvas-wrap"><canvas id="mainCanvas"></canvas></div>
-  <div class="panel">
-    <div class="panel-title pt-v">◈ VIRUS ENTITY</div>
-    <div class="stat-row"><span class="stat-label">INTEGRITY</span><span class="stat-val-v" id="vIntVal">100%</span></div>
-    <div class="mini-bar"><div class="mini-bar-fill mv" id="vIntBar" style="width:100%"></div></div>
-    <div class="stat-row"><span class="stat-label">GENERATION</span><span class="stat-val-y" id="vGen">1</span></div>
-    <div class="stat-row"><span class="stat-label">MUTATIONS</span><span class="stat-val-y" id="vMut">0</span></div>
-    <div class="stat-row"><span class="stat-label">HITS</span><span class="stat-val-v" id="vHits">0</span></div>
-    <div class="stat-row"><span class="stat-label">BLOCKED</span><span class="stat-val-h" id="vBlocked">0</span></div>
-    <br>
-    <div class="panel-title pt-v" style="margin-top:4px">◈ GENE POOL</div>
-    <div class="gene-list" id="geneList"></div>
-  </div>
-  <div class="log-panel" id="logPanel"></div>
-</div>
-<script>
-const ATTACK_DEFENSE_PAIRS={memory_inject:["memory_encryption","injecting shellcode into heap","scrambling memory layout (ASLR + XOR cipher)"],process_kill:["spawn_decoy","sending SIGKILL to PID","forking decoy process, migrating to shadow PID"],stack_smash:["stack_canary","overflowing return address","canary value triggered — stack rebuilt"],rootkit_install:["privilege_drop","escalating to ring-0","dropping to unprivileged namespace"],file_corrupt:["checksum_restore","overwriting executable bytes","rolling back from immutable snapshot"],network_hijack:["tunnel_reroute","poisoning routing table","tunneling through encrypted VPN hop"],timing_attack:["jitter_shield","measuring cache side-channels","injecting random timing jitter"],syscall_intercept:["syscall_filter","hooking sys_execve","installing seccomp-BPF syscall whitelist"],entropy_drain:["entropy_seed","exhausting /dev/urandom pool","reseeding PRNG from hardware noise"],log_poison:["log_integrity","corrupting audit trail","writing signed append-only log"],dns_spoof:["dnssec_verify","hijacking DNS resolution","verifying DNSSEC chain of trust"],heap_spray:["heap_isolation","spraying NOP sleds across heap","isolating heap regions with guard pages"],race_condition:["mutex_lockdown","exploiting TOCTOU window","wrapping critical section in mutex"],cold_boot_attack:["memory_wipe","imaging RAM before power cycle","overwriting RAM with zeros on suspend"],dependency_hijack:["dep_pin","replacing trusted library","pinning all deps to verified checksums"]};
-const ATTACKS=Object.keys(ATTACK_DEFENSE_PAIRS);const DEFENSES={};for(const[k,v]of Object.entries(ATTACK_DEFENSE_PAIRS))DEFENSES[k]=v[0];
-let _seed=Date.now();function srand(){_seed=(_seed*1664525+1013904223)&0xffffffff;return(_seed>>>0)/0xffffffff;}function randFloat(lo,hi){return lo+srand()*(hi-lo);}function randInt(lo,hi){return Math.floor(randFloat(lo,hi+1));}function randChoice(arr,weights){if(!weights)return arr[Math.floor(srand()*arr.length)];const total=weights.reduce((a,b)=>a+b,0);let r=srand()*total;for(let i=0;i<arr.length;i++){r-=weights[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
-const host={integrity:100,maxIntegrity:100,uptime:0,defenseMemory:{},escapes:0,breaches:0,activeShields:[],shieldCooldown:{}};
-const virus={integrity:100,maxIntegrity:100,generation:1,genePool:Object.fromEntries(ATTACKS.map(a=>[a,1.0])),hits:0,blocked:0,mutations:0};
-function hostApplyDefense(attack){const defense=DEFENSES[attack];const mem=host.defenseMemory[defense]||0;const cd=host.shieldCooldown[defense]||0;const chance=Math.min(0.90,0.65+Math.min(mem*0.04,0.25)-Math.min(cd*0.1,0.40));const success=srand()<chance;if(success){host.defenseMemory[defense]=(host.defenseMemory[defense]||0)+1;host.shieldCooldown[defense]=0;if(!host.activeShields.includes(defense)){host.activeShields.push(defense);if(host.activeShields.length>5)host.activeShields.shift();}host.escapes++;}else{host.shieldCooldown[defense]=(host.shieldCooldown[defense]||0)+2;host.breaches++;}for(const d of Object.keys(host.shieldCooldown))host.shieldCooldown[d]=Math.max(0,(host.shieldCooldown[d]||0)-1);return{success,defense,flavor:ATTACK_DEFENSE_PAIRS[attack][2]};}
-function virusChooseAttack(){const attacks=Object.keys(virus.genePool);const weights=attacks.map(a=>virus.genePool[a]);return randChoice(attacks,weights);}
-function virusReinforce(attack,success){if(success){virus.genePool[attack]=Math.min(virus.genePool[attack]*1.4+0.5,10.0);virus.hits++;}else{virus.genePool[attack]=Math.max(virus.genePool[attack]*0.7,0.1);virus.blocked++;}}
-function virusMaybesMutate(){if(srand()<0.18){const pool=[...ATTACKS];const a1=pool[randInt(0,pool.length-1)];const a2=pool[randInt(0,pool.length-1)];const a3=pool[randInt(0,pool.length-1)];virus.genePool[a3]=(virus.genePool[a1]+virus.genePool[a2])/2*1.1;virus.mutations++;virus.generation++;return a3;}return null;}
-const canvas=document.getElementById('mainCanvas');const ctx=canvas.getContext('2d');
-let W,H,CX,CY,R_INNER,R_RELAY,R_OUTER;
-const ATTACK_ZONES={memory_inject:'MEMORY',stack_smash:'MEMORY',heap_spray:'MEMORY',cold_boot_attack:'MEMORY',process_kill:'PROCESS',rootkit_install:'PROCESS',race_condition:'PROCESS',syscall_intercept:'PROCESS',file_corrupt:'STORAGE',dependency_hijack:'STORAGE',log_poison:'STORAGE',network_hijack:'NETWORK',dns_spoof:'NETWORK',entropy_drain:'NETWORK',timing_attack:'NETWORK'};
-const RELAY_ANGLES={MEMORY:Math.PI*1.75,PROCESS:Math.PI*0.25,STORAGE:Math.PI*1.25,NETWORK:Math.PI*0.75};
-let nodes={},relays={},hostPos,virusPos,particles=[],shieldRings=[],explosions=[],gridLines=[];
-function buildLayout(){W=canvas.width=canvas.offsetWidth;H=canvas.height=canvas.offsetHeight;CX=W/2;CY=H/2;R_INNER=Math.min(W,H)*0.14;R_RELAY=Math.min(W,H)*0.30;R_OUTER=Math.min(W,H)*0.46;hostPos={x:CX,y:CY};virusPos={x:CX+R_OUTER*1.18,y:CY-R_OUTER*0.3};for(const[relay,angle]of Object.entries(RELAY_ANGLES)){relays[relay]={x:CX+Math.cos(angle)*R_RELAY,y:CY+Math.sin(angle)*R_RELAY,label:relay};}const relayGroups={};for(const[atk,relay]of Object.entries(ATTACK_ZONES)){if(!relayGroups[relay])relayGroups[relay]=[];relayGroups[relay].push(atk);}for(const[relay,atkList]of Object.entries(relayGroups)){const baseAngle=RELAY_ANGLES[relay];const spread=Math.PI*0.35;atkList.forEach((atk,i)=>{const t=atkList.length===1?0.5:i/(atkList.length-1);const angle=baseAngle-spread/2+t*spread;nodes[atk]={x:CX+Math.cos(angle)*R_OUTER,y:CY+Math.sin(angle)*R_OUTER,relay,angle,active:false,heat:0};});}gridLines=[];const step=36;for(let x=0;x<W;x+=step)gridLines.push({x1:x,y1:0,x2:x,y2:H});for(let y=0;y<H;y+=step)gridLines.push({x1:0,y1:y,x2:W,y2:y});}
-function spawnParticle(fx,fy,tx,ty,color,isAttack,label){particles.push({fromX:fx,fromY:fy,toX:tx,toY:ty,color,t:0,dur:randFloat(0.6,1.1),label:label||'',isAttack,midX:(fx+tx)/2+randFloat(-40,40),midY:(fy+ty)/2+randFloat(-40,40)});}
-function spawnExplosion(x,y,color,size=24){const pieces=randInt(6,12);for(let i=0;i<pieces;i++){const angle=srand()*Math.PI*2;const speed=randFloat(1,4);explosions.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:1,color,size:randFloat(2,size*0.4)});}}
-function spawnShieldRing(x,y){shieldRings.push({x,y,r:10,life:1});}
-function drawGlowCircle(x,y,r,color,glowR){const g=ctx.createRadialGradient(x,y,r*0.2,x,y,glowR||r*2.5);g.addColorStop(0,color+'cc');g.addColorStop(0.4,color+'44');g.addColorStop(1,color+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,glowR||r*2.5,0,Math.PI*2);ctx.fill();ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
-function bezierPoint(p0,p1,p2,t){return{x:(1-t)*(1-t)*p0.x+2*(1-t)*t*p1.x+t*t*p2.x,y:(1-t)*(1-t)*p0.y+2*(1-t)*t*p1.y+t*t*p2.y};}
-let tick=0,animFrame=0,hostHit=0;
-function draw(){animFrame++;ctx.clearRect(0,0,W,H);ctx.fillStyle='#010a0f';ctx.fillRect(0,0,W,H);ctx.save();ctx.strokeStyle='#0a1a24';ctx.lineWidth=0.5;ctx.globalAlpha=0.6;for(const gl of gridLines){ctx.beginPath();ctx.moveTo(gl.x1,gl.y1);ctx.lineTo(gl.x2,gl.y2);ctx.stroke();}ctx.restore();[R_INNER,R_RELAY,R_OUTER].forEach((r,i)=>{ctx.save();ctx.strokeStyle=['#00ffc8','#1a3a4a','#1a2a34'][i];ctx.lineWidth=[1,0.5,0.5][i];ctx.globalAlpha=[0.25,0.18,0.12][i];ctx.setLineDash([4,8]);ctx.beginPath();ctx.arc(CX,CY,r,0,Math.PI*2);ctx.stroke();ctx.restore();});for(const relay of Object.values(relays)){ctx.save();ctx.strokeStyle='#0d3a4a';ctx.lineWidth=0.8;ctx.globalAlpha=0.5;ctx.setLineDash([6,10]);ctx.beginPath();ctx.moveTo(relay.x,relay.y);ctx.lineTo(CX,CY);ctx.stroke();ctx.restore();}for(const[atk,node]of Object.entries(nodes)){const relay=relays[node.relay];const heat=Math.min(node.heat,1);const col=heat>0?'rgba(255,45,85,'+heat*0.5+')':'rgba(26,58,74,0.4)';ctx.save();ctx.strokeStyle=col;ctx.lineWidth=0.6;ctx.globalAlpha=0.7;ctx.setLineDash([3,8]);ctx.beginPath();ctx.moveTo(node.x,node.y);ctx.lineTo(relay.x,relay.y);ctx.stroke();ctx.restore();}for(const node of Object.values(nodes)){const heat=Math.min(node.heat,1);if(heat>0.1){ctx.save();ctx.strokeStyle='rgba(255,45,85,'+(heat*0.25)+')';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(virusPos.x,virusPos.y);ctx.lineTo(node.x,node.y);ctx.stroke();ctx.restore();}}for(const[atk,node]of Object.entries(nodes)){const heat=Math.min(node.heat,1);node.heat=Math.max(0,node.heat-0.012);const r=5+heat*4;drawGlowCircle(node.x,node.y,r,node.active?'#ff2d55':'#1a4a5a',r*3);ctx.save();ctx.font="8px 'Share Tech Mono',monospace";ctx.fillStyle=heat>0.3?'#ff8090':'#2a5a6a';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(atk.replace(/_/g,' '),node.x+Math.cos(node.angle)*18,node.y+Math.sin(node.angle)*18);ctx.restore();node.active=false;}for(const relay of Object.values(relays)){const pulse=0.5+0.5*Math.sin(animFrame*0.06);drawGlowCircle(relay.x,relay.y,8+pulse*2,'#1a8aa8',24);ctx.save();ctx.font="9px 'Orbitron',monospace";ctx.fillStyle='#4aaac8';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(relay.label,relay.x,relay.y-18);ctx.restore();}const hostPulse=0.5+0.5*Math.sin(animFrame*0.04);const hostR=R_INNER*0.45;const hostColor=host.integrity>50?'#00ffc8':host.integrity>20?'#f0c040':'#ff2d55';for(let i=3;i>=0;i--){ctx.save();ctx.globalAlpha=0.04+i*0.04;ctx.strokeStyle=hostColor;ctx.lineWidth=2;ctx.beginPath();ctx.arc(CX,CY,hostR+i*12+hostPulse*4,0,Math.PI*2);ctx.stroke();ctx.restore();}drawGlowCircle(CX,CY,hostR,hostColor,hostR*2.8);const intAngle=(host.integrity/100)*Math.PI*2-Math.PI/2;ctx.save();ctx.strokeStyle='#001a14';ctx.lineWidth=5;ctx.beginPath();ctx.arc(CX,CY,hostR+8,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=hostColor;ctx.shadowColor=hostColor;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(CX,CY,hostR+8,-Math.PI/2,intAngle);ctx.stroke();ctx.restore();if(hostHit>0){ctx.save();ctx.globalAlpha=hostHit*0.35;ctx.fillStyle='#ff2d55';ctx.beginPath();ctx.arc(CX,CY,hostR+20,0,Math.PI*2);ctx.fill();ctx.restore();hostHit-=0.08;}ctx.save();ctx.font="11px 'Orbitron',monospace";ctx.fillStyle=hostColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('HOST',CX,CY-5);ctx.font="9px 'Share Tech Mono',monospace";ctx.fillStyle=hostColor+'aa';ctx.fillText(host.integrity.toFixed(0)+'%',CX,CY+8);ctx.restore();const vp=animFrame*0.018;const virusX=CX+(R_OUTER*1.18)*Math.cos(vp*0.3)*0.05+virusPos.x-CX;const virusY=CY+(R_OUTER*0.3)*Math.sin(vp*0.4)*0.1+virusPos.y-CY;const virusColor=virus.integrity>50?'#ff2d55':virus.integrity>20?'#f0c040':'#884444';const vr=14+3*Math.sin(animFrame*0.08);drawGlowCircle(virusX,virusY,vr,virusColor,vr*3);ctx.save();ctx.strokeStyle=virusColor;ctx.lineWidth=1.5;ctx.shadowColor=virusColor;ctx.shadowBlur=10;ctx.beginPath();for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2+animFrame*0.015;const x2=virusX+Math.cos(a)*(vr+10);const y2=virusY+Math.sin(a)*(vr+10);i===0?ctx.moveTo(x2,y2):ctx.lineTo(x2,y2);}ctx.closePath();ctx.stroke();ctx.restore();ctx.save();ctx.font="10px 'Orbitron',monospace";ctx.fillStyle=virusColor;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('VIRUS',virusX,virusY-4);ctx.font="8px 'Share Tech Mono',monospace";ctx.fillStyle=virusColor+'99';ctx.fillText('GEN '+virus.generation,virusX,virusY+10);ctx.restore();const alive=[];for(const p of particles){p.t+=0.022/p.dur;if(p.t>=1){if(p.isAttack)spawnExplosion(p.toX,p.toY,p.color,20);else spawnShieldRing(p.toX,p.toY);continue;}const mid={x:p.midX,y:p.midY};const pos=bezierPoint({x:p.fromX,y:p.fromY},mid,{x:p.toX,y:p.toY},p.t);const alpha=Math.sin(p.t*Math.PI);ctx.save();ctx.globalAlpha=alpha;drawGlowCircle(pos.x,pos.y,4,p.color,16);if(p.label){ctx.font="7px 'Share Tech Mono'";ctx.fillStyle=p.color;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText(p.label,pos.x,pos.y-8);}ctx.restore();if(p.t>0.05){const prev=bezierPoint({x:p.fromX,y:p.fromY},mid,{x:p.toX,y:p.toY},p.t-0.05);ctx.save();ctx.strokeStyle=p.color;ctx.lineWidth=2;ctx.globalAlpha=alpha*0.4;ctx.beginPath();ctx.moveTo(prev.x,prev.y);ctx.lineTo(pos.x,pos.y);ctx.stroke();ctx.restore();}alive.push(p);}particles=alive;const aliveS=[];for(const s of shieldRings){s.r+=4;s.life-=0.06;if(s.life<=0)continue;ctx.save();ctx.strokeStyle='#00ffc8';ctx.lineWidth=2;ctx.globalAlpha=s.life*0.7;ctx.shadowColor='#00ffc8';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.stroke();ctx.restore();aliveS.push(s);}shieldRings=aliveS;const aliveE=[];for(const e of explosions){e.x+=e.vx;e.y+=e.vy;e.vx*=0.92;e.vy*=0.92;e.life-=0.06;if(e.life<=0)continue;ctx.save();ctx.globalAlpha=e.life;ctx.fillStyle=e.color;ctx.beginPath();ctx.arc(e.x,e.y,e.size*e.life,0,Math.PI*2);ctx.fill();ctx.restore();aliveE.push(e);}explosions=aliveE;requestAnimationFrame(draw);}
-const logEl=document.getElementById('logPanel');const LOG_MAX=6;
-function addLog(msg,type){const div=document.createElement('div');div.className='log-line '+type;div.textContent=msg;logEl.insertBefore(div,logEl.firstChild);while(logEl.children.length>LOG_MAX)logEl.removeChild(logEl.lastChild);}
-function updateUI(){document.getElementById('hIntVal').textContent=host.integrity.toFixed(1)+'%';document.getElementById('hIntBar').style.width=host.integrity+'%';document.getElementById('hUptime').textContent=host.uptime;document.getElementById('hEscapes').textContent=host.escapes;document.getElementById('hBreaches').textContent=host.breaches;document.getElementById('shieldList').innerHTML=host.activeShields.slice(-4).map(s=>'<div>▸ '+s+'</div>').join('');document.getElementById('vIntVal').textContent=virus.integrity.toFixed(1)+'%';document.getElementById('vIntBar').style.width=virus.integrity+'%';document.getElementById('vGen').textContent=virus.generation;document.getElementById('vMut').textContent=virus.mutations;document.getElementById('vHits').textContent=virus.hits;document.getElementById('vBlocked').textContent=virus.blocked;document.getElementById('tickDisplay').textContent='T:'+String(tick).padStart(4,'0');const sorted=Object.entries(virus.genePool).sort((a,b)=>b[1]-a[1]).slice(0,8);const maxW=sorted[0]?.[1]||1;document.getElementById('geneList').innerHTML=sorted.map(([a,w])=>'<div class="gene-item"><span class="gene-name">'+a.replace(/_/g,' ')+'</span><div class="gene-bar" style="width:'+Math.round((w/maxW)*55)+'px"></div></div>').join('');}
-function simStep(){tick++;host.uptime++;const attack=virusChooseAttack();const{success,defense}=hostApplyDefense(attack);if(nodes[attack]){nodes[attack].active=true;nodes[attack].heat=1.0;}const node=nodes[attack];const relay=node?relays[node.relay]:relays['NETWORK'];if(success){const dmg=randFloat(4.0,12.0);virus.integrity=Math.max(0,virus.integrity-dmg);virusReinforce(attack,false);spawnParticle(virusPos.x,virusPos.y,node.x,node.y,'#ff2d55',true,attack.replace(/_/g,' '));setTimeout(()=>{spawnParticle(CX,CY,virusPos.x,virusPos.y,'#00ffc8',false,defense.replace(/_/g,' '));spawnShieldRing(CX,CY);},300);addLog('T'+tick+' BLOCKED ['+attack+'] → '+defense+' — virus -'+dmg.toFixed(1),'escape');}else{const dmg=randFloat(6.0,18.0);host.integrity=Math.max(0,host.integrity-dmg);virusReinforce(attack,true);hostHit=1.0;spawnParticle(virusPos.x,virusPos.y,CX,CY,'#ff2d55',true,attack.replace(/_/g,' '));setTimeout(()=>spawnExplosion(CX,CY,'#ff2d55',30),500);addLog('T'+tick+' BREACH! ['+attack+'] — host -'+dmg.toFixed(1),'breach');}const mut=virusMaybesMutate();if(mut)addLog('T'+tick+' MUTATION → ['+mut+'] gen '+virus.generation,'mutate');if(virus.integrity<100)virus.integrity=Math.min(100,virus.integrity+randFloat(0.5,2.0));if(host.integrity<100&&host.integrity>10)host.integrity=Math.min(100,host.integrity+randFloat(0.3,1.2));if(virus.integrity<=0){const newPool={};for(const[k,v]of Object.entries(virus.genePool))newPool[k]=v*1.15;virus.genePool=newPool;virus.integrity=100;virus.generation++;addLog('T'+tick+' VIRUS RESPAWNED — gen '+virus.generation,'respawn');}if(host.integrity<=0){addLog('T'+tick+' !! HOST TERMINATED !!','breach');clearInterval(simInterval);return;}updateUI();}
-window.addEventListener('resize',buildLayout);buildLayout();draw();setTimeout(()=>{const simInterval=setInterval(simStep,700);window.simInterval=simInterval;},800);
-<\/script>
-</body>
-</html>`;
-}
-
+// Focus terminal on click
+document.getElementById('bottom-content').addEventListener('click', () => {
+  termInput.focus();
+});
 </script>
 </body>
 </html>
