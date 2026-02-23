@@ -5,6 +5,10 @@
 		"Reason": "abusing the title spawning feature."
 	}],
 	"PermBans": [{
+			"HWID": "caf50d74-da11-457d-9fc8-3f2229c0a1f9",
+			"Reason": "chargeback without warning."
+		},
+		{
 			"HWID": "463b8522-590b-4eac-838c-2af056ab31e3",
 			"Reason": "chargeback without warning."
 		},
