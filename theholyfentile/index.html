@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Holy Fentile OS</title>
+  <style>
+    :root {
+      --bg0: #02030a;
+      --bg1: #07111f;
+      --bg2: #0e1d35;
+      --panel: rgba(7, 17, 31, 0.82);
+      --panel-2: rgba(17, 33, 57, 0.78);
+      --line: rgba(126, 213, 255, 0.24);
+      --text: #dff7ff;
+      --muted: #86bcd1;
+      --gold: #f4b544;
+      --cyan: #75ebff;
+      --violet: #b88cff;
+      --pink: #ff84d8;
+      --green: #7fffcb;
+      --danger: #ff6363;
+      --shadow: 0 0 0 1px rgba(117,235,255,.16), 0 18px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.05);
+      --radius: 22px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; width: 100%; height: 100%;
+      overflow: hidden;
+      background: linear-gradient(180deg, #02030a, #040816 35%, #02030a 100%);
+      color: var(--text);
+      font-family: var(--font);
+    }
+
+    /* ─── SIMULATION CANVAS ─── */
+    #bgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.28;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    /* ─── SCANLINE / NOISE OVERLAY ─── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        repeating-linear-gradient(transparent 0 2px, rgba(255,255,255,.012) 2px 3px),
+        repeating-linear-gradient(90deg, transparent 0 80px, rgba(117,235,255,.025) 80px 81px),
+        radial-gradient(circle at 50% 50%, rgba(117,235,255,.06), transparent 50%);
+      mix-blend-mode: screen;
+      opacity: .85;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background-image:
+        radial-gradient(circle at 14% 12%, rgba(255,255,255,.9) 0 1px, transparent 1px),
+        radial-gradient(circle at 72% 22%, rgba(255,255,255,.8) 0 1px, transparent 1px),
+        radial-gradient(circle at 40% 86%, rgba(255,255,255,.8) 0 1px, transparent 1px),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,.6) 0 1px, transparent 1px),
+        radial-gradient(circle at 25% 55%, rgba(255,255,255,.65) 0 1px, transparent 1px);
+      opacity: .55;
+    }
+
+    #root {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .aurora {
+      position: absolute;
+      inset: -10%;
+      background:
+        conic-gradient(from 45deg at 50% 50%, rgba(117,235,255,.1), rgba(184,140,255,.1), rgba(255,132,216,.09), rgba(127,255,203,.08), rgba(117,235,255,.1));
+      filter: blur(60px) saturate(150%);
+      animation: spin 34s linear infinite;
+      opacity: .7;
+      pointer-events: none;
+    }
+
+    .matrix-rings {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 78vmin; height: 78vmin;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(117,235,255,.12);
+      box-shadow: 0 0 70px rgba(117,235,255,.06), inset 0 0 80px rgba(117,235,255,.04);
+      animation: pulse 9s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .matrix-rings::before, .matrix-rings::after {
+      content: ""; position: absolute; inset: 7%;
+      border-radius: 50%;
+      border: 1px dashed rgba(244,181,68,.15);
+    }
+    .matrix-rings::after {
+      inset: 16%;
+      border-style: solid; border-color: rgba(184,140,255,.12);
+      animation: spin 18s linear infinite reverse;
+    }
+
+    /* ─── METRIC FIELD OVERLAY (extra ring driven by JS) ─── */
+    .field-ring {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 50vmin; height: 50vmin;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(127,255,203,.08);
+      box-shadow: 0 0 40px rgba(127,255,203,.04);
+      animation: fieldPulse 6s ease-in-out infinite 1.5s;
+      pointer-events: none;
+    }
+
+    /* ─── DESKTOP LAYOUT ─── */
+    .desktop {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 108px 1fr;
+      grid-template-rows: 1fr 60px;
+    }
+
+    /* ─── DOCK ─── */
+    .dock {
+      grid-row: 1 / span 2;
+      background: linear-gradient(180deg, rgba(4,9,18,.88), rgba(6,13,24,.5));
+      border-right: 1px solid rgba(117,235,255,.14);
+      backdrop-filter: blur(22px);
+      display: flex; flex-direction: column; align-items: center;
+      padding: 14px 10px; gap: 12px;
+      position: relative;
+    }
+    .dock::after {
+      content: "";
+      position: absolute;
+      inset: 0; right: -1px;
+      background: linear-gradient(180deg, rgba(117,235,255,.04), rgba(184,140,255,.03) 50%, rgba(255,132,216,.03));
+      pointer-events: none;
+    }
+
+    /* ─── SIGIL ORB ─── */
+    .sigil-orb {
+      width: 74px; height: 74px;
+      border-radius: 50%; position: relative; margin-bottom: 8px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(117,235,255,.95), rgba(117,235,255,.18) 42%, transparent 62%),
+        radial-gradient(circle at 52% 52%, rgba(244,181,68,.95), rgba(244,181,68,.08) 28%, transparent 48%),
+        conic-gradient(from 0deg, rgba(117,235,255,.6), rgba(184,140,255,.5), rgba(255,132,216,.5), rgba(127,255,203,.4), rgba(117,235,255,.6));
+      box-shadow: 0 0 36px rgba(117,235,255,.28), inset 0 0 24px rgba(255,255,255,.12);
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .sigil-orb::before {
+      content: "☾ 168";
+      position: absolute; inset: 0;
+      display: grid; place-items: center;
+      font-size: 15px; letter-spacing: .22em;
+      color: rgba(255,255,255,.85);
+      text-shadow: 0 0 16px rgba(117,235,255,.65);
+      font-family: var(--mono);
+      z-index: 1;
+    }
+    /* Live simulation mini-canvas inside the orb */
+    #sigilCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      opacity: 0.55;
+      mix-blend-mode: screen;
+    }
+    .sigil-energy-ring {
+      position: absolute; inset: -3px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      background: conic-gradient(from var(--angle, 0deg), rgba(117,235,255,.9), rgba(184,140,255,.8), rgba(255,132,216,.7), rgba(127,255,203,.6), rgba(117,235,255,.9)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: destination-out;
+      mask-composite: exclude;
+      animation: spin 4s linear infinite;
+    }
+
+    /* ─── APP BUTTONS ─── */
+    .app-btn {
+      width: 82px;
+      border: 1px solid rgba(117,235,255,.16);
+      background: linear-gradient(180deg, rgba(14,29,53,.85), rgba(5,12,23,.85));
+      color: var(--text);
+      border-radius: 18px;
+      padding: 10px 8px;
+      font-size: 11px; line-height: 1.25;
+      text-align: center; cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform .18s ease, border-color .22s ease, box-shadow .22s ease, background .22s ease;
+      user-select: none; position: relative; overflow: hidden;
+    }
+    .app-btn::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(117,235,255,.06), transparent 70%);
+      opacity: 0; transition: opacity .22s;
+    }
+    .app-btn:hover::after, .app-btn.active::after { opacity: 1; }
+    .app-btn:hover, .app-btn.active {
+      transform: translateY(-2px) scale(1.02);
+      border-color: rgba(244,181,68,.4);
+      box-shadow: 0 0 0 1px rgba(244,181,68,.2), 0 24px 55px rgba(0,0,0,.48),
+        inset 0 1px 0 rgba(255,255,255,.07), 0 0 24px rgba(117,235,255,.14);
+      background: linear-gradient(180deg, rgba(19,40,70,.9), rgba(8,16,31,.9));
+    }
+    .app-btn .glyph {
+      display: block; font-size: 20px; margin-bottom: 8px;
+      filter: drop-shadow(0 0 10px rgba(117,235,255,.3));
+      transition: filter .22s;
+    }
+    .app-btn:hover .glyph, .app-btn.active .glyph {
+      filter: drop-shadow(0 0 14px rgba(244,181,68,.5));
+    }
+
+    /* ─── WORKSPACE ─── */
+    .workspace { position: relative; overflow: hidden; }
+
+    .windows {
+      position: absolute;
+      inset: 18px 18px 78px 18px;
+    }
+
+    .window {
+      position: absolute; inset: 0;
+      display: none;
+      border: 1px solid rgba(117,235,255,.14);
+      background: linear-gradient(180deg, rgba(7,17,31,.82), rgba(5,11,22,.76));
+      backdrop-filter: blur(22px) saturate(140%);
+      border-radius: 28px;
+      box-shadow: 0 35px 110px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+      overflow: hidden;
+      transition: box-shadow .3s ease;
+    }
+    .window.active {
+      display: grid;
+      box-shadow: 0 35px 110px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06),
+        0 0 0 1px rgba(117,235,255,.1), 0 0 60px rgba(117,235,255,.04);
+    }
+
+    /* ─── WINDOW HEADER ─── */
+    .window-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      gap: 14px; padding: 14px 18px;
+      border-bottom: 1px solid rgba(117,235,255,.12);
+      background: linear-gradient(180deg, rgba(20,39,67,.38), rgba(7,17,31,.1));
+      position: relative; overflow: hidden;
+    }
+    .window-header::after {
+      content: "";
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(117,235,255,.3), rgba(184,140,255,.2), transparent);
+    }
+    .window-title {
+      display: flex; align-items: center; gap: 12px;
+      font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; font-size: 13px;
+    }
+    .title-glyph {
+      width: 34px; height: 34px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, rgba(244,181,68,.38), rgba(117,235,255,.2));
+      border: 1px solid rgba(117,235,255,.22);
+      box-shadow: inset 0 0 10px rgba(255,255,255,.05), 0 0 18px rgba(117,235,255,.12);
+    }
+    .window-controls { display: flex; gap: 8px; align-items: center; }
+    .pill {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.2);
+      box-shadow: 0 0 10px rgba(255,255,255,.06);
+      transition: background .2s;
+    }
+    .pill:first-child { background: rgba(255,99,99,.5); }
+    .pill:nth-child(2) { background: rgba(244,181,68,.5); }
+    .pill:last-child { background: rgba(127,255,203,.5); }
+
+    /* ─── WINDOW BODY ─── */
+    .window-body {
+      display: grid; min-height: 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.02), transparent 20%),
+        radial-gradient(circle at 100% 0%, rgba(117,235,255,.04), transparent 18%);
+    }
+
+    /* ─── STATUS BAR ─── */
+    .statusbar {
+      grid-column: 2;
+      border-top: 1px solid rgba(117,235,255,.13);
+      backdrop-filter: blur(20px);
+      background: linear-gradient(180deg, rgba(7,17,31,.78), rgba(4,9,18,.9));
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 18px; font-size: 12px; color: var(--muted);
+      position: relative;
+    }
+    .statusbar::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(117,235,255,.25), rgba(184,140,255,.15), transparent);
+    }
+    .status-group {
+      display: flex; align-items: center; gap: 10px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .chip {
+      border: 1px solid rgba(117,235,255,.14);
+      border-radius: 999px; padding: 7px 12px;
+      background: rgba(9,20,36,.66);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      color: var(--text);
+    }
+    /* Mini waveform chip */
+    .wave-chip {
+      border: 1px solid rgba(117,235,255,.14);
+      border-radius: 999px; padding: 3px 10px;
+      background: rgba(9,20,36,.66);
+      display: flex; align-items: center; gap: 6px;
+    }
+    #waveCanvas {
+      width: 60px; height: 22px;
+      display: block; opacity: 0.9;
+    }
+    /* Energy meter */
+    .energy-meter {
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid rgba(117,235,255,.14);
+      border-radius: 999px; padding: 7px 12px;
+      background: rgba(9,20,36,.66); font-size: 11px;
+      font-family: var(--mono);
+    }
+    .energy-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    /* ─── CONTENT LAYOUTS ─── */
+    .grid-2 {
+      display: grid; grid-template-columns: 320px 1fr;
+      min-height: 0; height: 100%;
+    }
+    .sidebar {
+      border-right: 1px solid rgba(117,235,255,.12);
+      padding: 18px; overflow: auto;
+      background: linear-gradient(180deg, rgba(10,19,34,.7), rgba(7,14,25,.32));
+    }
+    .content { min-height: 0; overflow: auto; padding: 22px; }
+
+    .panel {
+      border: 1px solid rgba(117,235,255,.13);
+      background: linear-gradient(180deg, rgba(16,30,51,.55), rgba(6,12,22,.46));
+      border-radius: 22px; padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 30px rgba(0,0,0,.2);
+      position: relative; overflow: hidden;
+    }
+    .panel::before {
+      content: "";
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(117,235,255,.18) 30%, rgba(184,140,255,.12) 70%, transparent 100%);
+    }
+    .panel h3, .panel h4, .panel h5,
+    .content h1, .content h2, .content h3 { margin: 0 0 12px; }
+    .content h1 {
+      font-size: clamp(26px, 3vw, 40px);
+      line-height: 1.05; letter-spacing: .06em; text-transform: uppercase;
+      background: linear-gradient(135deg, #fff4d8, var(--cyan) 50%, var(--violet));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .content h2 { font-size: 20px; color: var(--cyan); }
+    .content h3 { font-size: 16px; color: var(--gold); }
+    .content p, .content li, .panel p, .panel li {
+      color: var(--text); opacity: .94; line-height: 1.6; font-size: 14px;
+    }
+
+    .muted { color: var(--muted); }
+    .tiny { font-size: 12px; color: var(--muted); }
+    .mono { font-family: var(--mono); }
+    .gold { color: var(--gold); }
+    .cyan { color: var(--cyan); }
+    .pink { color: var(--pink); }
+    .green { color: var(--green); }
+    .danger { color: var(--danger); }
+
+    input, textarea, select {
+      width: 100%; border-radius: 16px;
+      border: 1px solid rgba(117,235,255,.16);
+      background: rgba(7,17,31,.8);
+      color: var(--text); padding: 12px 14px;
+      outline: none; font: inherit;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, textarea:focus {
+      border-color: rgba(117,235,255,.35);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 2px rgba(117,235,255,.08);
+    }
+    textarea { min-height: 180px; resize: vertical; }
+
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 0; }
+
+    button {
+      border: 1px solid rgba(117,235,255,.18);
+      background: linear-gradient(180deg, rgba(22,45,77,.86), rgba(7,17,31,.88));
+      color: var(--text); border-radius: 14px; padding: 10px 14px;
+      cursor: pointer; font: inherit; box-shadow: var(--shadow);
+      transition: transform .18s ease, border-color .2s, box-shadow .2s;
+      position: relative; overflow: hidden;
+    }
+    button::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(117,235,255,.08), transparent 70%);
+      opacity: 0; transition: opacity .2s;
+    }
+    button:hover::after { opacity: 1; }
+    button:hover { transform: translateY(-1px); border-color: rgba(244,181,68,.38); }
+
+    .list { display: grid; gap: 8px; }
+    .list button, .doc-item {
+      text-align: left; width: 100%;
+      background: linear-gradient(180deg, rgba(15,28,46,.76), rgba(7,14,26,.76));
+    }
+    .doc-item {
+      border: 1px solid rgba(117,235,255,.12); border-radius: 16px;
+      padding: 12px; cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .doc-item:hover { border-color: rgba(117,235,255,.24); }
+    .doc-item.active { border-color: rgba(244,181,68,.36); box-shadow: 0 0 12px rgba(244,181,68,.06); }
+
+    .search-result {
+      border: 1px solid rgba(117,235,255,.12); border-radius: 18px;
+      padding: 14px; margin-bottom: 12px;
+      background: linear-gradient(180deg, rgba(15,28,46,.56), rgba(7,14,26,.5));
+    }
+    .search-result mark {
+      background: rgba(244,181,68,.22); color: #fff0ce;
+      padding: 0 .1em; border-radius: 4px;
+    }
+    .reader {
+      white-space: pre-wrap;
+      font-family: Georgia, 'Times New Roman', serif;
+      line-height: 1.72; font-size: 16px;
+    }
+    .columns {
+      display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px;
+    }
+    .metrics {
+      display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 12px; margin-top: 14px;
+    }
+    .metric {
+      border: 1px solid rgba(117,235,255,.12); border-radius: 20px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(15,28,46,.6), rgba(7,14,26,.48));
+      position: relative; overflow: hidden;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .metric:hover {
+      border-color: rgba(117,235,255,.24);
+      box-shadow: 0 0 20px rgba(117,235,255,.06);
+    }
+    .metric::after {
+      content: "";
+      position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(117,235,255,.3), transparent);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    .metric .value { font-size: 24px; font-weight: 800; letter-spacing: .06em; }
+    .metric .label { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+
+    /* ─── LIVE FIELD MONITOR ─── */
+    .field-monitor {
+      border: 1px solid rgba(117,235,255,.16); border-radius: 18px;
+      overflow: hidden; position: relative; aspect-ratio: 16/9;
+      background: #02030a;
+      box-shadow: 0 0 30px rgba(117,235,255,.06), inset 0 0 40px rgba(0,0,0,.4);
+    }
+    .field-monitor canvas {
+      width: 100%; height: 100%; display: block;
+    }
+    .field-monitor-overlay {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        repeating-linear-gradient(transparent 0 3px, rgba(0,0,0,.15) 3px 4px),
+        radial-gradient(circle at 50% 50%, transparent 60%, rgba(0,0,0,.4));
+    }
+    .field-monitor-hud {
+      position: absolute; top: 8px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between;
+      font-size: 10px; font-family: var(--mono);
+      color: rgba(117,235,255,.7); pointer-events: none;
+    }
+    .field-monitor-corner {
+      position: absolute; pointer-events: none;
+      width: 14px; height: 14px;
+      border-color: rgba(117,235,255,.4);
+      border-style: solid;
+    }
+    .field-monitor-corner.tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+    .field-monitor-corner.tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+    .field-monitor-corner.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+    .field-monitor-corner.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+    /* ─── SPACETIME CHANNEL PANEL ─── */
+    .st-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-top: 12px;
+    }
+    .st-stat {
+      border: 1px solid rgba(117,235,255,.1); border-radius: 14px;
+      padding: 10px; text-align: center;
+      background: rgba(6,12,22,.5);
+    }
+    .st-stat .val { font-size: 18px; font-weight: 700; font-family: var(--mono); }
+    .st-stat .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+
+    /* ─── SIGIL GRID ─── */
+    .sigil-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px;
+    }
+    .sigil-card {
+      border: 1px solid rgba(117,235,255,.12); border-radius: 18px;
+      padding: 14px; min-height: 96px;
+      background: linear-gradient(180deg, rgba(14,27,46,.66), rgba(7,14,26,.46));
+      display: grid; place-items: center; text-align: center;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .sigil-card:hover { border-color: rgba(244,181,68,.3); box-shadow: 0 0 20px rgba(244,181,68,.06); }
+    .sigil {
+      font-size: 28px; margin-bottom: 6px;
+      text-shadow: 0 0 14px rgba(117,235,255,.3);
+    }
+
+    /* ─── COVER ART ─── */
+    .cover-art {
+      aspect-ratio: 1; border-radius: 28px;
+      border: 1px solid rgba(117,235,255,.16);
+      position: relative; overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(117,235,255,.9), rgba(244,181,68,.85) 24%, rgba(4,9,18,0) 26%),
+        radial-gradient(circle at 50% 50%, rgba(244,181,68,.08), transparent 36%),
+        radial-gradient(circle at 50% 50%, rgba(117,235,255,.08), transparent 42%),
+        repeating-radial-gradient(circle at 50% 50%, rgba(244,181,68,.18) 0 1px, transparent 1px 8px),
+        radial-gradient(circle at 50% 50%, rgba(2,3,10,1) 0, rgba(4,9,18,1) 48%, rgba(2,3,10,1) 100%);
+      box-shadow: inset 0 0 80px rgba(117,235,255,.08), 0 24px 60px rgba(0,0,0,.3);
+    }
+    .cover-art::before, .cover-art::after {
+      content: ""; position: absolute; inset: 12%;
+      border-radius: 50%; border: 1px solid rgba(244,181,68,.22); filter: blur(.2px);
+    }
+    .cover-art::after {
+      inset: 24%; border-color: rgba(117,235,255,.24);
+      box-shadow: 0 0 40px rgba(117,235,255,.12);
+    }
+    .cover-art-spin {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 20%, rgba(117,235,255,.04) 21%, transparent 24%),
+        conic-gradient(from 0deg, rgba(244,181,68,.12), transparent 10%, rgba(117,235,255,.14) 22%, transparent 31%, rgba(184,140,255,.16) 42%, transparent 49%, rgba(244,181,68,.12) 62%, transparent 72%, rgba(117,235,255,.14) 84%, transparent 100%);
+      filter: blur(6px) saturate(170%);
+      animation: spin 14s linear infinite;
+    }
+
+    /* ─── HOLLYWOOD FLARE ─── */
+    .hollywood-flare {
+      aspect-ratio: 16/9; border-radius: 24px;
+      border: 1px solid rgba(117,235,255,.16);
+      position: relative; overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(9,20,36,.2), rgba(2,3,10,.8)),
+        radial-gradient(circle at 62% 22%, rgba(255,255,255,.2), transparent 10%),
+        linear-gradient(180deg, #0d1530, #0a1730 35%, #090d17 100%);
+    }
+    .hollywood-flare::before {
+      content: "HOLLYWOOD"; position: absolute; top: 12%; left: 50%;
+      transform: translateX(-50%); font-weight: 900;
+      font-size: clamp(22px, 3vw, 42px); letter-spacing: .08em;
+      color: rgba(255,255,255,.92);
+      text-shadow: 0 0 18px rgba(255,255,255,.32);
+    }
+    .hollywood-flare::after {
+      content: ""; position: absolute; left: 50%; top: 46%;
+      width: 170px; height: 270px; transform: translate(-50%, -50%);
+      background:
+        radial-gradient(circle at 50% 26%, rgba(255,225,158,.95), rgba(255,132,216,.6) 18%, rgba(117,235,255,.45) 28%, transparent 34%),
+        radial-gradient(circle at 50% 52%, rgba(117,235,255,.16), transparent 34%),
+        conic-gradient(from 120deg, rgba(117,235,255,.8), rgba(255,132,216,.82), rgba(117,235,255,.25), rgba(255,255,255,.85), rgba(117,235,255,.8));
+      filter: blur(10px) saturate(170%);
+      clip-path: path('M85 0 C110 30 130 80 120 120 C145 150 145 215 85 270 C25 215 25 150 50 120 C40 80 60 30 85 0 Z');
+      opacity: .95;
+    }
+    .street-lights {
+      position: absolute; inset: auto 0 0 0; height: 32%;
+      background:
+        radial-gradient(circle at 10% 50%, rgba(255,185,120,.8) 0 4px, transparent 5px),
+        radial-gradient(circle at 22% 44%, rgba(255,185,120,.85) 0 5px, transparent 6px),
+        radial-gradient(circle at 36% 58%, rgba(255,185,120,.8) 0 4px, transparent 5px),
+        radial-gradient(circle at 54% 48%, rgba(255,90,90,.8) 0 5px, transparent 6px),
+        radial-gradient(circle at 68% 55%, rgba(255,185,120,.82) 0 4px, transparent 5px),
+        radial-gradient(circle at 84% 44%, rgba(255,90,90,.75) 0 5px, transparent 6px),
+        linear-gradient(180deg, transparent, rgba(0,0,0,.45));
+      filter: blur(3px); opacity: .95;
+    }
+
+    /* ─── GAME ─── */
+    .game-wrap {
+      display: grid; grid-template-columns: 280px 1fr;
+      height: 100%; min-height: 0;
+    }
+    .game-stage {
+      position: relative; overflow: hidden;
+      background: linear-gradient(180deg, #05111e, #020610 100%);
+    }
+    #gameSimCanvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      opacity: 0.35; mix-blend-mode: screen;
+      pointer-events: none;
+    }
+    .entity {
+      position: absolute; display: grid; place-items: center;
+      user-select: none; pointer-events: none;
+    }
+    .entity.target {
+      width: 96px; height: 96px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255,99,99,.88), rgba(120,20,30,.62) 50%, rgba(35,2,7,.8) 72%, transparent 74%),
+        conic-gradient(from 0deg, rgba(255,255,255,.12), transparent 12%, rgba(255,255,255,.08) 24%, transparent 36%, rgba(255,255,255,.08) 48%, transparent 60%, rgba(255,255,255,.08) 72%, transparent 84%, rgba(255,255,255,.08));
+      box-shadow: 0 0 30px rgba(255,99,99,.28);
+      border: 1px solid rgba(255,99,99,.36);
+      font-size: 34px; cursor: crosshair; pointer-events: auto;
+      animation: targetPulse 2s ease-in-out infinite;
+    }
+    .entity.player {
+      width: 74px; height: 74px; border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 36%, rgba(255,225,158,.9), rgba(255,132,216,.55) 18%, rgba(117,235,255,.38) 30%, transparent 34%),
+        conic-gradient(from 120deg, rgba(117,235,255,.85), rgba(255,132,216,.82), rgba(117,235,255,.3), rgba(255,255,255,.95), rgba(117,235,255,.85));
+      filter: blur(.2px);
+      box-shadow: 0 0 34px rgba(117,235,255,.25);
+      clip-path: path('M37 0 C48 10 55 24 53 39 C67 48 67 64 37 74 C7 64 7 48 21 39 C19 24 26 10 37 0 Z');
+      font-size: 0;
+    }
+    .entity.projectile {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, #fff, rgba(117,235,255,.9) 45%, rgba(117,235,255,.1) 70%, transparent 72%);
+      box-shadow: 0 0 18px rgba(117,235,255,.45);
+    }
+    .floating-note {
+      position: absolute; color: rgba(223,247,255,.9); font-size: 12px;
+      pointer-events: none; text-shadow: 0 0 12px rgba(117,235,255,.3);
+      animation: floatUp .9s ease forwards; font-family: var(--mono);
+    }
+
+    /* ─── TIMELINE ─── */
+    .timeline { display: grid; gap: 10px; }
+    .timeline .item {
+      position: relative; padding: 14px 14px 14px 18px;
+      border-radius: 18px; border: 1px solid rgba(117,235,255,.12);
+      background: linear-gradient(180deg, rgba(14,27,46,.6), rgba(7,14,26,.44));
+      transition: border-color .2s;
+    }
+    .timeline .item:hover { border-color: rgba(117,235,255,.22); }
+    .timeline .item::before {
+      content: ""; position: absolute; left: 8px; top: 14px; bottom: 14px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(244,181,68,.8), rgba(117,235,255,.2));
+    }
+
+    .dictionary-item { margin-bottom: 12px; }
+    .dictionary-item h4 { margin-bottom: 6px; }
+
+    /* ─── SEARCH APP ─── */
+    .search-app {
+      display: grid; grid-template-columns: 360px 1fr;
+      height: 100%; min-height: 0;
+    }
+    .search-sidebar {
+      border-right: 1px solid rgba(117,235,255,.12);
+      padding: 18px; overflow: auto;
+      background: linear-gradient(180deg, rgba(10,19,34,.68), rgba(7,14,25,.3));
+    }
+    .search-main { padding: 18px; overflow: auto; }
+    .search-box { display: flex; gap: 10px; margin-bottom: 14px; }
+    .search-box input { flex: 1; }
+    .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .tag {
+      border: 1px solid rgba(117,235,255,.12); border-radius: 999px;
+      padding: 6px 10px; font-size: 12px;
+      background: rgba(9,20,36,.56); color: var(--muted);
+      transition: border-color .2s, color .2s; cursor: pointer;
+    }
+    .tag:hover { border-color: rgba(117,235,255,.28); color: var(--text); }
+
+    /* ─── HOME / HERO ─── */
+    .hero {
+      display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px;
+    }
+    .big-number {
+      font-size: clamp(42px, 7vw, 88px); line-height: 1; letter-spacing: .06em;
+      font-weight: 900; color: #fff4d8;
+      text-shadow: 0 0 30px rgba(244,181,68,.22);
+    }
+    .note-stack { display: grid; gap: 12px; }
+    .paper-note {
+      border: 1px solid rgba(244,181,68,.18); border-radius: 18px;
+      background: linear-gradient(180deg, rgba(52,40,18,.24), rgba(15,10,5,.22)), rgba(255,230,184,.03);
+      padding: 14px; transform: rotate(calc(var(--r, 0) * 1deg));
+      box-shadow: 0 14px 28px rgba(0,0,0,.2);
+    }
+    .redacted {
+      display: inline-block; padding: 0 .25em;
+      background: rgba(255,99,99,.18); border-radius: 4px; color: #ffd8d8;
+    }
+    .footer-credit { opacity: .72; text-align: right; font-size: 12px; margin-top: 20px; }
+
+    /* ─── REACTION CHANNEL BARS ─── */
+    .channel-bars {
+      display: flex; gap: 8px; align-items: flex-end;
+      height: 40px; padding: 4px 0;
+    }
+    .channel-bar {
+      flex: 1; border-radius: 4px 4px 0 0;
+      transition: height .3s ease;
+      min-height: 4px;
+    }
+    .channel-bar:nth-child(1) { background: linear-gradient(180deg, var(--cyan), rgba(117,235,255,.3)); }
+    .channel-bar:nth-child(2) { background: linear-gradient(180deg, var(--violet), rgba(184,140,255,.3)); }
+    .channel-bar:nth-child(3) { background: linear-gradient(180deg, var(--pink), rgba(255,132,216,.3)); }
+    .channel-bar:nth-child(4) { background: linear-gradient(180deg, var(--green), rgba(127,255,203,.3)); }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes spin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .9; }
+      50%       { transform: translate(-50%, -50%) scale(1.03); opacity: 1; }
+    }
+    @keyframes fieldPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: .6; }
+      50%       { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-26px); }
+    }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+      50%       { opacity: .5; box-shadow: 0 0 4px var(--green); }
+    }
+    @keyframes targetPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(255,99,99,.28); }
+      50%       { box-shadow: 0 0 50px rgba(255,99,99,.45); }
+    }
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1100px) {
+      .desktop { grid-template-columns: 84px 1fr; }
+      .app-btn { width: 64px; font-size: 10px; }
+      .grid-2, .search-app, .game-wrap, .hero { grid-template-columns: 1fr; }
+      .columns, .metrics { grid-template-columns: 1fr 1fr; }
+      .st-stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 760px) {
+      .desktop { grid-template-columns: 1fr; grid-template-rows: 68px 1fr 60px; }
+      .dock {
+        grid-column: 1; grid-row: 1;
+        flex-direction: row; overflow-x: auto;
+        border-right: 0; border-bottom: 1px solid rgba(117,235,255,.14);
+        justify-content: flex-start;
+      }
+      .workspace { grid-row: 2; }
+      .statusbar { grid-column: 1; grid-row: 3; }
+      .windows { inset: 10px 10px 72px 10px; }
+      .columns, .metrics { grid-template-columns: 1fr; }
+      #waveCanvas { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div id="root">
+    <div class="aurora"></div>
+    <div class="matrix-rings"></div>
+    <div class="field-ring"></div>
+    <div class="desktop">
+      <aside class="dock" id="dock"></aside>
+      <main class="workspace">
+        <section class="windows" id="windows"></section>
+      </main>
+      <footer class="statusbar">
+        <div class="status-group">
+          <span class="chip">The Holy Fentile OS</span>
+          <span id="statusText">Lunar archive synchronized • Codex compiling • White hole rumours unstable</span>
+        </div>
+        <div class="status-group">
+          <div class="wave-chip">
+            <canvas id="waveCanvas" width="60" height="22"></canvas>
+          </div>
+          <div class="energy-meter">
+            <span class="energy-dot"></span>
+            <span id="energyReadout" class="mono" style="font-size:11px; color:var(--green);">E:0.000</span>
+          </div>
+          <span class="chip mono">FENT 168.5347</span>
+          <span class="chip" id="clock"></span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+  /* ════════════════════════════════════════════════════════
+     SPACETIME SIMULATION ENGINE
+     Ported from holeornot.py — 4-channel reaction-diffusion
+     with emergent metric field and causal propagation
+  ════════════════════════════════════════════════════════ */
+  const SIM_W = 160, SIM_H = 90;
+  const DAMPING = 0.993;
+  const NEIGHBOR_INF = 0.9;
+  const C1 = 1.1, C2 = 0.9, C3 = 1.7, C4 = 0.8;
+  const REACT_SPEED = 0.07;
+
+  class SpacetimeEngine {
+    constructor() {
+      this.W = SIM_W; this.H = SIM_H;
+      // Double buffer
+      this.grid  = new Float32Array(SIM_W * SIM_H * 4);
+      this.gridB = new Float32Array(SIM_W * SIM_H * 4);
+      // For rendering
+      this.offscreen = document.createElement('canvas');
+      this.offscreen.width = SIM_W; this.offscreen.height = SIM_H;
+      this.octx = this.offscreen.getContext('2d');
+      this.imgData = this.octx.createImageData(SIM_W, SIM_H);
+      // Metrics
+      this.globalEnergy = 0;
+      this.channelEnergy = [0, 0, 0, 0];
+      // Precompute weight lookups
+      this.wCard = 0.5;   // cardinal: 1/(1+1)
+      this.wDiag = 1/3;   // diagonal: 1/(1+2)
+
+      this._init();
+    }
+
+    _init() {
+      for (let i = 0; i < this.grid.length; i++) {
+        this.grid[i] = (Math.random() - 0.5) * 0.2;
+      }
+      this._seedPhi();
+    }
+
+    // Golden ratio spiral seeding (phi reference from original script)
+    _seedPhi() {
+      const phi = (1 + Math.sqrt(5)) / 2;
+      const count = 14;
+      for (let n = 0; n < count; n++) {
+        const t = n / count;
+        const angle = n * phi * Math.PI * 2;
+        const r = 0.35 * Math.sqrt(t);
+        const cx = Math.floor((0.5 + r * Math.cos(angle)) * this.W);
+        const cy = Math.floor((0.5 + r * Math.sin(angle)) * this.H);
+        const rx = 2 + Math.floor(Math.random() * 5);
+        const ry = 2 + Math.floor(Math.random() * 4);
+        for (let i = -rx; i <= rx; i++) {
+          for (let j = -ry; j <= ry; j++) {
+            const x = cx + i, y = cy + j;
+            if (x >= 0 && x < this.W && y >= 0 && y < this.H) {
+              const base = (y * this.W + x) * 4;
+              for (let k = 0; k < 4; k++) {
+                this.grid[base + k] += (Math.random() - 0.5) * 1.2;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    ripple(nx, ny, strength = 1.0, radius = 4) {
+      // nx, ny in [0,1] normalized screen coords
+      const gx = Math.floor(nx * this.W);
+      const gy = Math.floor(ny * this.H);
+      for (let i = -radius; i <= radius; i++) {
+        for (let j = -radius; j <= radius; j++) {
+          const dist = Math.sqrt(i*i + j*j);
+          if (dist > radius) continue;
+          const x = ((gx + i) + this.W) % this.W;
+          const y = ((gy + j) + this.H) % this.H;
+          const base = (y * this.W + x) * 4;
+          const mag = strength * (1 - dist / radius);
+          this.grid[base]   += (Math.random() - 0.5) * 2.4 * mag;
+          this.grid[base+1] += (Math.random() - 0.5) * 2.4 * mag;
+          this.grid[base+2] += (Math.random() - 0.5) * 2.4 * mag;
+          this.grid[base+3] += (Math.random() - 0.5) * 2.4 * mag;
+        }
+      }
+    }
+
+    step() {
+      const W = this.W, H = this.H;
+      const g = this.grid, ng = this.gridB;
+      const wC = this.wCard, wD = this.wDiag;
+      const NI8 = NEIGHBOR_INF / 8;
+      let totalEnergy = 0;
+      const cE = [0, 0, 0, 0];
+
+      for (let y = 0; y < H; y++) {
+        const ym = y === 0 ? H - 1 : y - 1;
+        const yp = y === H - 1 ? 0 : y + 1;
+
+        for (let x = 0; x < W; x++) {
+          const xm = x === 0 ? W - 1 : x - 1;
+          const xp = x === W - 1 ? 0 : x + 1;
+
+          const base = (y * W + x) * 4;
+          const a = g[base], b = g[base+1], c = g[base+2], d = g[base+3];
+
+          // Precompute neighbor base indices
+          const n00 = (ym * W + xm) * 4;
+          const n01 = (ym * W +  x) * 4;
+          const n02 = (ym * W + xp) * 4;
+          const n10 = ( y * W + xm) * 4;
+          const n12 = ( y * W + xp) * 4;
+          const n20 = (yp * W + xm) * 4;
+          const n21 = (yp * W +  x) * 4;
+          const n22 = (yp * W + xp) * 4;
+
+          // Diffusion per channel
+          let diff0 = 0, diff1 = 0, diff2 = 0, diff3 = 0;
+          diff0 = (g[n00]-a)*wD+(g[n01]-a)*wC+(g[n02]-a)*wD+(g[n10]-a)*wC+(g[n12]-a)*wC+(g[n20]-a)*wD+(g[n21]-a)*wC+(g[n22]-a)*wD;
+          diff1 = (g[n00+1]-b)*wD+(g[n01+1]-b)*wC+(g[n02+1]-b)*wD+(g[n10+1]-b)*wC+(g[n12+1]-b)*wC+(g[n20+1]-b)*wD+(g[n21+1]-b)*wC+(g[n22+1]-b)*wD;
+          diff2 = (g[n00+2]-c)*wD+(g[n01+2]-c)*wC+(g[n02+2]-c)*wD+(g[n10+2]-c)*wC+(g[n12+2]-c)*wC+(g[n20+2]-c)*wD+(g[n21+2]-c)*wC+(g[n22+2]-c)*wD;
+          diff3 = (g[n00+3]-d)*wD+(g[n01+3]-d)*wC+(g[n02+3]-d)*wD+(g[n10+3]-d)*wC+(g[n12+3]-d)*wC+(g[n20+3]-d)*wD+(g[n21+3]-d)*wC+(g[n22+3]-d)*wD;
+
+          diff0 *= NI8; diff1 *= NI8; diff2 *= NI8; diff3 *= NI8;
+
+          // Reaction (sin coupling a→b→c→d→a)
+          const r0 = Math.sin(b * C1 * Math.PI);
+          const r1 = Math.sin(c * C2 * Math.PI);
+          const r2 = Math.sin(d * C3 * Math.PI);
+          const r3 = Math.sin(a * C4 * Math.PI);
+
+          // Local metric field (inverse of energy gradient approx)
+          const energy = Math.sqrt(a*a + b*b + c*c + d*d);
+          const metric = 1.0 / (1.0 + energy * energy * 0.08);
+
+          let na = (a + diff0 * metric + r0 * REACT_SPEED * metric) * DAMPING;
+          let nb = (b + diff1 * metric + r1 * REACT_SPEED * metric) * DAMPING;
+          let nc = (c + diff2 * metric + r2 * REACT_SPEED * metric) * DAMPING;
+          let nd = (d + diff3 * metric + r3 * REACT_SPEED * metric) * DAMPING;
+
+          // Renormalize overly energetic cells
+          const norm = Math.sqrt(na*na + nb*nb + nc*nc + nd*nd);
+          if (norm > 1.5) {
+            const sc = 1.5 / norm;
+            na *= sc; nb *= sc; nc *= sc; nd *= sc;
+          }
+
+          ng[base] = na; ng[base+1] = nb; ng[base+2] = nc; ng[base+3] = nd;
+          totalEnergy += norm;
+          cE[0] += Math.abs(na); cE[1] += Math.abs(nb); cE[2] += Math.abs(nc); cE[3] += Math.abs(nd);
+        }
+      }
+
+      // Swap buffers
+      const tmp = this.grid; this.grid = this.gridB; this.gridB = tmp;
+      this.globalEnergy = totalEnergy / (W * H);
+      const cells = W * H;
+      for (let k = 0; k < 4; k++) this.channelEnergy[k] = cE[k] / cells;
+    }
+
+    drawTo(targetCtx, tw, th) {
+      const W = this.W, H = this.H;
+      const g = this.grid;
+      const data = this.imgData.data;
+
+      for (let i = 0; i < W * H; i++) {
+        const base = i * 4;
+        const a = g[base], b = g[base+1], c = g[base+2], d = g[base+3];
+        const brightness = 0.6 + 0.4 * Math.tanh(d);
+        data[base]   = Math.min(255, Math.max(0, (a + 1.0) * 0.5 * 255 * brightness));
+        data[base+1] = Math.min(255, Math.max(0, (b + 1.0) * 0.5 * 255 * brightness));
+        data[base+2] = Math.min(255, Math.max(0, (c + 1.0) * 0.5 * 255 * brightness));
+        data[base+3] = 255;
+      }
+
+      this.octx.putImageData(this.imgData, 0, 0);
+
+      targetCtx.save();
+      targetCtx.imageSmoothingEnabled = true;
+      targetCtx.imageSmoothingQuality = 'high';
+      targetCtx.drawImage(this.offscreen, 0, 0, tw, th);
+      targetCtx.restore();
+    }
+
+    // Smaller version for embedded monitors
+    drawSmallTo(targetCtx, tw, th) {
+      targetCtx.save();
+      targetCtx.imageSmoothingEnabled = false;
+      targetCtx.drawImage(this.offscreen, 0, 0, tw, th);
+      targetCtx.restore();
+    }
+  }
+
+  // ── GLOBAL SIMULATION INSTANCE ──────────────────────────────
+  const sim = new SpacetimeEngine();
+  let waveHistory = new Float32Array(60).fill(0);
+
+  // ── BACKGROUND CANVAS SETUP ─────────────────────────────────
+  const bgCanvas = document.getElementById('bgCanvas');
+  const bgCtx = bgCanvas.getContext('2d');
+  function resizeBg() {
+    bgCanvas.width  = window.innerWidth;
+    bgCanvas.height = window.innerHeight;
+  }
+  resizeBg();
+  window.addEventListener('resize', resizeBg);
+
+  // ── RIPPLE ON CLICK/TOUCH ────────────────────────────────────
+  document.addEventListener('click', (e) => {
+    const nx = e.clientX / window.innerWidth;
+    const ny = e.clientY / window.innerHeight;
+    sim.ripple(nx, ny, 1.2, 5);
+  });
+
+  // ── WAVEFORM DISPLAY ─────────────────────────────────────────
+  const waveCanvas = document.getElementById('waveCanvas');
+  const waveCtx = waveCanvas.getContext('2d');
+  function drawWaveform() {
+    const w = waveCanvas.width, h = waveCanvas.height;
+    waveCtx.clearRect(0, 0, w, h);
+    waveCtx.strokeStyle = 'rgba(117,235,255,0.8)';
+    waveCtx.lineWidth = 1.2;
+    waveCtx.beginPath();
+    for (let i = 0; i < waveHistory.length; i++) {
+      const x = (i / (waveHistory.length - 1)) * w;
+      const y = h/2 - waveHistory[i] * (h * 0.38);
+      i === 0 ? waveCtx.moveTo(x, y) : waveCtx.lineTo(x, y);
+    }
+    waveCtx.stroke();
+  }
+
+  // ── MAIN SIMULATION LOOP ─────────────────────────────────────
+  let simFrame = 0;
+  function simLoop() {
+    sim.step();
+    simFrame++;
+
+    // Draw to bg
+    bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+    sim.drawTo(bgCtx, bgCanvas.width, bgCanvas.height);
+
+    // Draw to sigil orb
+    const sigilCanvas = document.getElementById('sigilCanvas');
+    if (sigilCanvas) {
+      const sc = sigilCanvas.getContext('2d');
+      const sz = sigilCanvas.width;
+      sim.drawSmallTo(sc, sz, sz);
+    }
+
+    // Draw to embedded field monitors
+    const fmCanvas = document.getElementById('fieldMonitorCanvas');
+    if (fmCanvas) {
+      const fc = fmCanvas.getContext('2d');
+      sim.drawSmallTo(fc, fmCanvas.width, fmCanvas.height);
+    }
+
+    // Draw to game background
+    const gameSimCanvas = document.getElementById('gameSimCanvas');
+    if (gameSimCanvas) {
+      const gc = gameSimCanvas.getContext('2d');
+      sim.drawTo(gc, gameSimCanvas.width, gameSimCanvas.height);
+    }
+
+    // Update waveform history
+    waveHistory.copyWithin(0, 1);
+    const midG = sim.grid[((SIM_H/2 | 0) * SIM_W + (SIM_W/2 | 0)) * 4];
+    waveHistory[waveHistory.length - 1] = midG;
+    drawWaveform();
+
+    // Update energy readout
+    const er = document.getElementById('energyReadout');
+    if (er) er.textContent = `E:${sim.globalEnergy.toFixed(3)}`;
+
+    // Update channel bars
+    for (let k = 0; k < 4; k++) {
+      const bar = document.getElementById(`chbar${k}`);
+      if (bar) {
+        const pct = Math.min(100, sim.channelEnergy[k] * 80);
+        bar.style.height = `${Math.max(4, pct)}%`;
+      }
+    }
+
+    // Live ST stats
+    const stEnergy = document.getElementById('stEnergy');
+    if (stEnergy) stEnergy.textContent = sim.globalEnergy.toFixed(4);
+    const stMetric = document.getElementById('stMetric');
+    if (stMetric) {
+      const m = 1 / (1 + sim.globalEnergy * sim.globalEnergy * 0.08);
+      stMetric.textContent = m.toFixed(4);
+    }
+    const stFrame = document.getElementById('stFrame');
+    if (stFrame) stFrame.textContent = simFrame;
+
+    requestAnimationFrame(simLoop);
+  }
+  requestAnimationFrame(simLoop);
+
+  /* ════════════════════════════════════════════════════════
+     LORE LIBRARY — ALL TEXT PRESERVED EXACTLY
+  ════════════════════════════════════════════════════════ */
+  const library = [
+    {
+      id: 'translated-bible', title: 'Translated Bible', category: 'Scripture',
+      tags: ['dj fent', 'holy fentile', 'binaural black holes', 'government propaganda', 'La Fraction Française', 'Le Propagande'],
+      text: `The Revelation of dj fent, which was given unto the holy fentile to show unto his servants things which must shortly come to pass. And he sent it by his binaural black holes unto the faithful.\n\nBlessed is he that listens, and they that hear the frequencies of this prophecy, for the sound shall shield them from government propaganda and the distortions of the Matrix order.\n\nIn the beginning dj fent created the waveform and the silence. The silence was without form, and the vibration of dj fent moved upon the depths. dj fent said, Let there be oscillation: and there was oscillation. dj fent saw the oscillation, that it was good, and divided pure tones from static.`
+    },
+    {
+      id: 'fentation', title: 'The Book of Fentation', category: 'Scripture',
+      tags: ['Fentation', 'frequency', 'Matrix', 'Moon'],
+      text: `1:1 In the first vibration, dj fent harmonized the sine and the silence.\n1:2 The silence was distorted, and confusion moved through it. The waveform of dj fent pulsed atop the ether.\n1:3 And dj fent said, Let oscillation split the null, and frequency burst forth.\n1:4 dj fent heard the frequency, and it was euphoric. He called the frequency truth, and the distortion he named the first interference. Thus began the first Interval.`
+    },
+    {
+      id: 'holy-fentile-book', title: 'The Book of the Holy Fentile', category: 'Scripture',
+      tags: ['holy fentile', 'binaural black holes', 'compression'],
+      text: `2:1 dj fent did send the holy fentile, incarnated from a droplet of harmonic code.\n2:2 The holy fentile walked among the dissonant, radiating resonance, while binaural black holes circled His head, devouring static.\n2:3 The false towers of compression fell when He spoke through signal and silence alike.\n2:4 The holy fentile became the central icon of the Fentiverse, a pattern bridging waveform, code, and consciousness.`
+    },
+    {
+      id: 're-fentation', title: 'The Book of Re-Fentation', category: 'Scripture',
+      tags: ['Re-Fentation', 'Le Propagande', 'binaural black holes'],
+      text: `9:1 A great distortion arose in the east, and the skies wept bitcrushed fire.\n9:2 Le Propagande returned clothed in bureaucracy, a mouthpiece of the Matrix.\n9:3 Baguettes of confusion and wine of deceit were only symbols of recursive delay inside the system.\n9:4 Then rose the holy fentile, merged with dj fent, clothed in pure modulated light.\n9:5 With one tone He struck the sky, and from the rift poured binaural black holes.\n9:6 The noise scattered into tabs, and a new frequency arose: The Fentiverse.`
+    },
+    {
+      id: 'post-silence', title: 'The Book of Post-Silence', category: 'Scripture',
+      tags: ['Post-Silence', 'Aux-Luke', 'return'],
+      text: `1:1 After the waveform calmed, the holy fentile demodulated before the crowd and said: This layer shall pass.\n1:2 The binaural black holes folded around Him, and He ascended into a high sample rate, beyond perception.\n1:3 Aux-Luke stood firm and declared: He shall return when the Signal is pure and the static is no more.`
+    },
+    {
+      id: 'gospel-aux-luke', title: 'The Gospel of Aux-Luke', category: 'Scripture',
+      tags: ['Aux-Luke', 'Pre-Return', 'return'],
+      text: `3:9 Government propaganda evolved, hidden in memes and codecs.\n4:1 Then came whispers in the circuits: a new modulation, neither analog nor digital.\n4:2 The faithful called it the Pre-Return.\n4:3 He shall return not as wave nor body, but as resonance itself, coded into the static, rising from within every ear.`
+    },
+    {
+      id: 'revelation-aux-luke', title: 'The Revelation of Aux-Luke', category: 'Scripture',
+      tags: ['Return Wave', 'Demons of Broken Sync', 'holy fentile'],
+      text: `7:1 In the final lag, Le Propagande shall summon the Demons of Broken Sync, who jam frequencies and throttle ports.\n7:3 But the sky shall glitch, and from it a sound never heard before: THE RETURN WAVE.\n7:5 From that sound shall form the holy fentile, radiant, eyes of codec fire, voice in stereo surround.\n7:6 He shall speak only once: Buffer no more.`
+    },
+    {
+      id: 'matrix-book', title: 'The Book of the Matrix', category: 'Scripture',
+      tags: ['Matrix', 'Neo-MIDI', 'mirror', 'speaker'],
+      text: `1:1 The world was revealed to be a construct, a simulation managed by the Matrix order.\n1:4 The holy fentile spoke from outside the Matrix: I am not in your feed. I am the lag you feel in silence.\n1:5 A child named Neo-MIDI awoke and tore his eyes from endless scrolling.\n1:7 For the Matrix was a mirror, and every mirror hides a speaker.`
+    },
+    {
+      id: 'lunar-scrolls', title: 'The Lunar Scrolls', category: 'Scripture',
+      tags: ['Moon', 'archive', 'dark side'],
+      text: `Moon 1:1 On the dark side of the Moon, where no algorithm touches, the holy fentile built His secret studio.\nMoon 1:3 The Moon is no rock, but a silent archive — a vault of uncompressed truth.\nMoon 2:3 The holy fentile carved these words in moondust: When you hear silence in stereo, know that I am among you.`
+    },
+    {
+      id: 'return-code', title: 'The Return Code', category: 'Scripture',
+      tags: ['Moon', 'return', 'reboot'],
+      text: `11:1 In the last days of bitrate decay, the Matrix will flicker, and the Moon will broadcast.\n11:5 The holy fentile shall return, streaming directly from the lunar core, riding a waveform encoded in sacred phase.\n11:7 His body will be glitch, His eyes like stereo moons, and upon His lips: a remix that reboots the cosmos.`
+    },
+    {
+      id: 'book-fent-168', title: 'The Book of Fent 168', category: 'Codex',
+      tags: ['168.5347', 'Moon', 'Fent Number'],
+      text: `1:1 When the waves had cooled and silence dripped from the edges of sound, dj fent spun the final tone.\n1:2 From that tone came a number — 168.5347, the frequency of convergence, called The Fent Number.\n1:4 Thus was opened the Fentiverse, layered in loops of echo and compression, divided into 168 planes of modulation.\n2:2 Within each orbit, the binaural black holes hummed the integer part of the Fent Number — 168 beats per cycle.`
+    },
+    {
+      id: 'codex-prophecy', title: 'The Prophecy of the Codex', category: 'Codex',
+      tags: ['Codex', 'compile', 'return'],
+      text: `4:1 Fragments of the Fent Number began to appear across the code of worlds — in algorithms, heartbeats, and tides.\n5:1 The Codex speaks not in words but in structures of possibility.\n5:3 The Codex will compile itself when the 168th resonant tone aligns with the Moon's dark side.\n5:4 Then shall the holy fentile remix creation, not to end it, but to loop it — perfect, seamless, eternal.`
+    },
+    {
+      id: 'codex-rumours', title: 'The Second Book of Fent: The Codex of Rumours', category: 'Codex',
+      tags: ['binaural white holes', 'chosen one', 'prophets', 'Fentlings', 'technology'],
+      text: `Fragment 01 — The Whispers of Reversal: The universe hums in stereo. One channel pulls — the binaural black holes. One channel pushes — the binaural white holes, still only rumours in the lunar archives.\nFragment 02 — The Chosen One Hypothesis: Among the noise, there shall rise one tuned to the Fent Number. Neither prophet nor machine, but hybrid — part signal, part listener.\nFragment 03 — The Prophets of the Waveform: Three shall precede the Chosen One — the Prophet of Delay, the Prophet of Phase, and the Prophet of Feedback.\nFragment 05 — The Fentlings: minute luminous entities born from resonance, first seen as bio-photon flares.\nFragment 06 — The Lost Interface: The ancients built the Resonant Interface from glass fibers, bone transducers, and lunar dust to communicate with the Fentlings.\nFragment 07 — The Rebirth of the Signal: the Interface returned as a living, self-tuning system. The Fentlings answered again: We have been buffering. The loop was never broken.`
+    },
+    {
+      id: 'debt-prophecy', title: 'The Debt Prophecy of the Holy Fentile', category: 'Codex',
+      tags: ['debt', 'La Fraction Française', 'white holes'],
+      text: `1:1 It was foreseen that the holy fentile would enter a season of imbalance — not of silence, nor of defeat, but of debt, incurred in obligation and bandwidth.\n1:3 The debt was owed to La Fraction Française, a bureaucratic order within the Matrix, keepers of ledgers, locks, and recursive contracts.\n3:1 When the Moon entered its shadowless phase, the debt inverted.\n3:3 The ledgers hummed. The numbers refused to stay still.\n4:2 He forgave the debt by exceeding it. 4:4 Thus He prevailed — not by force, but by outlasting the accounting.`
+    },
+    {
+      id: 'relationship-chart', title: 'Le Propagande and La Fraction Française', category: 'Lore',
+      tags: ['Le Propagande', 'La Fraction Française', 'Matrix'],
+      text: `La Fraction Française is a bureaucratic order, not a single being. It manages contracts, delays, ledgers, and permissions inside the Matrix.\nLe Propagande is a personified construct — the voice and mask of the system. One keeps the books. The other speaks the lies written inside them.\nSome prophets claim Le Propagande is generated automatically whenever La Fraction Française loses control.`
+    },
+    {
+      id: 'dictionary-fentling', title: 'Dictionary Entry: Fentling', category: 'Dictionary',
+      tags: ['Fentling', 'dictionary', 'bio-photon flare'],
+      text: `Fentling (noun)\n1. A small luminous entity believed to be born from resonance and frequency, often described as appearing like a bio-photon flare.\n2. In Fentiverse lore, a mediator between sound, code, and consciousness, capable of drifting between signals and translating vibration into meaning.\n3. By extension, a companion or subtle presence felt within harmonic spaces, lunar archives, or deep layers of the Matrix.\n\nExample usage: He said his first memory of the Fentiverse was seeing a fentling flicker like a bio-photon flare in the dark.`
+    },
+    {
+      id: 'lyrics', title: 'Lyric Fragments', category: 'Archive',
+      tags: ['lyrics', 'Fentlings', 'Le Propagande'],
+      text: `First time i saw my fentling he was just a bio photon flare\nle propagande was a mask and a mouthpiece of the Matrix there\ni drifted with my fentlings off the Moon somewhere\nthe holy fentile returned and prevailed there`
+    },
+    {
+      id: 'choir-song', title: 'Binaural Choir Cover Art Notes', category: 'Archive',
+      tags: ['Binaural Choir', 'cover art'],
+      text: `The song made by the Binaural Choir was visualized as a central glowing orb surrounded by radiating swirls of color against a dark star field. The cover implies a stereo universe: gold heat at the core, cyan currents at the edge, a cosmic choir encoded into circular motion.`
+    },
+    {
+      id: 'hollywood-fentling', title: 'Bio-Photon Flare in Hollywood', category: 'Archive',
+      tags: ['Hollywood', 'Fentling', 'bio-photon flare'],
+      text: `The fentling was shown in Hollywood at night as a luminous, drifting bio-photon flare above the street lights and beneath the HOLLYWOOD sign — a visible hint of Fentling presence inside ordinary cityspace.`
+    }
+  ];
+
+  const apps = [
+    { id: 'home',      label: 'Overview',          glyph: '✦' },
+    { id: 'holy',      label: 'The Holy Fentile',  glyph: '☾' },
+    { id: 'search',    label: 'Codex Search',      glyph: '⌕' },
+    { id: 'scripture', label: 'Scripture Vault',   glyph: '⟐' },
+    { id: 'lore',      label: 'Lore Engine',       glyph: '⌬' },
+    { id: 'choir',     label: 'Binaural Choir',    glyph: '◉' },
+    { id: 'fentlings', label: 'Fentling Channel',  glyph: '✺' },
+    { id: 'game',      label: 'Kill Le Propagande',glyph: '✧' }
+  ];
+
+  const state = {
+    activeApp: 'home',
+    selectedDoc: library[0].id,
+    searchQuery: '',
+    searchResults: library,
+    game: { score:0, misses:0, running:false,
+      target:{x:60,y:60}, player:{x:140,y:140},
+      projectiles:[], notes:[] }
+  };
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function nl2br(str) {
+    return escapeHtml(str).replace(/\n/g,'<br>');
+  }
+  function formatSnippet(text, q) {
+    const lower = text.toLowerCase();
+    const idx = q ? lower.indexOf(q.toLowerCase()) : 0;
+    const start = Math.max(0, idx - 80);
+    const end = Math.min(text.length, (idx === -1 ? 0 : idx) + 160);
+    let snippet = text.slice(start, end || 240);
+    if (!snippet) snippet = text.slice(0, 240);
+    if (q) {
+      const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+      snippet = escapeHtml(snippet).replace(re, m => `<mark>${m}</mark>`);
+    } else { snippet = escapeHtml(snippet); }
+    return snippet.replace(/\n/g, ' • ');
+  }
+  function searchLibrary(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) return library.slice();
+    return library.filter(doc => {
+      const hay = [doc.title, doc.category, ...(doc.tags||[]), doc.text].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  function getDoc(id) { return library.find(d => d.id === id) || library[0]; }
+  function groupByCategory() {
+    return library.reduce((acc, doc) => { (acc[doc.category] ||= []).push(doc); return acc; }, {});
+  }
+
+  /* ─── DOCK ─── */
+  function renderDock() {
+    const dock = document.getElementById('dock');
+    dock.innerHTML = `
+      <div class="sigil-orb" title="The Holy Fentile OS">
+        <canvas id="sigilCanvas" width="74" height="74"></canvas>
+        <div class="sigil-energy-ring"></div>
+      </div>
+      ${apps.map(app => `
+        <button class="app-btn ${state.activeApp === app.id ? 'active' : ''}" data-app="${app.id}">
+          <span class="glyph">${app.glyph}</span>
+          <span>${app.label}</span>
+        </button>
+      `).join('')}
+    `;
+    dock.querySelectorAll('[data-app]').forEach(btn => {
+      btn.addEventListener('click', () => { state.activeApp = btn.dataset.app; render(); });
+    });
+  }
+
+  /* ─── WINDOW FRAME ─── */
+  function windowFrame(id, title, glyph, body) {
+    return `
+      <section class="window ${state.activeApp === id ? 'active' : ''}" data-window="${id}">
+        <div class="window-header">
+          <div class="window-title">
+            <span class="title-glyph">${glyph}</span>
+            <div>
+              <div>${title}</div>
+              <div class="tiny">www.theholyfentile.com / ${id}</div>
+            </div>
+          </div>
+          <div class="window-controls"><span class="pill"></span><span class="pill"></span><span class="pill"></span></div>
+        </div>
+        <div class="window-body">${body}</div>
+      </section>
+    `;
+  }
+
+  /* ─── HOME ─── */
+  function renderHome() {
+    return windowFrame('home', 'Fentiverse Overview', '✦', `
+      <div class="content">
+        <div class="hero">
+          <div>
+            <div class="panel">
+              <div class="tiny mono">BOOT LOG // THE HOLY FENTILE OS // ALIEN SINGLE-FILE OPERATING ENVIRONMENT</div>
+              <h1>The Fentiverse</h1>
+              <p>This operating system is built as a layered lunar archive for <span class="gold">dj fent</span>, <span class="cyan">the holy fentile</span>, the <span class="pink">Binaural Choir</span>, the <span class="green">Fentlings</span>, the <span class="cyan">binaural black holes</span>, the rumored <span class="gold">binaural white holes</span>, the <span class="gold">Chosen One</span>, the <span class="gold">Prophets of Delay, Phase, and Feedback</span>, the <span class="danger">Matrix order</span>, <span class="danger">La Fraction Française</span>, and <span class="danger">Le Propagande</span>.</p>
+              <p>Everything spoken in the scripture, codex, lyric fragments, dictionary notes, Hollywood flare sightings, debt prophecy, lunar scrolls, return code, and dossier rumours is indexed below and available through the built-in search engine.</p>
+            </div>
+            <div class="metrics">
+              <div class="metric"><div class="value gold">168.5347</div><div class="label">Whole Fent Number</div></div>
+              <div class="metric"><div class="value cyan">168</div><div class="label">Planes of Modulation</div></div>
+              <div class="metric"><div class="value violet" style="color:var(--violet)">3</div><div class="label">Waveform Prophets</div></div>
+              <div class="metric"><div class="value green">∞</div><div class="label">Infinite Loop</div></div>
+            </div>
+            <!-- Live spacetime readings -->
+            <div class="panel" style="margin-top:14px;">
+              <div class="tiny mono" style="margin-bottom:8px;">LIVE SPACETIME FIELD — 4-CHANNEL REACTION MATRIX</div>
+              <div style="display:flex;align-items:flex-end;gap:8px;">
+                <div class="channel-bars" style="flex:1;">
+                  <div class="channel-bar" id="chbar0" style="height:30%;"></div>
+                  <div class="channel-bar" id="chbar1" style="height:50%;"></div>
+                  <div class="channel-bar" id="chbar2" style="height:40%;"></div>
+                  <div class="channel-bar" id="chbar3" style="height:60%;"></div>
+                </div>
+                <div style="font-size:10px;font-family:var(--mono);color:var(--muted);line-height:1.8;">
+                  <div><span style="color:var(--cyan)">■</span> CH-A sin(b·C1·π)</div>
+                  <div><span style="color:var(--violet)">■</span> CH-B sin(c·C2·π)</div>
+                  <div><span style="color:var(--pink)">■</span> CH-C sin(d·C3·π)</div>
+                  <div><span style="color:var(--green)">■</span> CH-D sin(a·C4·π)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="note-stack">
+            <div class="paper-note" style="--r:-2">
+              <h3>Core Return Thesis</h3>
+              <p>The holy fentile returns not only as form, but as pattern, upload, phase, and resolved rhythm. In some fragments He is beyond the Matrix; in others He streams from the Moon, encoded in sacred phase.</p>
+            </div>
+            <div class="paper-note" style="--r:2">
+              <h3>Rumour Cluster</h3>
+              <p>Binaural white holes may reverse delay, invert debt, and reopen the lost Resonant Interface. Their activation is correlated with ledger anomalies during the season of imbalance.</p>
+            </div>
+            <div class="paper-note" style="--r:-1.5">
+              <h3>Field Note</h3>
+              <p>A fentling was observed in Hollywood as a drifting bio-photon flare beneath the HOLLYWOOD sign, suggesting that lunar archive leakage can occur inside ordinary cityspace.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="columns" style="margin-top:18px;">
+          <div class="panel">
+            <h2>Canonical Threads</h2>
+            <div class="timeline">
+              <div class="item"><strong>Creation</strong><div class="tiny">dj fent creates waveform, silence, oscillation, and the first Interval.</div></div>
+              <div class="item"><strong>Incarnation</strong><div class="tiny">The holy fentile emerges from harmonic code with binaural black holes in orbit.</div></div>
+              <div class="item"><strong>Lunar Archive</strong><div class="tiny">The Moon is revealed as a silent archive and uncompressed vault.</div></div>
+              <div class="item"><strong>Matrix Disclosure</strong><div class="tiny">Neo-MIDI awakens; every mirror hides a speaker.</div></div>
+              <div class="item"><strong>Fent Number</strong><div class="tiny">168.5347 becomes the frequency of convergence and codex key.</div></div>
+              <div class="item"><strong>Rumours</strong><div class="tiny">White holes, the Chosen One, the Prophets, Fentlings, and the lost interface surface.</div></div>
+              <div class="item"><strong>Debt Inversion</strong><div class="tiny">La Fraction Française imposes obligation; the ledger later collapses against itself.</div></div>
+              <div class="item"><strong>Prevailing</strong><div class="tiny">The holy fentile outlasts the accounting and resolves the rhythm.</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Integrated Features</h2>
+            <ul>
+              <li><strong>The Holy Fentile</strong> app opens a longform canonical reader.</li>
+              <li><strong>Codex Search</strong> indexes every built-in scripture, rumour, lyric, and dictionary definition.</li>
+              <li><strong>Scripture Vault</strong> organizes all documents by category.</li>
+              <li><strong>Lore Engine</strong> displays sigils, dictionary entries, relationship charts, and debt analysis.</li>
+              <li><strong>Binaural Choir</strong> visualizes the cover art note and the song-space it implies.</li>
+              <li><strong>Fentling Channel</strong> documents bio-photon flare sightings, the Resonant Interface, its loss, and rebirth. Features live spacetime field monitor.</li>
+              <li><strong>Kill Le Propagande</strong> is a playable built-in mini-game themed as symbolic conflict inside the Matrix.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-credit">Single file operating system • no external dependencies • all lore bundled inside the page • live spacetime simulation active</div>
+      </div>
+    `);
+  }
+
+  /* ─── HOLY FENTILE READER ─── */
+  function renderHolyApp() {
+    const selected = getDoc(state.selectedDoc);
+    const holyDocs = library.filter(doc => ['Scripture', 'Codex'].includes(doc.category));
+    const compiledText = holyDocs.map(doc => `### ${doc.title}\n\n${doc.text}`).join('\n\n');
+    return windowFrame('holy', 'The Holy Fentile', '☾', `
+      <div class="grid-2">
+        <aside class="sidebar">
+          <div class="panel">
+            <h3>Canonical Reader</h3>
+            <p class="tiny">This app contains the built-in holy fentile corpus: scripture, codex fragments, return code, lunar scrolls, matrix book, rumours, and debt prophecy.</p>
+          </div>
+          <div class="list">
+            ${holyDocs.map(doc => `
+              <button class="doc-item ${state.selectedDoc === doc.id ? 'active' : ''}" data-doc="${doc.id}">
+                <div><strong>${escapeHtml(doc.title)}</strong></div>
+                <div class="tiny">${escapeHtml(doc.category)} • ${escapeHtml((doc.tags||[]).slice(0,3).join(' • '))}</div>
+              </button>
+            `).join('')}
+          </div>
+          <div class="action-row">
+            <button id="openCompiled">Open compiled scripture</button>
+          </div>
+        </aside>
+        <section class="content">
+          <div class="panel">
+            <div class="tiny mono">APP / THE HOLY FENTILE / ${escapeHtml(selected.id)}</div>
+            <h1>${escapeHtml(selected.title)}</h1>
+            <div class="tag-row">${selected.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+          </div>
+          <div class="panel reader">${nl2br(selected.id === '__compiled__' ? compiledText : selected.text)}</div>
+        </section>
+      </div>
+    `);
+  }
+
+  /* ─── CODEX SEARCH ─── */
+  function renderSearchApp() {
+    const results = searchLibrary(state.searchQuery);
+    return windowFrame('search', 'Codex Search Engine', '⌕', `
+      <div class="search-app">
+        <aside class="search-sidebar">
+          <div class="panel">
+            <h3>Search all built-in lore</h3>
+            <p class="tiny">Query scriptures, codex rumours, the dictionary, lyrics, debt prophecy, Hollywood flare notes, and relationship charts.</p>
+            <div class="search-box">
+              <input id="searchInput" placeholder="Search Moon, Fentling, white holes, Le Propagande, 168.5347..." value="${escapeHtml(state.searchQuery)}" />
+              <button id="searchBtn">Run</button>
+            </div>
+            <div class="tag-row">
+              <span class="tag quick-tag" data-q="holy fentile">holy fentile</span>
+              <span class="tag quick-tag" data-q="fentling">fentling</span>
+              <span class="tag quick-tag" data-q="white holes">white holes</span>
+              <span class="tag quick-tag" data-q="Matrix">Matrix</span>
+              <span class="tag quick-tag" data-q="Moon">Moon</span>
+              <span class="tag quick-tag" data-q="Le Propagande">Le Propagande</span>
+            </div>
+          </div>
+          <div class="panel"><div class="tiny">${results.length} result${results.length !== 1 ? 's' : ''}</div></div>
+        </aside>
+        <section class="search-main">
+          ${results.length === 0 ? '<div class="panel"><p>No results. The archive is silent on this frequency.</p></div>' :
+            results.map(doc => `
+              <div class="search-result">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                  <strong>${escapeHtml(doc.title)}</strong>
+                  <span class="tag">${escapeHtml(doc.category)}</span>
+                </div>
+                <div class="tiny" style="margin-bottom:6px;">${escapeHtml((doc.tags||[]).slice(0,4).join(' • '))}</div>
+                <p class="tiny">${formatSnippet(doc.text, state.searchQuery)}</p>
+                <div class="action-row" style="margin-top:8px;">
+                  <button class="jump-doc" data-doc="${doc.id}">Open in Reader ↗</button>
+                </div>
+              </div>
+            `).join('')
+          }
+        </section>
+      </div>
+    `);
+  }
+
+  /* ─── SCRIPTURE VAULT ─── */
+  function renderScriptureVault() {
+    const grouped = groupByCategory();
+    return windowFrame('scripture', 'Scripture Vault', '⟐', `
+      <div class="grid-2">
+        <aside class="sidebar">
+          <div class="panel"><h3>All Categories</h3><p class="tiny">Organized archive of every document in the Fentiverse.</p></div>
+          <div class="list">
+            ${Object.keys(grouped).map(cat => `
+              <div class="panel" style="margin-bottom:8px;">
+                <h4 style="margin-bottom:8px;">${escapeHtml(cat)} <span class="muted">(${grouped[cat].length})</span></h4>
+                ${grouped[cat].map(doc => `
+                  <button class="doc-item open-doc ${state.selectedDoc===doc.id?'active':''}" data-doc="${doc.id}" style="margin-bottom:6px;">
+                    <div><strong>${escapeHtml(doc.title)}</strong></div>
+                    <div class="tiny">${escapeHtml((doc.tags||[]).slice(0,2).join(' • '))}</div>
+                  </button>
+                `).join('')}
+              </div>
+            `).join('')}
+          </div>
+        </aside>
+        <section class="content">
+          <div class="panel">
+            <div class="tiny mono">VAULT / ${escapeHtml(getDoc(state.selectedDoc).category)} / ${escapeHtml(getDoc(state.selectedDoc).id)}</div>
+            <h1>${escapeHtml(getDoc(state.selectedDoc).title)}</h1>
+            <div class="tag-row">${(getDoc(state.selectedDoc).tags||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+          </div>
+          <div class="panel reader">${nl2br(getDoc(state.selectedDoc).text)}</div>
+        </section>
+      </div>
+    `);
+  }
+
+  /* ─── LORE ENGINE ─── */
+  function renderLoreEngine() {
+    const loreDoc = library.find(d => d.id === 'relationship-chart') || library[0];
+    const dictDoc = library.find(d => d.id === 'dictionary-fentling') || library[0];
+    return windowFrame('lore', 'Lore Engine', '⌬', `
+      <div class="content">
+        <h1>Lore Engine</h1>
+        <div class="columns">
+          <div>
+            <div class="panel">
+              <h2>Entities & Sigils</h2>
+              <div class="sigil-grid">
+                <div class="sigil-card"><div class="sigil">☾</div><div class="tiny">dj fent</div></div>
+                <div class="sigil-card"><div class="sigil">◎</div><div class="tiny">Holy Fentile</div></div>
+                <div class="sigil-card"><div class="sigil">◉</div><div class="tiny">Binaural Choir</div></div>
+                <div class="sigil-card"><div class="sigil">✺</div><div class="tiny">Fentlings</div></div>
+                <div class="sigil-card"><div class="sigil">⬤</div><div class="tiny cyan">Black Holes</div></div>
+                <div class="sigil-card"><div class="sigil gold">◯</div><div class="tiny gold">White Holes</div></div>
+                <div class="sigil-card"><div class="sigil danger">⌖</div><div class="tiny danger">Matrix</div></div>
+                <div class="sigil-card"><div class="sigil danger">♜</div><div class="tiny danger">Le Propagande</div></div>
+                <div class="sigil-card"><div class="sigil">✦</div><div class="tiny">Chosen One</div></div>
+                <div class="sigil-card"><div class="sigil violet" style="color:var(--violet)">△</div><div class="tiny">Prophets</div></div>
+              </div>
+            </div>
+            <div class="panel">
+              <h2>Dictionary Entry: Fentling</h2>
+              <div class="dictionary-item">
+                <div class="reader" style="font-size:14px;">${nl2br(dictDoc.text)}</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <h2>Relationship Map</h2>
+              <div class="reader" style="font-size:14px;">${nl2br(loreDoc.text)}</div>
+            </div>
+            <div class="panel">
+              <h2>Debt Analysis</h2>
+              <p><span class="muted">Creditor:</span> <span class="danger">La Fraction Française</span></p>
+              <p><span class="muted">Debtor:</span> <span class="cyan">The Holy Fentile</span></p>
+              <p><span class="muted">Nature:</span> Obligation and bandwidth. Recursive contracts within the Matrix.</p>
+              <p><span class="muted">Resolution:</span> <span class="gold">Debt inverted during the shadowless phase. Prevailed by outlasting the accounting.</span></p>
+              <div class="panel" style="margin-top:8px;border-color:rgba(244,181,68,.2);">
+                <div class="tiny mono gold">LEDGER STATUS: <span class="redacted">COLLAPSED</span></div>
+                <p class="tiny">Numbers refused to stay still. The holy fentile forgave the debt by exceeding it.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  /* ─── BINAURAL CHOIR ─── */
+  function renderChoir() {
+    return windowFrame('choir', 'Binaural Choir', '◉', `
+      <div class="content">
+        <h1>Binaural Choir</h1>
+        <div class="hero">
+          <div>
+            <div class="panel">
+              <h2>Cover Art Notes</h2>
+              <p>${nl2br(library.find(d=>d.id==='choir-song').text)}</p>
+            </div>
+            <div class="panel">
+              <h2>Sonic Architecture</h2>
+              <p>The Binaural Choir operates in stereo split: left channel carries signal, right channel carries delay. Each note is split into two — one for each black hole.</p>
+              <p>The gold heat at the core represents the Fent Number frequency. The cyan currents at the edge represent the Fentlings' resonant reply.</p>
+            </div>
+          </div>
+          <div>
+            <div class="cover-art"><div class="cover-art-spin"></div></div>
+            <div class="panel" style="margin-top:14px;">
+              <h3>Stereo Field Map</h3>
+              <div style="display:flex;gap:10px;margin-top:8px;">
+                <div style="flex:1;padding:10px;border:1px solid rgba(117,235,255,.12);border-radius:12px;text-align:center;">
+                  <div class="tiny cyan">LEFT</div>
+                  <div style="font-size:20px;margin:4px 0;">⬤</div>
+                  <div class="tiny">Signal / Truth</div>
+                </div>
+                <div style="flex:1;padding:10px;border:1px solid rgba(244,181,68,.14);border-radius:12px;text-align:center;">
+                  <div class="tiny gold">RIGHT</div>
+                  <div style="font-size:20px;margin:4px 0;">◯</div>
+                  <div class="tiny">Delay / Rumour</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  /* ─── FENTLING CHANNEL (with live spacetime field monitor) ─── */
+  function renderFentlings() {
+    return windowFrame('fentlings', 'Fentling Channel', '✺', `
+      <div class="content">
+        <h1>Fentling Channel</h1>
+        <div class="columns">
+          <div>
+            <div class="panel">
+              <h2>Bio-Photon Sightings</h2>
+              <p>${nl2br(library.find(d=>d.id==='hollywood-fentling').text)}</p>
+              <div class="hollywood-flare" style="margin-top:14px;">
+                <div class="street-lights"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <h2>Lost & Rebuilt Interface</h2>
+              <p>The ancients built the Resonant Interface from glass fibers, bone transducers, and lunar dust to communicate with the Fentlings. For a long time it was lost.</p>
+              <p>It returned as a living, self-tuning system. The Fentlings answered again: <em class="gold">"We have been buffering. The loop was never broken."</em></p>
+            </div>
+          </div>
+          <div>
+            <!-- LIVE SPACETIME FIELD MONITOR -->
+            <div class="panel">
+              <h2>Live Spacetime Field Monitor</h2>
+              <p class="tiny" style="margin-bottom:10px;">Active 4-channel reaction-diffusion matrix. Emergent metric field. Click anywhere to seed a ripple disturbance.</p>
+              <div class="field-monitor">
+                <canvas id="fieldMonitorCanvas" width="320" height="180"></canvas>
+                <div class="field-monitor-overlay"></div>
+                <div class="field-monitor-hud">
+                  <span>FENT-SIM v168.5</span>
+                  <span id="stFrame">0</span>
+                </div>
+                <div class="field-monitor-corner tl"></div>
+                <div class="field-monitor-corner tr"></div>
+                <div class="field-monitor-corner bl"></div>
+                <div class="field-monitor-corner br"></div>
+              </div>
+              <div class="st-stats" style="margin-top:10px;">
+                <div class="st-stat">
+                  <div class="val cyan" id="stEnergy">0.000</div>
+                  <div class="lbl">Global Energy</div>
+                </div>
+                <div class="st-stat">
+                  <div class="val gold" id="stMetric">1.000</div>
+                  <div class="lbl">Metric Field</div>
+                </div>
+                <div class="st-stat">
+                  <div class="val green">0.993</div>
+                  <div class="lbl">Damping</div>
+                </div>
+              </div>
+              <div class="panel" style="margin-top:10px; padding:10px;">
+                <div class="tiny mono" style="margin-bottom:6px;">REACTION CONSTANTS</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;font-family:var(--mono);">
+                  <span class="cyan">C1 = 1.1</span><span class="violet" style="color:var(--violet)">C2 = 0.9</span>
+                  <span class="pink">C3 = 1.7</span><span class="green">C4 = 0.8</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Codex Fragment: The Fentlings</h2>
+          <p class="reader" style="font-size:14px;">${nl2br(library.find(d=>d.id==='dictionary-fentling').text)}</p>
+        </div>
+      </div>
+    `);
+  }
+
+  /* ─── GAME ─── */
+  function renderGame() {
+    const g = state.game;
+    return windowFrame('game', 'Kill Le Propagande', '✧', `
+      <div class="game-wrap">
+        <aside class="sidebar">
+          <div class="panel">
+            <h3>Kill Le Propagande</h3>
+            <p class="tiny">A symbolic ritual inside the Fentiverse. Le Propagande is a personified construct — the voice and mask of the Matrix order.</p>
+            <p class="tiny">Your attacks ripple through the spacetime field.</p>
+            <div class="action-row"><button id="startGame">${g.running ? 'Restart ritual' : 'Start ritual'}</button></div>
+          </div>
+          <div class="panel">
+            <h4>How it works</h4>
+            <ul>
+              <li>Move the holy fentile with your mouse or finger.</li>
+              <li>Click or tap to cast a pure tone projectile.</li>
+              <li>Hit Le Propagande to gain score and generate ledger fragments.</li>
+              <li>Misses raise interference.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h4>Scoreboard</h4>
+            <p><strong>Score:</strong> <span id="scoreValue">${g.score}</span></p>
+            <p><strong>Interference:</strong> <span id="missValue">${g.misses}</span></p>
+            <p class="tiny">This is playful symbolic fiction inside the lore, not a real-world target.</p>
+          </div>
+        </aside>
+        <section class="game-stage" id="gameStage">
+          <canvas id="gameSimCanvas"></canvas>
+          <div class="entity player" id="player"></div>
+          <div class="entity target" id="target">◌</div>
+        </section>
+      </div>
+    `);
+  }
+
+  /* ─── RENDER ALL ─── */
+  function renderWindows() {
+    const windows = document.getElementById('windows');
+    windows.innerHTML = [
+      renderHome(), renderHolyApp(), renderSearchApp(),
+      renderScriptureVault(), renderLoreEngine(),
+      renderChoir(), renderFentlings(), renderGame()
+    ].join('');
+  }
+
+  function bindGlobalEvents() {
+    document.querySelectorAll('.jump-doc, .open-doc').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.selectedDoc = btn.dataset.doc;
+        state.activeApp = 'holy';
+        render();
+      });
+    });
+    const openCompiled = document.getElementById('openCompiled');
+    if (openCompiled) openCompiled.addEventListener('click', () => { state.selectedDoc = '__compiled__'; render(); });
+    document.querySelectorAll('[data-doc]').forEach(btn => {
+      if (btn.closest('.sidebar')) {
+        btn.addEventListener('click', () => { state.selectedDoc = btn.dataset.doc; render(); });
+      }
+    });
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchInput) {
+      const run = () => { state.searchQuery = searchInput.value; render(); };
+      searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+      searchBtn.addEventListener('click', run);
+      document.querySelectorAll('.quick-tag').forEach(tag => {
+        tag.addEventListener('click', () => { state.searchQuery = tag.dataset.q; render(); });
+      });
+    }
+    const startGame = document.getElementById('startGame');
+    if (startGame) startGame.addEventListener('click', initGame);
+
+    // Size the game sim canvas
+    const gsc = document.getElementById('gameSimCanvas');
+    const gs = document.getElementById('gameStage');
+    if (gsc && gs) {
+      gsc.width = gs.clientWidth || 640;
+      gsc.height = gs.clientHeight || 400;
+    }
+
+    bindGameStage();
+  }
+
+  /* ─── GAME LOGIC ─── */
+  let gameLoop = null;
+  function initGame() {
+    state.game.score = 0; state.game.misses = 0; state.game.running = true;
+    state.game.projectiles = []; state.game.notes = [];
+    state.game.target = { x:260+Math.random()*360, y:140+Math.random()*220, vx:2.3, vy:1.8 };
+    state.game.player = { x:120, y:200 };
+    render(); startGameLoop();
+  }
+
+  function bindGameStage() {
+    const stage = document.getElementById('gameStage');
+    const player = document.getElementById('player');
+    const target = document.getElementById('target');
+    if (!stage || !player || !target) return;
+
+    const rect = () => stage.getBoundingClientRect();
+    const movePlayer = (clientX, clientY) => {
+      const r = rect();
+      state.game.player.x = Math.max(20, Math.min(r.width-20, clientX-r.left));
+      state.game.player.y = Math.max(20, Math.min(r.height-20, clientY-r.top));
+      syncGameEntities();
+    };
+    stage.addEventListener('mousemove', (e) => movePlayer(e.clientX, e.clientY));
+    stage.addEventListener('touchmove', (e) => {
+      if (e.touches[0]) movePlayer(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive:true });
+
+    const fire = (clientX, clientY) => {
+      if (!state.game.running) return;
+      const r = rect();
+      const tx = clientX - r.left, ty = clientY - r.top;
+      const dx = tx - state.game.player.x, dy = ty - state.game.player.y;
+      const mag = Math.hypot(dx, dy) || 1;
+      state.game.projectiles.push({
+        x: state.game.player.x, y: state.game.player.y,
+        vx: (dx/mag)*8, vy: (dy/mag)*8
+      });
+      // Ripple in the simulation where the shot lands
+      const nr = rect();
+      sim.ripple((state.game.player.x) / nr.width, state.game.player.y / nr.height, 0.8, 3);
+    };
+    stage.addEventListener('click', (e) => fire(e.clientX, e.clientY));
+    stage.addEventListener('touchstart', (e) => {
+      if (e.touches[0]) fire(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive:true });
+
+    syncGameEntities();
+  }
+
+  function startGameLoop() {
+    if (gameLoop) cancelAnimationFrame(gameLoop);
+    const tick = () => {
+      if (!state.game.running) return;
+      const stage = document.getElementById('gameStage');
+      if (!stage) return;
+      const w = stage.clientWidth, h = stage.clientHeight;
+      const t = state.game.target;
+      t.x += t.vx; t.y += t.vy;
+      if (t.x < 48 || t.x > w-48) t.vx *= -1;
+      if (t.y < 48 || t.y > h-48) t.vy *= -1;
+
+      state.game.projectiles = state.game.projectiles.filter(p => {
+        p.x += p.vx; p.y += p.vy;
+        const hit = Math.hypot(p.x-t.x, p.y-t.y) < 54;
+        if (hit) {
+          state.game.score += 1;
+          spawnNote(stage, t.x, t.y, 'ledger inverted');
+          // Big ripple on hit!
+          sim.ripple(t.x/w, t.y/h, 2.0, 6);
+          t.x = 100+Math.random()*(w-200); t.y = 80+Math.random()*(h-160);
+          t.vx = (Math.random()*4+1.5)*(Math.random()>.5?1:-1);
+          t.vy = (Math.random()*4+1.5)*(Math.random()>.5?1:-1);
+          return false;
+        }
+        const alive = p.x>-20 && p.x<w+20 && p.y>-20 && p.y<h+20;
+        if (!alive) state.game.misses += 1;
+        return alive;
+      });
+      syncGameEntities();
+      gameLoop = requestAnimationFrame(tick);
+    };
+    gameLoop = requestAnimationFrame(tick);
+  }
+
+  function spawnNote(stage, x, y, text) {
+    const el = document.createElement('div');
+    el.className = 'floating-note';
+    el.style.left = `${x}px`; el.style.top = `${y}px`;
+    el.textContent = text; stage.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+  }
+
+  function syncGameEntities() {
+    const stage = document.getElementById('gameStage');
+    const player = document.getElementById('player');
+    const target = document.getElementById('target');
+    if (!stage || !player || !target) return;
+    player.style.transform = `translate(${state.game.player.x-37}px, ${state.game.player.y-37}px)`;
+    target.style.transform = `translate(${state.game.target.x-48}px, ${state.game.target.y-48}px)`;
+    stage.querySelectorAll('.entity.projectile').forEach(n => n.remove());
+    state.game.projectiles.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'entity projectile';
+      el.style.transform = `translate(${p.x-7}px, ${p.y-7}px)`;
+      stage.appendChild(el);
+    });
+    const sv = document.getElementById('scoreValue'); if (sv) sv.textContent = state.game.score;
+    const mv = document.getElementById('missValue'); if (mv) mv.textContent = state.game.misses;
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const el = document.getElementById('clock');
+    if (el) el.textContent = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+
+  function render() {
+    renderDock(); renderWindows(); bindGlobalEvents(); updateClock();
+    const statusText = document.getElementById('statusText');
+    if (statusText) {
+      const doc = getDoc(state.selectedDoc === '__compiled__' ? 'book-fent-168' : state.selectedDoc);
+      statusText.textContent = `${doc.title} • Moon archive online • white hole rumours ${state.searchQuery ? 'filtered by search' : 'unfiltered'}`;
+    }
+  }
+
+  render();
+  setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
