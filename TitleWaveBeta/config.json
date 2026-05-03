@@ -23685,7 +23685,7 @@
       {
         "Class": "GameEvent_TA",
         "Property": "DemoFXOverride",
-        "Value": "FXActor_TA'FXActors.Ball.BallExplosion_Base_FXActor'"
+        "Value": "FXActor_TA'explosion_poof.Explosion_Poof_FXActor'"
       }
     ]
   },
