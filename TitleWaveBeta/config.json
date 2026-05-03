@@ -9049,7 +9049,7 @@
   "DynamicLogosConfig": {
     "Class": "DynamicLogosConfig_TA",
     "bUseDynamicLogos": true,
-    "LogoURL": "http://localhost:8765/cdn/RocketLeague_TitleWave_Logo_transparent.png"
+    "LogoURL": "https://www.voltage.gay/TitleWaveBeta/RocketLeague_TitleWave_Logo_transparent.png"
   },
   "TradeConfig": {
     "Class": "TradeConfig_TA",
