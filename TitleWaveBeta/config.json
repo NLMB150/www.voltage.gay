@@ -3220,7 +3220,7 @@
     "bEnableCPCCShowRoWModal": true,
     "bEnableCPCCShowRealPrice": true,
     "bEnableExactAmountPackLogic": true,
-    "bEnableDebugFeatures": true,
+    "bEnableDebugFeatures": false,
     "VCFactor": 50,
     "VCMaxExactPack": 5000,
     "FilteredCatalogItemsMax": 6,
