@@ -23683,9 +23683,9 @@
         "Value": "(\"if u miss, it was a fake.\",\"boost is stored in the ego.\",\"the ball cannot legally hurt u unless u look at it.\",\"free play is where cars go to repent.\",\"saving a replay preserves the crime scene.\",\"if kickoff goes badly blame region selection.\",\"a clean landing is just falling with confidence.\",\"the handbrake is not a button, it is a lifestyle.\",\"your teammate is also wondering what the fuck u are doing.\",\"rotate midair to confuse the ball.\",\"if the server lags, it is thinking.\",\"do not trust the small pads. they know too much.\",\"every missed open net becomes a historical document.\",\"the octane has seen everything and forgiven nothing.\",\"when in doubt, jump for absolutely no reason.\")"
       },
       {
-        "Class": "GameEvent_TA",
-        "Property": "DemoFXOverride",
-        "Value": "FXActor_TA'explosion_poof.Explosion_Poof_FXActor'"
+        "Class": "ProductAsset_Boost_TA",
+        "Property": "FXActor",
+        "Value": "FXActor_Boost_TA'Boost_AlphaReward.FX.FXActor'"
       }
     ]
   },
