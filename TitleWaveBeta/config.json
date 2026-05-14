@@ -15025,7 +15025,7 @@
   },
   "UIConfig": {
     "Class": "UIConfig_TA",
-    "bCrateRouletteEnabled": "false",
+    "bCrateRouletteEnabled": "true",
     "bPsyNetFriendListEnabled": "true",
     "bPurchaseProTier": "true",
     "XPDataRanges": [
