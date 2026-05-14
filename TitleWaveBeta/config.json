@@ -3198,8 +3198,8 @@
   },
   "EOSMetricsConfig": {
     "Class": "EOSMetricsConfig_X",
-    "DataRouterURL": "localhost",
-    "PingDelayTime": 60
+    "DataRouterURL": "https://datarouter.ol.epicgames.com/datarouter/api/v1/public/data",
+    "PingDelayTime": 99999
   },
   "ConnectionQualityConfig": {
     "Class": "ConnectionQualityConfig_TA",
