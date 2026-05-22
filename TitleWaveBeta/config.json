@@ -15053,7 +15053,7 @@
     "Class": "PsyNetConfig_X",
     "PerConPingInterval": 20,
     "PerConTimeout": 60,
-    "PsyNetEnvironment": "EPE_Environment1",
+    "PsyNetEnvironment": "EPE_Environment4",
     "bAllowBacktraceUploads": false,
     "bAllowBacktraceLogUploads": false,
     "BacktraceURL": "https://psyonix.sp.Backtrace.io:6098/post",
