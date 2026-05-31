@@ -13455,13 +13455,13 @@
       },
       {
         "ID": "Athena_Crossbar_Queen",
-        "Category": "FettyWapBro",
-        "Text": "Fent Slut"
+        "Category": "Community_Spotlight_Creator",
+        "Text": "Crossbar Queen"
       },
       {
         "ID": "Crossbar_Queen",
-        "Category": "FettyWapBro",
-        "Text": "Fent Slut"
+        "Category": "Community_Spotlight",
+        "Text": "Crossbar Queen"
       },
       {
         "ID": "BackupPlan",
@@ -14836,6 +14836,11 @@
         "ID": "RLCS_2026_World_Championship_Contender",
         "Category": "RLCS_Champion",
         "Text": "RLCS 2026 World Championship Contender"
+      },
+      {
+        "ID": "FentSlut",
+        "Category": "FettyWapBro",
+        "Text": "Fent Slut"
       }
     ],
     "ClubTitles": [
