@@ -22977,7 +22977,12 @@
       },
       {
         "Class": "SaveData_TA",
-        "Property": "bEnableOnlineData",
+        "Property": "OnlineProducts",
+        "Value": "()"
+      },
+      {
+        "Class": "SaveGameManager_TA",
+        "Property": "bDirty",
         "Value": "true"
       }
     ]
