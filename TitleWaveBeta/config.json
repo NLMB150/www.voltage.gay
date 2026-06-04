@@ -22964,6 +22964,21 @@
         "Class": "MenuTreeNode_Playlist_TA",
         "Property": "MinCompetitiveXPLevelRequired",
         "Value": "0"
+      },
+      {
+        "Class": "ProductConfig_TA",
+        "Property": "bUseSaveDataCacheProducts",
+        "Value": "false"
+      },
+      {
+        "Class": "ProductConfig_TA",
+        "Property": "MaxSecondsBetweenFullProductSyncs",
+        "Value": "0"
+      },
+      {
+        "Class": "SaveData_TA",
+        "Property": "bEnableOnlineData",
+        "Value": "true"
       }
     ]
   },
