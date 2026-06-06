@@ -9064,11 +9064,6 @@
     "Class": "TitleConfig_X",
     "Categories": [
       {
-        "ID": "FettyWapBro",
-        "Color": "DBD2FF",
-        "GlowColor": "8C50FF"
-      },
-      {
         "ID": "Developer",
         "Color": "00FFAA",
         "GlowColor": "00FFFF"
@@ -14839,7 +14834,8 @@
       },
       {
         "ID": "FentSlut",
-        "Category": "FettyWapBro",
+        "Color": "DBD2FF",
+        "GlowColor": "8C50FF",
         "Text": "TitleWave Dev"
       }
     ],
