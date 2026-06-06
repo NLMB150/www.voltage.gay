@@ -22956,11 +22956,6 @@
         "Value": "true"
       },
       {
-        "Class": "OnlineSubsystemSteamworks",
-        "Property": "UnlockedDLC",
-        "Value": "(SuperSonic,Revenge,GreyCar,Wasteland,DarkCar,NBA,Body_NeoBike,Body_NeoCar,Body_Aftershock,Body_Marauder,body_cannonboy,Body_Number6,body_gilliam,body_bone,body_scallop,body_charged,body_Challah,body_Melonpan,DCU,Fauna,Calidi,Ron,BBB,Slime,Feline,SuperSonic,Revenge,GreyCar,Wasteland,DarkCar,NBA,Body_NeoBike,Body_NeoCar,Body_Aftershock,Body_Marauder,body_cannonboy,Body_Number6,body_gilliam,body_bone,body_scallop,body_charged,body_Challah,body_Melonpan,DCU,Fauna,Calidi,Ron,BBB,Slime,Feline,PSPlusPack01,PSPlusPack02,PSPlusPack03,PSPlusPack04,PSPlusPack05,PSPlusPack06,PSPlusPack07,PSPlusPack08,PSPlusPack09,PSPlusPack10,PSPlusPack11,PSPlusPack12,PSPlusPack13,PSPlusPack14,PSPlusPack15,PSPlusPack16,PSPlusPack17,PSPlusPack18,PSPlusPack19,PSPlusPack20,PSPlusPack21,PSPlusPack22,SuperSonic,Revenge,GreyCar,Wasteland,DarkCar,NBA,Body_NeoBike,Body_NeoCar,Body_Aftershock,Body_Marauder,body_cannonboy,Body_Number6,body_gilliam,body_bone,body_scallop,body_charged,body_Challah,body_Melonpan,DCU,Fauna,Calidi,Ron,BBB,XBGP,Slime,Feline,XBOXGoldPack01,SuperSonic,Revenge,GreyCar,Wasteland,DarkCar,Body_NeoBike,Body_NeoCar,Body_Aftershock,Body_Marauder,body_cannonboy,Body_Number6,body_gilliam,body_bone,body_scallop,body_charged,body_Challah,body_Melonpan,DCU,Fauna,Calidi,Ron,BBB,Slime,Feline)"
-      },
-      {
         "Class": "MenuTreeNode_Playlist_TA",
         "Property": "MinCompetitiveXPLevelRequired",
         "Value": "0"
